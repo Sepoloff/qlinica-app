@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LinearGradient } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS, SERVICES } from '../constants/Data';
 
 export default function HomeScreen() {
+  const navigation = useNavigation();
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
@@ -32,7 +34,10 @@ export default function HomeScreen() {
           <Text style={styles.subGreeting}>Como podemos ajudá-la hoje?</Text>
         </View>
 
-        <TouchableOpacity style={styles.bookButton}>
+        <TouchableOpacity 
+          style={styles.bookButton}
+          onPress={() => navigation.navigate('ServiceSelection' as never)}
+        >
           <Text style={styles.bookButtonText}>Agendar Consulta</Text>
         </TouchableOpacity>
       </LinearGradient>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qlinica - App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #2C3E50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .phone {
+            width: 390px;
+            height: 844px;
+            background: #2C3E50;
+            border-radius: 40px;
+            border: 12px solid #1a1a1a;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        .notch {
+            height: 30px;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 30px;
+            font-size: 12px;
+            color: white;
+        }
+        .screen {
+            flex: 1;
+            overflow-y: auto;
+            background: #2C3E50;
+        }
+        .header {
+            background: linear-gradient(165deg, #2C3E50 0%, #1a252f 100%);
+            padding: 28px 24px 32px;
+            position: relative;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -40px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212,175,143,0.08), transparent 70%);
+        }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+        .logo {
+            font-size: 26px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 1px;
+        }
+        .logo-q { color: #D4AF8F; }
+        .avatar-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #34495E;
+            border: 1.5px solid rgba(212,175,143,0.25);
+            color: #D4AF8F;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .avatar-btn:hover { background: #3a525a; }
+        .greeting {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 20px;
+        }
+        .greeting-text {
+            font-size: 14px;
+            color: rgba(255,255,255,0.9);
+        }
+        .greeting-name {
+            font-weight: bold;
+        }
+        .greeting-sub {
+            font-size: 13px;
+            color: #8895a0;
+            margin-top: 4px;
+        }
+        .book-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #D4AF8F, #b8956f);
+            border: none;
+            border-radius: 14px;
+            color: #1a252f;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 12px;
+            box-shadow: 0 8px 24px rgba(212,175,143,0.3);
+            transition: transform 0.2s;
+            position: relative;
+            z-index: 1;
+        }
+        .book-btn:active { transform: scale(0.98); }
+        .section {
+            padding: 24px 20px 16px;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: white;
+        }
+        .see-more {
+            font-size: 12px;
+            color: #D4AF8F;
+            cursor: pointer;
+        }
+        .appointment-card {
+            background: #34495E;
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 12px;
+            border-left: 3px solid #D4AF8F;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+        .appointment-icon {
+            font-size: 24px;
+            width: 48px;
+            height: 48px;
+            background: rgba(212,175,143,0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .appointment-info { flex: 1; }
+        .appointment-service {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+        }
+        .appointment-therapist {
+            font-size: 12px;
+            color: #8895a0;
+            margin-top: 3px;
+        }
+        .appointment-time {
+            font-size: 12px;
+            color: #D4AF8F;
+            margin-top: 4px;
+        }
+        .services-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+        }
+        .service-card {
+            background: #34495E;
+            border-radius: 14px;
+            padding: 18px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(212,175,143,0.15);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .service-card:hover {
+            border-color: rgba(212,175,143,0.5);
+            background: rgba(212,175,143,0.08);
+        }
+        .service-icon {
+            font-size: 26px;
+        }
+        .service-name {
+            font-size: 11px;
+            font-weight: 500;
+            color: white;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .bottom-nav {
+            height: 70px;
+            background: #1a252f;
+            border-top: 1px solid #34495E;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 20px;
+            color: #8895a0;
+            transition: color 0.2s;
+        }
+        .nav-btn.active {
+            color: #D4AF8F;
+        }
+        .nav-icon {
+            font-size: 22px;
+        }
+        .nav-label {
+            font-size: 10px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        .nav-btn.active .nav-label {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="notch">
+            <span>9:41</span>
+            <span>📶 📡 🔋</span>
+        </div>
+        <div class="screen">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-top">
+                    <div>
+                        <div class="logo"><span class="logo-q">Q</span>linica</div>
+                        <div style="color: #8895a0; font-size: 11px; margin-top: 2px; letter-spacing: 2px; text-transform: uppercase;">
+                            Fisioterapia & Bem-estar
+                        </div>
+                    </div>
+                    <button class="avatar-btn">MC</button>
+                </div>
+                <div class="greeting">
+                    <div class="greeting-text">Olá, <span class="greeting-name">Maria</span></div>
+                    <div class="greeting-sub">Como podemos ajudá-la hoje?</div>
+                </div>
+                <button class="book-btn">Agendar Consulta</button>
+            </div>
+
+            <!-- Próximas Consultas -->
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">Próximas consultas</span>
+                    <span class="see-more">Ver todas →</span>
+                </div>
+                <div class="appointment-card">
+                    <div class="appointment-icon">🦴</div>
+                    <div class="appointment-info">
+                        <div class="appointment-service">Fisioterapia</div>
+                        <div class="appointment-therapist">Dra. Ana Silva</div>
+                        <div class="appointment-time">📅 20 Mar 2026 · 🕐 10:00</div>
+                    </div>
+                </div>
+                <div class="appointment-card">
+                    <div class="appointment-icon">🧘</div>
+                    <div class="appointment-info">
+                        <div class="appointment-service">Pilates Clínico</div>
+                        <div class="appointment-therapist">Dra. Marta Oliveira</div>
+                        <div class="appointment-time">📅 25 Mar 2026 · 🕐 14:30</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Serviços -->
+            <div class="section">
+                <span class="section-title" style="display: block; margin-bottom: 16px;">Os nossos serviços</span>
+                <div class="services-grid">
+                    <button class="service-card"><div class="service-icon">🦴</div><div class="service-name">Fisioterapia</div></button>
+                    <button class="service-card"><div class="service-icon">🤲</div><div class="service-name">Osteopatia</div></button>
+                    <button class="service-card"><div class="service-icon">🧘</div><div class="service-name">Pilates</div></button>
+                    <button class="service-card"><div class="service-icon">💆</div><div class="service-name">Massagem</div></button>
+                    <button class="service-card"><div class="service-icon">🗣️</div><div class="service-name">Terapia da Fala</div></button>
+                    <button class="service-card"><div class="service-icon">🥗</div><div class="service-name">Nutrição</div></button>
+                </div>
+            </div>
+
+            <div style="height: 20px;"></div>
+        </div>
+
+        <!-- Bottom Nav -->
+        <div class="bottom-nav">
+            <button class="nav-btn active">
+                <div class="nav-icon">⌂</div>
+                <div class="nav-label">Início</div>
+            </button>
+            <button class="nav-btn">
+                <div class="nav-icon">◷</div>
+                <div class="nav-label">Marcações</div>
+            </button>
+            <button class="nav-btn">
+                <div class="nav-icon">◉</div>
+                <div class="nav-label">Perfil</div>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.nav-btn').forEach((btn, idx) => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        document.querySelectorAll('.book-btn, .service-card').forEach(btn => {
+            btn.addEventListener('click', function() {
+                alert('✅ Funcionalidade em desenvolvimento!');
+            });
+        });
+    </script>
+</body>
+</html>
