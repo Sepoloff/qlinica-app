@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Qlinica",
+    "slug": "qlinica-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2C3E50"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTabletMode": true,
+      "bundleIdentifier": "com.qlinica.app",
+      "buildNumber": "1"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2C3E50"
+      },
+      "package": "com.qlinica.app",
+      "versionCode": 1,
+      "permissions": []
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-font"
+      ]
+    ]
+  }
+}
