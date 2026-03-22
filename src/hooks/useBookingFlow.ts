@@ -36,7 +36,7 @@ export const useBookingFlowHook = () => {
       // Check authentication
       if (!user) {
         setState((prev) => ({ ...prev, error: 'Você precisa estar autenticado' }));
-        showToast('error', 'Autenticação necessária');
+        showToast('Autenticação necessária', 'error');
         return null;
       }
 
@@ -45,7 +45,7 @@ export const useBookingFlowHook = () => {
       if (!validation.valid) {
         const errorMsg = validation.errors.join('; ');
         setState((prev) => ({ ...prev, error: errorMsg }));
-        showToast('error', errorMsg);
+        showToast(errorMsg, 'error');
         logger.warn(`Booking validation failed: ${errorMsg}`, 'UseBookingFlow');
         return null;
       }
@@ -62,7 +62,7 @@ export const useBookingFlowHook = () => {
         error: null,
       }));
 
-      showToast('success', 'Agendamento realizado com sucesso! ✅');
+      showToast('Agendamento realizado com sucesso! ✅', 'success');
       logger.debug(`Booking submitted successfully: ${booking.id}`, 'UseBookingFlow');
 
       return booking;
@@ -76,7 +76,7 @@ export const useBookingFlowHook = () => {
         error: errorMessage,
       }));
 
-      showToast('error', errorMessage);
+      showToast(errorMessage, 'error');
       logger.error(`Booking flow failed: ${errorMessage}`, err, 'UseBookingFlow');
 
       return null;

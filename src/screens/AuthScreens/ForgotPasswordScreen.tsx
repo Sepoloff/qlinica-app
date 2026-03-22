@@ -45,10 +45,7 @@ export default function ForgotPasswordScreen() {
       await passwordResetService.requestReset(email);
 
       setSubmitted(true);
-      showToast({
-        message: 'Email de recuperação enviado com sucesso!',
-        type: 'success',
-      });
+      showToast('Email de recuperação enviado com sucesso!', 'success');
 
       // Navigate to reset code verification screen after 3 seconds
       setTimeout(() => {
@@ -57,10 +54,7 @@ export default function ForgotPasswordScreen() {
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao solicitar recuperação de senha';
       setError(errorMessage);
-      showToast({
-        message: errorMessage,
-        type: 'error',
-      });
+      showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }

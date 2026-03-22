@@ -1,13 +1,15 @@
 import { useState, useCallback } from 'react';
-import { FormValidator, FormRule, FormValidationResult } from '../utils/formValidator';
+import { ValidationResult } from '../utils/formValidator';
 
 export interface UseFormValidatorOptions {
   validateOnChange?: boolean;
   validateOnBlur?: boolean;
 }
 
+/**
+ * Custom hook for form validation
+ */
 export const useFormValidator = (
-  rules: Record<string, FormRule>,
   options: UseFormValidatorOptions = {}
 ) => {
   const { validateOnChange = false, validateOnBlur = true } = options;
@@ -17,20 +19,30 @@ export const useFormValidator = (
 
   const validateField = useCallback(
     (fieldName: string, value: any): string | null => {
-      const fieldRule = rules[fieldName];
-      if (!fieldRule) return null;
-
-      const error = FormValidator.validateField(fieldName, value, fieldRule);
-      return error ? error.message : null;
+      // Simple validation logic
+      if (!value) return `${fieldName} is required`;
+      return null;
     },
-    [rules]
+    []
   );
 
   const validateForm = useCallback(
-    (values: Record<string, any>): FormValidationResult => {
-      return FormValidator.validateForm(values, rules);
+    (values: Record<string, any>): ValidationResult => {
+      const newErrors: Record<string, string> = {};
+      
+      Object.keys(values).forEach(fieldName => {
+        const error = validateField(fieldName, values[fieldName]);
+        if (error) {
+          newErrors[fieldName] = error;
+        }
+      });
+
+      return {
+        isValid: Object.keys(newErrors).length === 0,
+        errors: newErrors,
+      };
     },
-    [rules]
+    [validateField]
   );
 
   const handleBlur = useCallback((fieldName: string) => {
@@ -74,31 +86,7 @@ export const useFormValidator = (
     [validateOnBlur, validateField, handleBlur]
   );
 
-  const setFieldError = useCallback((fieldName: string, error: string | null) => {
-    setErrors(prev => {
-      const newErrors = { ...prev };
-      if (error) {
-        newErrors[fieldName] = error;
-      } else {
-        delete newErrors[fieldName];
-      }
-      return newErrors;
-    });
-  }, []);
-
-  const clearErrors = useCallback(() => {
-    setErrors({});
-  }, []);
-
-  const clearFieldError = useCallback((fieldName: string) => {
-    setErrors(prev => {
-      const newErrors = { ...prev };
-      delete newErrors[fieldName];
-      return newErrors;
-    });
-  }, []);
-
-  const resetForm = useCallback(() => {
+  const reset = useCallback(() => {
     setErrors({});
     setTouched({});
   }, []);
@@ -109,11 +97,9 @@ export const useFormValidator = (
     validateField,
     validateForm,
     handleChange,
-    handleBlur: handleFieldBlur,
-    setFieldError,
-    clearErrors,
-    clearFieldError,
-    resetForm,
-    isValid: Object.keys(errors).length === 0,
+    handleBlur,
+    handleFieldBlur,
+    reset,
+    hasErrors: Object.keys(errors).length > 0,
   };
 };

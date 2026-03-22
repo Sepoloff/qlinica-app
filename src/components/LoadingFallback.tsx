@@ -13,7 +13,7 @@ interface LoadingFallbackProps {
   /** Content to show when not loading */
   children: React.ReactNode;
   /** Custom spinner size */
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'large';
   /** Custom loading message */
   loadingMessage?: string;
 }
@@ -35,7 +35,7 @@ export const LoadingFallback: React.FC<LoadingFallbackProps> = ({
   isLoading,
   error,
   children,
-  size = 'medium',
+  size = 'large',
   loadingMessage = 'Carregando...',
 }) => {
   if (isLoading) {

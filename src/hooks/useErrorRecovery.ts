@@ -42,9 +42,9 @@ export const useErrorRecovery = () => {
       options: ErrorRecoveryOptions = {}
     ): Promise<T | null> => {
       const {
-        maxRetries = DEFAULT_OPTIONS.maxRetries,
-        retryDelay = DEFAULT_OPTIONS.retryDelay,
-        backoffMultiplier = DEFAULT_OPTIONS.backoffMultiplier,
+        maxRetries = DEFAULT_OPTIONS.maxRetries ?? 3,
+        retryDelay = DEFAULT_OPTIONS.retryDelay ?? 500,
+        backoffMultiplier = DEFAULT_OPTIONS.backoffMultiplier ?? 2,
         onRetry,
         onFinalError,
       } = options;
@@ -52,7 +52,7 @@ export const useErrorRecovery = () => {
       let lastErr: Error | null = null;
       let currentDelay = retryDelay;
 
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      for (let attempt = 0; attempt <= (maxRetries ?? 3); attempt++) {
         try {
           setIsRetrying(attempt > 0);
           setRetryCount(attempt);
@@ -89,7 +89,7 @@ export const useErrorRecovery = () => {
 
             onRetry?.(attempt + 1);
             await new Promise((resolve) => setTimeout(resolve, currentDelay));
-            currentDelay *= backoffMultiplier;
+            currentDelay *= (backoffMultiplier ?? 2);
           }
         }
       }

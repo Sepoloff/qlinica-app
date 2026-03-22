@@ -20,7 +20,7 @@ export const useAnimatedValue = (initialValue: number = 0) => {
     });
   };
 
-  const interpolate = (outputRange: (string | number)[]) => {
+  const interpolate = (outputRange: string[] | number[]) => {
     return animatedValue.interpolate({
       inputRange: [0, 1],
       outputRange,

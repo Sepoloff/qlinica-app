@@ -38,10 +38,7 @@ export function useReview() {
           isLoading: false,
         }));
 
-        showToast({
-          message: 'Avaliação enviada com sucesso!',
-          type: 'success',
-        });
+        showToast('Avaliação enviada com sucesso!', 'success');
 
         return newReview;
       } catch (err: any) {
@@ -51,10 +48,7 @@ export function useReview() {
           error: errorMessage,
           isLoading: false,
         }));
-        showToast({
-          message: errorMessage,
-          type: 'error',
-        });
+        showToast(errorMessage, 'error');
         throw err;
       }
     },
@@ -141,10 +135,7 @@ export function useReview() {
           isLoading: false,
         }));
 
-        showToast({
-          message: 'Avaliação atualizada com sucesso!',
-          type: 'success',
-        });
+        showToast("Avaliação atualizada com sucesso!", "success");
 
         return updatedReview;
       } catch (err: any) {
@@ -154,10 +145,7 @@ export function useReview() {
           error: errorMessage,
           isLoading: false,
         }));
-        showToast({
-          message: errorMessage,
-          type: 'error',
-        });
+        showToast(errorMessage, 'error');
         throw err;
       }
     },
@@ -180,10 +168,7 @@ export function useReview() {
           isLoading: false,
         }));
 
-        showToast({
-          message: 'Avaliação removida com sucesso!',
-          type: 'success',
-        });
+        showToast("Avaliação removida com sucesso!", "success");
       } catch (err: any) {
         const errorMessage = err.message || 'Erro ao remover avaliação';
         setState((prev) => ({
@@ -191,10 +176,7 @@ export function useReview() {
           error: errorMessage,
           isLoading: false,
         }));
-        showToast({
-          message: errorMessage,
-          type: 'error',
-        });
+        showToast(errorMessage, 'error');
         throw err;
       }
     },
