@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants/Colors';
 import { Booking } from '../services/bookingService';
 
@@ -8,8 +8,9 @@ interface BookingCardProps {
   serviceName?: string;
   therapistName?: string;
   onReschedule?: (bookingId: string) => void;
-  onCancel?: (bookingId: string) => void;
+  onCancel?: (bookingId: string) => Promise<void>;
   onDetails?: (bookingId: string) => void;
+  isLoading?: boolean;
 }
 
 const getStatusColor = (status: Booking['status']) => {
@@ -44,7 +45,10 @@ export const BookingCard: React.FC<BookingCardProps> = ({
   onReschedule,
   onCancel,
   onDetails,
+  isLoading = false,
 }) => {
+  const [cancelling, setCancelling] = useState(false);
+
   const handleCancel = () => {
     Alert.alert(
       'Cancelar Marcação',
@@ -53,7 +57,15 @@ export const BookingCard: React.FC<BookingCardProps> = ({
         { text: 'Manter', style: 'cancel' },
         {
           text: 'Cancelar Marcação',
-          onPress: () => onCancel?.(booking.id),
+          onPress: async () => {
+            if (!onCancel) return;
+            setCancelling(true);
+            try {
+              await onCancel(booking.id);
+            } finally {
+              setCancelling(false);
+            }
+          },
           style: 'destructive',
         },
       ]
@@ -62,6 +74,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({
 
   const statusColor = getStatusColor(booking.status);
   const isUpcoming = booking.status === 'confirmed';
+  const isActionDisabled = isLoading || cancelling;
 
   return (
     <TouchableOpacity
@@ -112,18 +125,24 @@ export const BookingCard: React.FC<BookingCardProps> = ({
         {isUpcoming && (
           <View style={styles.actions}>
             <TouchableOpacity
-              style={[styles.actionButton, styles.rescheduleButton]}
-              onPress={() => onReschedule?.(booking.id)}
+              style={[styles.actionButton, styles.rescheduleButton, isActionDisabled && styles.actionButtonDisabled]}
+              onPress={() => !isActionDisabled && onReschedule?.(booking.id)}
+              disabled={isActionDisabled}
             >
               <Text style={styles.actionButtonText}>Remarcar</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionButton, styles.cancelButton]}
+              style={[styles.actionButton, styles.cancelButton, isActionDisabled && styles.actionButtonDisabled]}
               onPress={handleCancel}
+              disabled={isActionDisabled}
             >
-              <Text style={[styles.actionButtonText, styles.cancelButtonText]}>
-                Cancelar
-              </Text>
+              {cancelling ? (
+                <ActivityIndicator size="small" color={COLORS.gold} />
+              ) : (
+                <Text style={[styles.actionButtonText, styles.cancelButtonText]}>
+                  Cancelar
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -225,5 +244,8 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: COLORS.gold,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
   },
 });
