@@ -14,6 +14,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
 import { useToast } from '../context/ToastContext';
+import { useNotificationManager } from '../hooks/useNotificationManager';
 import { Button } from '../components/Button';
 import bookingService from '../services/bookingService';
 
@@ -40,6 +41,7 @@ export default function BookingSummaryScreen() {
   const route = useRoute();
   const { bookingData, resetBooking } = useBooking();
   const { showToast } = useToast();
+  const { notifyBookingConfirmation, scheduleAppointmentReminder } = useNotificationManager();
   const [isConfirming, setIsConfirming] = useState(false);
   
   // Extract params from route or context
@@ -75,6 +77,36 @@ export default function BookingSummaryScreen() {
       };
 
       await bookingService.createBooking(bookingData);
+
+      // Parse date and time to create appointment datetime
+      // Assuming date is in format "DD/MM/YYYY" and time is "HH:MM"
+      const [day, month, year] = date.split('/');
+      const [hours, minutes] = time.split(':');
+      const appointmentDate = new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes)
+      );
+
+      // Send booking confirmation notification
+      try {
+        await notifyBookingConfirmation(therapist.name, service.name, appointmentDate);
+      } catch (notificationError) {
+        console.warn('Notification send failed (non-critical):', notificationError);
+      }
+
+      // Schedule appointment reminder
+      try {
+        await scheduleAppointmentReminder(
+          therapist.name,
+          service.name,
+          appointmentDate
+        );
+      } catch (reminderError) {
+        console.warn('Reminder schedule failed (non-critical):', reminderError);
+      }
 
       // Reset booking context
       resetBooking();

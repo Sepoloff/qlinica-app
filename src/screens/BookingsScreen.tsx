@@ -5,6 +5,7 @@ import { COLORS } from '../constants/Colors';
 import { BOOKINGS } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
 import { useQuickToast } from '../hooks/useToast';
+import { useNotificationManager } from '../hooks/useNotificationManager';
 import bookingService, { Booking } from '../services/bookingService';
 import { BookingCard } from '../components/BookingCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -13,6 +14,7 @@ export default function BookingsScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
   const toast = useQuickToast();
+  const { notifyCancellation, notifyReschedule } = useNotificationManager();
   const [activeTab, setActiveTab] = useState(0);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +56,9 @@ export default function BookingsScreen() {
   };
 
   const handleCancelBooking = (bookingId: string) => {
+    // Find the booking to get details
+    const booking = bookings.find(b => b.id === bookingId);
+    
     Alert.alert(
       'Cancelar consulta',
       'Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser revertida.',
@@ -66,6 +71,20 @@ export default function BookingsScreen() {
             setCancelling(bookingId);
             try {
               await bookingService.cancelBooking(bookingId);
+              
+              // Send cancellation notification
+              if (booking) {
+                try {
+                  await notifyCancellation(
+                    booking.therapistName || 'Terapeuta',
+                    booking.serviceName || 'Serviço',
+                    new Date(booking.dateTime || new Date())
+                  );
+                } catch (notificationError) {
+                  console.warn('Cancellation notification failed (non-critical):', notificationError);
+                }
+              }
+              
               toast.success('✅ Consulta cancelada com sucesso');
               await loadBookings();
             } catch (error: any) {
