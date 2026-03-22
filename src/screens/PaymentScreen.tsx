@@ -83,7 +83,16 @@ export default function PaymentScreen({
         showToast('Preencha todos os campos do cartão', 'warning');
         return;
       }
-      // TODO: Validate card format in production
+      
+      // Validate card format
+      const { validateCreditCard } = require('../utils/validation');
+      const validation = validateCreditCard(cardNumber, cardExpiry, cardCVC, cardHolder);
+      
+      if (!validation.valid) {
+        const firstError = Object.values(validation.errors)[0];
+        showToast(firstError as string, 'error');
+        return;
+      }
     }
 
     setIsLoading(true);

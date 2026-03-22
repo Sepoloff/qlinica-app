@@ -174,3 +174,117 @@ export const validateTimeSlot = (time: string): boolean => {
 export const validateBookingNotes = (notes: string): boolean => {
   return notes.length <= 500;
 };
+
+/**
+ * Validate credit card number using Luhn algorithm
+ */
+export const validateCardNumber = (cardNumber: string): boolean => {
+  // Remove spaces and dashes
+  const cleaned = cardNumber.replace(/[\s-]/g, '');
+  
+  // Must be 13-19 digits
+  if (!/^\d{13,19}$/.test(cleaned)) {
+    return false;
+  }
+  
+  // Luhn algorithm
+  let sum = 0;
+  let isEven = false;
+  
+  for (let i = cleaned.length - 1; i >= 0; i--) {
+    let digit = parseInt(cleaned[i], 10);
+    
+    if (isEven) {
+      digit *= 2;
+      if (digit > 9) {
+        digit -= 9;
+      }
+    }
+    
+    sum += digit;
+    isEven = !isEven;
+  }
+  
+  return sum % 10 === 0;
+};
+
+/**
+ * Validate card expiry date format (MM/YY)
+ */
+export const validateCardExpiry = (expiry: string): {
+  valid: boolean;
+  error?: string;
+} => {
+  const expiryRegex = /^(0[1-9]|1[0-2])\/\d{2}$/;
+  
+  if (!expiryRegex.test(expiry)) {
+    return { valid: false, error: 'Invalid expiry format (MM/YY)' };
+  }
+  
+  const [month, year] = expiry.split('/').map(Number);
+  const now = new Date();
+  const currentYear = now.getFullYear() % 100;
+  const currentMonth = now.getMonth() + 1;
+  
+  // Check if card is expired
+  if (year < currentYear || (year === currentYear && month < currentMonth)) {
+    return { valid: false, error: 'Card has expired' };
+  }
+  
+  return { valid: true };
+};
+
+/**
+ * Validate CVC/CVV (3-4 digits)
+ */
+export const validateCardCVC = (cvc: string): boolean => {
+  return /^\d{3,4}$/.test(cvc);
+};
+
+/**
+ * Validate cardholder name
+ */
+export const validateCardholderName = (name: string): boolean => {
+  return name.trim().length >= 3 && /^[a-zA-Z\s'-]+$/.test(name);
+};
+
+/**
+ * Comprehensive card validation
+ */
+export const validateCreditCard = (
+  cardNumber: string,
+  expiry: string,
+  cvc: string,
+  holderName: string
+): {
+  valid: boolean;
+  errors: Record<string, string>;
+} => {
+  const errors: Record<string, string> = {};
+  
+  if (!cardNumber || !validateCardNumber(cardNumber)) {
+    errors.cardNumber = 'Invalid card number';
+  }
+  
+  if (!expiry) {
+    errors.expiry = 'Expiry date is required';
+  } else {
+    const expiryValidation = validateCardExpiry(expiry);
+    if (!expiryValidation.valid) {
+      errors.expiry = expiryValidation.error || 'Invalid expiry date';
+    }
+  }
+  
+  if (!cvc || !validateCardCVC(cvc)) {
+    errors.cvc = 'Invalid CVC (must be 3-4 digits)';
+  }
+  
+  if (!holderName || !validateCardholderName(holderName)) {
+    errors.holderName = 'Invalid cardholder name';
+  }
+  
+  return {
+    valid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
