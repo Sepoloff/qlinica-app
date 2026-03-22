@@ -20,7 +20,10 @@ export default function HomeScreen() {
   useFocusEffect(
     React.useCallback(() => {
       loadData();
-    }, [])
+      return () => {
+        // Cleanup if needed
+      };
+    }, [user])
   );
 
   const loadData = async (fromRefresh = false) => {
