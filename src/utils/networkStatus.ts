@@ -19,7 +19,7 @@ export interface NetworkState {
 export const checkNetworkConnection = async (): Promise<boolean> => {
   try {
     const state = await NetInfo.fetch();
-    return state.isConnected && state.isInternetReachable !== false;
+    return (state.isConnected ?? false) && (state.isInternetReachable !== false);
   } catch (error) {
     console.error('Error checking network status:', error);
     return false;
@@ -35,7 +35,7 @@ export const useNetworkStatus = () => {
 
   useEffect(() => {
     // Subscribe to network changes
-    const unsubscribe = NetInfo.addEventListener((state) => {
+    const unsubscribe = NetInfo.addEventListener((state: any) => {
       const connected = state.isConnected && state.isInternetReachable !== false;
       setIsOnline(connected);
       setNetworkType(state.type);
