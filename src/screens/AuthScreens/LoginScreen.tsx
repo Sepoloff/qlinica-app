@@ -18,7 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { FormInput } from '../../components/FormInput';
 import { Button } from '../../components/Button';
-import { useFormValidation, emailRule, passwordRule } from '../../hooks/useFormValidation';
+import { useFormValidation } from '../../hooks/useFormValidation';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { logger } from '../../utils/logger';
 
@@ -33,16 +33,9 @@ export default function LoginScreen() {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isRateLimited, setIsRateLimited] = useState(false);
   
-  const { errors, validate, validateFieldValue, isValid } = useFormValidation({
-    initialValues: { email: '', password: '' },
-    validationRules: {
-      email: { ...emailRule, message: 'Email inválido' },
-      password: {
-        required: true,
-        minLength: 8,
-        message: 'Palavra-passe deve ter pelo menos 8 caracteres',
-      },
-    },
+  const { errors, validateField: validateFormField, hasErrors } = useFormValidation({
+    email: { required: true, pattern: 'email' },
+    password: { required: true, minLength: 8 },
   });
 
   useFocusEffect(

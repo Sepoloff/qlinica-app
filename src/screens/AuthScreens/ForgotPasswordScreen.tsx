@@ -103,7 +103,6 @@ export default function ForgotPasswordScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   editable={!isLoading}
-                  icon="mail"
                 />
               </View>
 
@@ -117,7 +116,7 @@ export default function ForgotPasswordScreen() {
 
               {/* Submit Button */}
               <Button
-                label={isLoading ? 'Enviando...' : 'Enviar Link de Recuperação'}
+                title={isLoading ? 'Enviando...' : 'Enviar Link de Recuperação'}
                 onPress={handleRequestReset}
                 disabled={!isEmailValid || isLoading}
                 variant="primary"
@@ -151,13 +150,13 @@ export default function ForgotPasswordScreen() {
               </View>
 
               <Button
-                label="Verificar Email"
+                title="Verificar Email"
                 onPress={() => navigation.navigate('ResetPassword', { email })}
                 variant="primary"
               />
 
               <Button
-                label="Voltar para Login"
+                title="Voltar para Login"
                 onPress={handleBackToLogin}
                 variant="secondary"
               />

@@ -5,7 +5,7 @@
 
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
-import { notificationService } from '../services/notificationService';
+import { initializeNotifications } from '../services/notificationService';
 
 /**
  * Configurar notificações ao inicializar a app

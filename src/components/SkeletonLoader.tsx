@@ -11,6 +11,16 @@ interface SkeletonLoaderProps {
   style?: ViewStyle;
   animated?: boolean;
   variant?: 'line' | 'circle' | 'card';
+  count?: number;
+  lines?: number;
+}
+
+interface SkeletonLoaderComponent extends React.FC<SkeletonLoaderProps> {
+  Line?: React.FC<SkeletonLoaderProps>;
+  Circle?: React.FC<SkeletonLoaderProps>;
+  Card?: React.FC<SkeletonLoaderProps & { lines?: number }>;
+  BookingItem?: React.FC<{ count?: number }>;
+  List?: React.FC<{ count?: number; variant?: 'text' | 'card' | 'booking' }>;
 }
 
 interface SkeletonGroup {
@@ -34,7 +44,7 @@ interface SkeletonGroup {
  * <SkeletonLoader.Card />
  * <SkeletonLoader.BookingItem count={3} />
  */
-export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
+export const SkeletonLoader: SkeletonLoaderComponent = ({
   width = '100%',
   height = 20,
   borderRadius = 4,

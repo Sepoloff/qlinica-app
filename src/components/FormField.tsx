@@ -91,7 +91,7 @@ export const FormField: React.FC<FormFieldProps> = ({
           isFocused && styles.inputContainerFocused,
           hasError && styles.inputContainerError,
           !editable && styles.inputContainerDisabled,
-        ]}
+        ] as any}
       >
         {icon && (
           <TouchableOpacity onPress={onIconPress} disabled={!onIconPress}>
