@@ -64,20 +64,23 @@ export default function ProfileScreen() {
   };
 
   const handleSavePhone = async () => {
-    if (!tempPhone) {
+    // Validate input
+    const phoneToValidate = tempPhone?.trim();
+    
+    if (!phoneToValidate) {
       toast.error('Telefone não pode estar vazio');
       return;
     }
 
-    if (!validatePhone(tempPhone)) {
-      toast.error('Número inválido (ex: +351 912345678)');
+    if (!validatePhone(phoneToValidate)) {
+      toast.error('Formato inválido. Use: +351 912345678 ou 912345678');
       return;
     }
 
     setSavingPhone(true);
     try {
-      await updateUser({ phone: tempPhone });
-      toast.success('✅ Telefone atualizado');
+      await updateUser({ phone: phoneToValidate });
+      toast.success('✅ Telefone atualizado com sucesso');
       setEditingPhone(false);
     } catch (error: any) {
       toast.error('Erro ao atualizar');
