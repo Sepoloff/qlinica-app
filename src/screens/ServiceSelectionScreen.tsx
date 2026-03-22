@@ -8,6 +8,7 @@ import { COLORS } from '../constants/Colors';
 import { SERVICES } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
 import bookingService, { Service } from '../services/bookingService';
+import { convertMockServices } from '../utils/mockDataConverters';
 
 export default function ServiceSelectionScreen() {
   const navigation = useNavigation();
@@ -22,11 +23,11 @@ export default function ServiceSelectionScreen() {
   const loadServices = async () => {
     setLoading(true);
     try {
-      const data = await bookingService.getServices().catch(() => SERVICES as any);
-      setServices(data || SERVICES);
+      const data = await bookingService.getServices().catch(() => convertMockServices());
+      setServices(data || []);
     } catch (error) {
       console.error('Error loading services:', error);
-      setServices(SERVICES as any);
+      setServices(convertMockServices());
     } finally {
       setLoading(false);
     }
@@ -63,29 +64,29 @@ export default function ServiceSelectionScreen() {
       <View style={styles.servicesContainer}>
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 40 }} />
-        ) : (services.length > 0 ? services : SERVICES).map((service) => (
+        ) : (services.length > 0 ? services : convertMockServices()).map((service) => (
           <TouchableOpacity 
             key={service.id}
             style={styles.serviceCard}
-            onPress={() => handleServiceSelect(service)}
+            onPress={() => handleServiceSelect(service as any)}
             activeOpacity={0.7}
           >
             <View style={styles.iconContainer}>
-              <Text style={styles.serviceIcon}>{'icon' in service ? service.icon : '✨'}</Text>
+              <Text style={styles.serviceIcon}>{service.icon || '✨'}</Text>
             </View>
             
             <Text style={styles.serviceName}>{service.name}</Text>
-            <Text style={styles.serviceDesc} numberOfLines={2}>{service.description || ('desc' in service ? service.desc : '')}</Text>
+            <Text style={styles.serviceDesc} numberOfLines={2}>{service.description || ''}</Text>
             
             <View style={styles.serviceDetails}>
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Duração</Text>
-                <Text style={styles.detailValue}>{'duration' in service ? `${service.duration}min` : service.duration}</Text>
+                <Text style={styles.detailValue}>{`${service.duration}min`}</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Preço</Text>
-                <Text style={styles.detailValue}>{'price' in service ? `€${service.price}` : service.price}</Text>
+                <Text style={styles.detailValue}>{`€${service.price}`}</Text>
               </View>
             </View>
 

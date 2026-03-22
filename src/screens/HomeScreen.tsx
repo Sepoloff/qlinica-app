@@ -6,6 +6,7 @@ import { COLORS } from '../constants/Colors';
 import { BOOKINGS, SERVICES } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
 import bookingService, { Booking, Service } from '../services/bookingService';
+import { convertMockBookings, convertMockServices } from '../utils/mockDataConverters';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -27,22 +28,26 @@ export default function HomeScreen() {
 
     try {
       // Load services
-      const servicesData = await bookingService.getServices().catch(() => SERVICES as any);
-      setServices(servicesData || SERVICES);
+      const servicesData = await bookingService.getServices().catch(() => {
+        return convertMockServices();
+      });
+      setServices(servicesData || []);
 
       // Load user bookings if authenticated
       if (user) {
-        const bookingsData = await bookingService.getUserBookings().catch(() => BOOKINGS as any);
-        setBookings(bookingsData || BOOKINGS);
+        const bookingsData = await bookingService.getUserBookings().catch(() => {
+          return convertMockBookings(user.id);
+        });
+        setBookings(bookingsData || []);
       } else {
-        setBookings(BOOKINGS);
+        setBookings([]);
       }
     } catch (err) {
       console.error('Error loading home data:', err);
       setError('Failed to load data');
       // Fallback to mock data
-      setServices(SERVICES as any);
-      setBookings(BOOKINGS as any);
+      setServices(convertMockServices());
+      setBookings(user ? convertMockBookings(user.id) : []);
     } finally {
       setLoading(false);
     }
@@ -98,18 +103,22 @@ export default function HomeScreen() {
           bookings
             .filter(b => b.status === 'confirmed')
             .slice(0, 3)
-            .map((booking) => (
-              <View key={booking.id} style={styles.appointmentCard}>
-                <Text style={styles.appointmentIcon}>🗓️</Text>
-                <View style={styles.appointmentInfo}>
-                  <Text style={styles.appointmentService}>{booking.serviceId}</Text>
-                  <Text style={styles.appointmentTherapist}>{booking.therapistId}</Text>
-                  <Text style={styles.appointmentTime}>
-                    📅 {booking.date} · 🕐 {booking.time}
-                  </Text>
+            .map((booking) => {
+              // Find service and therapist names from mock data if available
+              const mockBooking = BOOKINGS.find(b => String(b.id) === booking.id);
+              return (
+                <View key={booking.id} style={styles.appointmentCard}>
+                  <Text style={styles.appointmentIcon}>🗓️</Text>
+                  <View style={styles.appointmentInfo}>
+                    <Text style={styles.appointmentService}>{mockBooking?.service || 'Consulta'}</Text>
+                    <Text style={styles.appointmentTherapist}>{mockBooking?.therapist || 'Terapeuta'}</Text>
+                    <Text style={styles.appointmentTime}>
+                      📅 {booking.date} · 🕐 {booking.time}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
         ) : (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>Nenhuma consulta agendada</Text>
@@ -127,13 +136,13 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Os nossos serviços</Text>
         <View style={styles.servicesGrid}>
-          {(services.length > 0 ? services : SERVICES).map((service) => (
+          {(services.length > 0 ? services : convertMockServices()).map((service) => (
             <TouchableOpacity 
               key={service.id} 
               style={styles.serviceCard}
               onPress={() => navigation.navigate('ServiceSelection' as never)}
             >
-              <Text style={styles.serviceIcon}>{'icon' in service ? service.icon : '✨'}</Text>
+              <Text style={styles.serviceIcon}>{service.icon || '✨'}</Text>
               <Text style={styles.serviceName}>{service.name}</Text>
             </TouchableOpacity>
           ))}
