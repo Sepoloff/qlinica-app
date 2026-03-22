@@ -1,0 +1,22 @@
+{
+  "name": "Qlinica",
+  "slug": "qlinica",
+  "version": "1.0.0",
+  "scheme": "qlinica",
+  "icon": "./assets/icon.png",
+  "splash": {
+    "image": "./assets/splash.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#2C3E50"
+  },
+  "plugins": [
+    [
+      "expo-build-properties",
+      {
+        "ios": {
+          "deploymentTarget": "13.0"
+        }
+      }
+    ]
+  ]
+}

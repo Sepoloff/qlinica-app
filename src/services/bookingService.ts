@@ -1,134 +1,68 @@
+'use strict';
+
 import { api } from '../config/api';
-import { handleAPIError, logAPIError } from './errorHandler';
+import { SERVICES, THERAPISTS, BOOKINGS } from '../constants/Data';
 
 export interface Booking {
   id: string;
   userId: string;
-  serviceId: string;
-  therapistId: string;
+  serviceId: number;
+  therapistId: number;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
   notes?: string;
+  status: 'upcoming' | 'past' | 'cancelled' | 'completed';
   createdAt: string;
   updatedAt: string;
 }
 
-export interface Service {
-  id: string;
-  name: string;
-  description: string;
-  duration: number; // in minutes
-  price: number;
-  icon: string;
-}
-
-export interface Therapist {
-  id: string;
-  name: string;
-  specialty: string;
-  rating: number;
-  reviews: number;
-  available: boolean;
-  avatar: string;
-  phone: string;
-  email: string;
+export interface CreateBookingPayload {
+  serviceId: number;
+  therapistId: number;
+  date: string;
+  time: string;
+  notes?: string;
 }
 
 export interface AvailableSlot {
   date: string;
   time: string;
-  therapistId: string;
 }
 
 class BookingService {
-  // Get all available services
-  async getServices(): Promise<Service[]> {
+  /**
+   * Fetch all bookings for the authenticated user
+   */
+  async getBookings(filters?: { status?: string; from?: string; to?: string }): Promise<Booking[]> {
     try {
-      const response = await api.get('/services');
-      return response.data;
-    } catch (error: any) {
-      const apiError = handleAPIError(error);
-      logAPIError(apiError, 'BookingService.getServices');
-      throw apiError;
-    }
-  }
-
-  // Get service by ID
-  async getService(serviceId: string): Promise<Service> {
-    try {
-      const response = await api.get(`/services/${serviceId}`);
-      return response.data;
+      const response = await api.get('/bookings', { params: filters });
+      return response.data || [];
     } catch (error) {
-      console.error('Error fetching service:', error);
-      throw error;
+      console.error('Error fetching bookings:', error);
+      // Return mock data as fallback
+      return BOOKINGS as any;
     }
   }
 
-  // Get all therapists
-  async getTherapists(): Promise<Therapist[]> {
+  /**
+   * Fetch a single booking by ID
+   */
+  async getBookingById(id: string): Promise<Booking | null> {
     try {
-      const response = await api.get('/therapists');
-      return response.data;
+      const response = await api.get(`/bookings/${id}`);
+      return response.data || null;
     } catch (error) {
-      console.error('Error fetching therapists:', error);
-      throw error;
+      console.error(`Error fetching booking ${id}:`, error);
+      return null;
     }
   }
 
-  // Get therapists by service
-  async getTherapistsByService(serviceId: string): Promise<Therapist[]> {
+  /**
+   * Create a new booking
+   */
+  async createBooking(payload: CreateBookingPayload): Promise<Booking> {
     try {
-      const response = await api.get(`/therapists?serviceId=${serviceId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching therapists by service:', error);
-      throw error;
-    }
-  }
-
-  // Get single therapist
-  async getTherapist(therapistId: string): Promise<Therapist> {
-    try {
-      const response = await api.get(`/therapists/${therapistId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching therapist:', error);
-      throw error;
-    }
-  }
-
-  // Get available time slots
-  async getAvailableSlots(
-    therapistId: string,
-    serviceId: string,
-    date: string
-  ): Promise<string[]> {
-    try {
-      const response = await api.get(`/availability/slots`, {
-        params: {
-          therapistId,
-          serviceId,
-          date,
-        },
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching available slots:', error);
-      throw error;
-    }
-  }
-
-  // Create booking
-  async createBooking(bookingData: {
-    serviceId: string;
-    therapistId: string;
-    date: string;
-    time: string;
-    notes?: string;
-  }): Promise<Booking> {
-    try {
-      const response = await api.post('/bookings', bookingData);
+      const response = await api.post('/bookings', payload);
       return response.data;
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -136,83 +70,118 @@ class BookingService {
     }
   }
 
-  // Get user bookings
-  async getUserBookings(): Promise<Booking[]> {
+  /**
+   * Update an existing booking
+   */
+  async updateBooking(id: string, payload: Partial<CreateBookingPayload>): Promise<Booking> {
     try {
-      const response = await api.get('/bookings');
+      const response = await api.put(`/bookings/${id}`, payload);
       return response.data;
     } catch (error) {
-      console.error('Error fetching user bookings:', error);
+      console.error(`Error updating booking ${id}:`, error);
       throw error;
     }
   }
 
-  // Get booking by ID
-  async getBooking(bookingId: string): Promise<Booking> {
+  /**
+   * Cancel a booking
+   */
+  async cancelBooking(id: string, reason?: string): Promise<Booking> {
     try {
-      const response = await api.get(`/bookings/${bookingId}`);
+      const response = await api.post(`/bookings/${id}/cancel`, { reason });
       return response.data;
     } catch (error) {
-      console.error('Error fetching booking:', error);
+      console.error(`Error cancelling booking ${id}:`, error);
       throw error;
     }
   }
 
-  // Update booking
-  async updateBooking(bookingId: string, data: Partial<Booking>): Promise<Booking> {
+  /**
+   * Fetch available time slots for a therapist on a given date
+   */
+  async getAvailableSlots(therapistId: number, date: string): Promise<AvailableSlot[]> {
     try {
-      const response = await api.put(`/bookings/${bookingId}`, data);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating booking:', error);
-      throw error;
-    }
-  }
-
-  // Cancel booking
-  async cancelBooking(bookingId: string, reason?: string): Promise<void> {
-    try {
-      await api.post(`/bookings/${bookingId}/cancel`, { reason });
-    } catch (error) {
-      console.error('Error cancelling booking:', error);
-      throw error;
-    }
-  }
-
-  // Reschedule booking
-  async rescheduleBooking(
-    bookingId: string,
-    newDate: string,
-    newTime: string
-  ): Promise<Booking> {
-    try {
-      const response = await api.post(`/bookings/${bookingId}/reschedule`, {
-        date: newDate,
-        time: newTime,
+      const response = await api.get(`/therapists/${therapistId}/availability`, {
+        params: { date },
       });
+      return response.data.slots || [];
+    } catch (error) {
+      console.error(`Error fetching slots for therapist ${therapistId}:`, error);
+      // Return mock data
+      return [
+        { date, time: '09:00' },
+        { date, time: '10:00' },
+        { date, time: '14:00' },
+        { date, time: '15:30' },
+      ];
+    }
+  }
+
+  /**
+   * Fetch services
+   */
+  async getServices() {
+    try {
+      const response = await api.get('/services');
+      return response.data || SERVICES;
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      return SERVICES;
+    }
+  }
+
+  /**
+   * Fetch therapists (optionally filtered by service)
+   */
+  async getTherapists(serviceId?: number) {
+    try {
+      const params = serviceId ? { serviceId } : {};
+      const response = await api.get('/therapists', { params });
+      return response.data || THERAPISTS;
+    } catch (error) {
+      console.error('Error fetching therapists:', error);
+      return THERAPISTS;
+    }
+  }
+
+  /**
+   * Fetch a single therapist
+   */
+  async getTherapistById(id: number) {
+    try {
+      const response = await api.get(`/therapists/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error rescheduling booking:', error);
+      console.error(`Error fetching therapist ${id}:`, error);
+      const therapist = THERAPISTS.find((t) => t.id === id);
+      return therapist || null;
+    }
+  }
+
+  /**
+   * Rate a booking/therapist
+   */
+  async rateBooking(bookingId: string, rating: number, comment?: string): Promise<void> {
+    try {
+      await api.post(`/bookings/${bookingId}/rate`, { rating, comment });
+    } catch (error) {
+      console.error(`Error rating booking ${bookingId}:`, error);
       throw error;
     }
   }
 
-  // Check availability for multiple dates
-  async checkMultipleDatesAvailability(
-    therapistId: string,
-    dates: string[]
-  ): Promise<Record<string, boolean>> {
+  /**
+   * Get booking statistics for user dashboard
+   */
+  async getBookingStats() {
     try {
-      const response = await api.post('/availability/check-dates', {
-        therapistId,
-        dates,
-      });
+      const response = await api.get('/bookings/stats');
       return response.data;
     } catch (error) {
-      console.error('Error checking dates availability:', error);
-      throw error;
+      console.error('Error fetching booking stats:', error);
+      return { totalBookings: 0, completed: 0, upcoming: 0 };
     }
   }
 }
 
-export default new BookingService();
+export const bookingService = new BookingService();

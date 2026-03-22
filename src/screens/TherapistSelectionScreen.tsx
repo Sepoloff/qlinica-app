@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { THERAPISTS } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
+import { useBookingFlow } from '../context/BookingFlowContext';
 import { useQuickToast } from '../hooks/useToast';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { RatingDisplay } from '../components/RatingDisplay';
@@ -16,6 +17,7 @@ import bookingService, { Therapist } from '../services/bookingService';
 export default function TherapistSelectionScreen() {
   const navigation = useNavigation();
   const { bookingData, setTherapist } = useBooking();
+  const { bookingState, setBookingState } = useBookingFlow();
   const toast = useQuickToast();
   const [selectedTherapist, setSelectedTherapist] = React.useState<string | null>(null);
   const [therapists, setTherapists] = useState<Therapist[]>([]);
@@ -23,13 +25,14 @@ export default function TherapistSelectionScreen() {
 
   useEffect(() => {
     loadTherapists();
-  }, [bookingData.service]);
+  }, [bookingData.service, bookingState.serviceId]);
 
   const loadTherapists = async () => {
     setLoading(true);
     try {
-      if (bookingData.service?.id) {
-        const data = await bookingService.getTherapistsByService(String(bookingData.service.id)).catch(() => THERAPISTS as any);
+      const serviceId = bookingData.service?.id || bookingState.serviceId;
+      if (serviceId) {
+        const data = await bookingService.getTherapistsByService(String(serviceId)).catch(() => THERAPISTS as any);
         setTherapists(data || THERAPISTS);
       } else {
         const data = await bookingService.getTherapists().catch(() => THERAPISTS as any);
@@ -46,6 +49,7 @@ export default function TherapistSelectionScreen() {
   const handleTherapistSelect = (therapist: Therapist | typeof THERAPISTS[0]) => {
     setSelectedTherapist(String(therapist.id));
     setTherapist(therapist as any);
+    setBookingState({ therapistId: therapist.id });
   };
 
   const handleContinue = () => {

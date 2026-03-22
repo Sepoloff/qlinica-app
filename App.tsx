@@ -21,6 +21,7 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { NetworkStatusBar } from './src/components/NetworkStatusBar';
 import { OfflineQueueStatus } from './src/components/OfflineQueueStatus';
 import { BookingProvider } from './src/context/BookingContext';
+import { BookingFlowProvider } from './src/context/BookingFlowContext';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { NotificationProvider } from './src/context/NotificationContext';
@@ -189,17 +190,19 @@ export default function App() {
       <ThemeProvider>
         <AuthProvider>
           <BookingProvider>
-            <ToastProvider>
-              <NotificationProvider>
-                <StatusBar style="light" />
-                <NetworkStatusBar />
-                <OfflineQueueStatus position="top" />
-                <NavigationContainer>
-                  <RootNavigator />
-                </NavigationContainer>
-                <ToastDisplay />
-              </NotificationProvider>
-            </ToastProvider>
+            <BookingFlowProvider>
+              <ToastProvider>
+                <NotificationProvider>
+                  <StatusBar style="light" />
+                  <NetworkStatusBar />
+                  <OfflineQueueStatus position="top" />
+                  <NavigationContainer>
+                    <RootNavigator />
+                  </NavigationContainer>
+                  <ToastDisplay />
+                </NotificationProvider>
+              </ToastProvider>
+            </BookingFlowProvider>
           </BookingProvider>
         </AuthProvider>
       </ThemeProvider>

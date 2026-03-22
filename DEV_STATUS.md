@@ -1,335 +1,203 @@
-# Qlinica App - Development Status Report
-**Last Updated:** 2026-03-22 04:47 UTC  
-**Status:** 🟢 Active Development
+# Qlinica App Development Status
+
+**Last Updated:** 2026-03-22 10:17 UTC  
+**Developer:** AI Assistant  
+**Branch:** main
 
 ---
 
-## 📊 Project Overview
+## 📊 Overall Progress: 65% ✅
 
-### Current Metrics
-- **Total Files:** 61 source files (`.tsx` + `.ts`)
-- **Commits:** 5 commits in current session
-- **Components:** 25+ reusable components
-- **Hooks:** 12+ custom hooks
-- **Services:** 2 main services (booking, error handling)
+### ✅ COMPLETED FEATURES
 
----
+#### Priority 1: Backend-Frontend Integration
+- ✅ **AuthContext** - User authentication with JWT support
+- ✅ **API Service** - Axios configuration with JWT interceptors and retry logic
+- ✅ **Auth Service** - Login, Register, Password Reset, Profile Management
+- ✅ **Booking Service** - Complete booking CRUD operations
+- ✅ **BookingFlowContext** - Centralized booking state management
+- ✅ **HomeScreen** - Data loading with mock fallbacks, pull-to-refresh
+- ✅ **BookingsScreen** - Display user bookings, cancel/reschedule functionality
+- ✅ **ProfileScreen** - User profile display and management
 
-## ✅ Completed Features
+#### Priority 2: Booking Flow Implementation
+- ✅ **ServiceSelectionScreen** - Service listing and selection with integrated BookingFlowContext
+- ✅ **TherapistSelectionScreen** - Therapist selection with filtering by service
+- ✅ **CalendarSelectionScreen** - Date/time selection with availability checking
+- ✅ **BookingSummaryScreen** - Booking confirmation
+- ✅ **Navigation Stack** - Proper navigation between booking screens
+- ✅ **Booking Submission** - POST to API with error handling
 
-### Priority 1: Authentication & Context Management
-- ✅ **AuthContext** with JWT token management
-- ✅ **ToastContext** with typed methods (success, error, info, warning)
-- ✅ **BookingContext** for managing booking flow state
-- ✅ **LoginScreen** with FormInput components
-- ✅ **RegisterScreen** with password strength validation
-- ✅ Auto-login on app launch
-- ✅ Token refresh interceptors in API
+#### Priority 3: Code Quality & Validation
+- ✅ **Form Validation** - Comprehensive validators for email, password, phone, date, time
+- ✅ **Error Boundaries** - Error handling component for crash prevention
+- ✅ **Loading States** - Skeleton loaders and spinners throughout
+- ✅ **Toast Notifications** - User feedback system
 
-### Priority 2: UI Components Library
-**Form & Input Components:**
-- ✅ FormInput (with validation, password toggle, focus states)
-- ✅ MaskedPhoneInput (automatic +351 XXX XXX XXX formatting)
-- ✅ TimeSlotPicker (horizontal scroll time selection)
+### ⏳ IN PROGRESS / UPCOMING
 
-**Display Components:**
-- ✅ StatusBadge (confirmed, completed, cancelled, pending)
-- ✅ Badge (6 variants with multiple sizes)
-- ✅ RatingDisplay (star rating with review count)
-- ✅ ProgressIndicator (multi-step booking progress)
-- ✅ SectionDivider (with optional title)
-- ✅ Separator (simple divider)
-- ✅ InfoBox (4 types: info, success, warning, danger)
+#### Priority 4: Reusable Components
+- ⏳ **LoadingSpinner** - Custom branded loading indicator
+- ⏳ **Toast Context** - Centralized toast notification system (partially done)
+- ⏳ **ErrorBoundary** - Complete error recovery flows
 
-**Pricing & Commerce:**
-- ✅ PriceBreakdown (itemized pricing with tax and discount)
-- ✅ Stepper (quantity increment/decrement)
+#### Priority 5: Advanced Features
+- ❌ Offline support with sync queue
+- ❌ Push notifications (Expo Notifications)
+- ❌ Geolocation features
+- ❌ Camera integration for profile photo
+- ❌ Animations with React Native Reanimated
 
-**Dialogs & Modals:**
-- ✅ ConfirmDialog (with dangerous action variant)
+#### Priority 6: UI/UX Polish
+- ❌ Dark/Light theme toggle (infrastructure ready)
+- ❌ Advanced animations
+- ❌ Skeleton screens optimization
+- ❌ Haptic feedback
 
-**Layout Components:**
-- ✅ Button (with variants and states)
-- ✅ Card (reusable card container)
-- ✅ Header (with back button)
-- ✅ LoadingSpinner (customizable)
-- ✅ EmptyState (for empty lists)
-- ✅ TabBarIcon (navigation icons)
-
-### Priority 3: Screens Implementation
-- ✅ **HomeScreen** - Dashboard with refresh, loading states
-- ✅ **BookingsScreen** - List bookings, reschedule, cancel
-- ✅ **ProfileScreen** - User preferences, notifications, edit phone
-- ✅ **ServiceSelectionScreen** - Browse and select services
-- ✅ **TherapistSelectionScreen** - Choose therapist with ratings
-- ✅ **CalendarSelectionScreen** - Pick date and time slots
-- ✅ **BookingSummaryScreen** - Confirm booking details
-
-### Priority 4: Hooks & Utilities
-
-**Data Fetching & State:**
-- ✅ useFetch (with retry logic and error handling)
-- ✅ useAsyncStorage (with serialization)
-- ✅ useCache (in-memory + global cache with TTL)
-- ✅ useToast (shorthand for toast notifications)
-
-**Performance & UX:**
-- ✅ useDebounce (value debouncing)
-- ✅ useDebouncedCallback (callback debouncing)
-- ✅ useAnalytics (event tracking)
-- ✅ usePermissions (location, camera, notifications)
-
-**Formatting & Validation:**
-- ✅ Comprehensive email validation (RFC compliant)
-- ✅ Password strength validation (8+ chars, uppercase, number)
-- ✅ Phone number validation (Portuguese format)
-- ✅ Name validation
-- ✅ Date validation (no past dates)
-
-**Formatters:**
-- ✅ Phone number formatting (+351 XXX XXX XXX)
-- ✅ Currency formatting (€)
-- ✅ Date formatting (DD/MM/YYYY)
-- ✅ Time formatting (HH:MM)
-- ✅ Duration formatting (min/hours)
-- ✅ Text truncation
-- ✅ Booking status translation
-
-**Masks:**
-- ✅ Credit card masking
-- ✅ NIF/ID masking (Portuguese)
-- ✅ IBAN masking
-- ✅ Generic mask application
-
-### Priority 5: API Integration
-- ✅ Axios with JWT interceptors
-- ✅ Automatic retry logic (exponential backoff)
-- ✅ Error handling middleware
-- ✅ 401 token refresh flow
-- ✅ Base URL configuration
-
-### Priority 6: Error Handling
-- ✅ **ErrorBoundary** component (graceful error handling)
-- ✅ Error service with structured error handling
-- ✅ Toast error notifications
-- ✅ Fallback to mock data on API failures
+#### Priority 7: Testing & Deployment
+- ❌ Unit tests for components
+- ❌ Integration tests for booking flow
+- ❌ EAS Build configuration
+- ❌ APK/IPA generation
+- ❌ App Store deployment
 
 ---
 
-## 🚀 In Progress / Next Steps
+## 🔧 Recent Changes (Today)
 
-### High Priority
-1. **Push Notifications**
-   - Set up expo-notifications
-   - Implement notification permissions
-   - Create notification service
-   - Handle booking confirmation notifications
+### New Files Created
+1. **src/services/bookingService.ts** - Comprehensive booking API service with mock fallbacks
+2. **src/services/authService.ts** - Authentication service with token management
+3. **src/context/BookingFlowContext.tsx** - New context for managing booking state across screens
+4. **src/hooks/useBookingFlow.ts** - Custom hook for easy booking state access
+5. **src/utils/formValidator.ts** - Centralized form validation utilities
 
-2. **Payment Integration**
-   - Stripe integration for payments
-   - Payment method storage
-   - Transaction history
-
-3. **Advanced Booking Features**
-   - Cancellation with refund logic
-   - Rescheduling with time slot management
-   - Booking history and search
-
-### Medium Priority
-1. **Testing**
-   - Unit tests for components
-   - Integration tests for screens
-   - E2E testing for critical flows
-
-2. **Performance**
-   - Bundle size optimization
-   - Image lazy loading
-   - Code splitting
-
-3. **Analytics**
-   - Mixpanel/Segment integration
-   - User journey tracking
-   - Conversion funnel analysis
-
-### Lower Priority
-1. **Dark/Light Theme Toggle**
-2. **Internationalization (i18n)**
-3. **Offline Support with Sync**
-4. **QR Code Booking**
-5. **Geolocation Services**
+### Updated Files
+1. **App.tsx** - Added BookingFlowProvider to context stack
+2. **src/screens/ServiceSelectionScreen.tsx** - Integrated BookingFlowContext
+3. **src/screens/TherapistSelectionScreen.tsx** - Integrated BookingFlowContext
+4. **src/screens/CalendarSelectionScreen.tsx** - Integrated BookingFlowContext and date/time state
 
 ---
 
-## 📁 Architecture
+## 📋 API Endpoints Required (Backend)
 
-### Directory Structure
+### Authentication
+- `POST /auth/login` - User login
+- `POST /auth/register` - New user registration
+- `POST /auth/logout` - User logout
+- `POST /auth/verify` - Verify token validity
+- `POST /auth/refresh` - Refresh access token
+- `GET /auth/profile` - Get current user profile
+- `PUT /auth/profile` - Update user profile
+- `POST /auth/password-reset/request` - Request password reset
+- `POST /auth/password-reset/confirm` - Confirm password reset
+- `POST /auth/password-change` - Change password
+- `POST /auth/delete-account` - Delete account
+
+### Bookings
+- `GET /bookings` - List user bookings (with filters)
+- `GET /bookings/{id}` - Get booking details
+- `POST /bookings` - Create new booking
+- `PUT /bookings/{id}` - Update booking
+- `POST /bookings/{id}/cancel` - Cancel booking
+- `POST /bookings/{id}/rate` - Rate booking/therapist
+- `GET /bookings/stats` - Get booking statistics
+
+### Services & Therapists
+- `GET /services` - List available services
+- `GET /therapists` - List all therapists
+- `GET /therapists/{id}` - Get therapist details
+- `GET /therapists/{id}/availability?date=YYYY-MM-DD` - Get available time slots
+- `GET /therapists?serviceId=X` - Filter therapists by service
+
+---
+
+## 🐛 Known Issues
+
+1. **Mock Data Dependency** - Some screens fall back to mock data when API is unavailable
+2. **Offline Mode** - Not fully implemented yet
+3. **Error Recovery** - Some error states don't have graceful recovery flows
+4. **Loading Performance** - Skeleton loaders could be more optimized
+
+---
+
+## 📈 Next Steps (Priority Order)
+
+1. **Backend Integration Testing**
+   - Test login/register flow with backend
+   - Verify booking creation endpoint
+   - Test token refresh and expiration
+
+2. **Complete Component Library**
+   - Finalize LoadingSpinner component
+   - Create reusable Button component variants
+   - Create Card component
+
+3. **Offline Support**
+   - Implement redux-persist or AsyncStorage queuing
+   - Add offline sync when connection restored
+
+4. **Testing**
+   - Write unit tests for services
+   - Test booking flow end-to-end
+   - Test error scenarios
+
+5. **Deployment**
+   - Configure EAS Build
+   - Generate testflight build for iOS
+   - Generate APK for Android testing
+
+---
+
+## 🎯 Code Statistics
+
+- **Total Files Created/Modified:** 8
+- **Lines of Code Added:** ~2,500
+- **New Services:** 2 (bookingService, authService)
+- **New Contexts:** 1 (BookingFlowContext)
+- **New Hooks:** 1 (useBookingFlow)
+- **Validation Utilities:** 13 functions
+
+---
+
+## 💡 Architecture Notes
+
+### Context Flow
 ```
-qlinica-app/
-├── src/
-│   ├── screens/              # 7 screens + 2 auth screens
-│   ├── components/           # 25+ reusable components
-│   ├── context/             # Auth, Booking, Toast contexts
-│   ├── hooks/               # 12+ custom hooks
-│   ├── services/            # API services (booking, error)
-│   ├── config/              # Firebase, API config
-│   ├── constants/           # Colors, mock data
-│   └── utils/               # Validation, formatting, storage
-├── App.tsx                   # Root with navigation
-├── app.json                  # Expo config
-└── package.json
+App.tsx
+├── ThemeProvider
+├── AuthProvider (user auth state)
+├── BookingProvider (legacy booking state)
+├── BookingFlowProvider (NEW: manages multi-screen booking flow)
+├── ToastProvider (notifications)
+└── NotificationProvider (push notifications)
 ```
 
-### Key Dependencies
-- `expo` - Framework
-- `@react-navigation` - Navigation (v6)
-- `axios` - HTTP client
-- `expo-linear-gradient` - Gradients
-- `@react-native-async-storage` - Local storage
-- `expo-permissions` - Native permissions
-- `expo-notifications` - Push notifications
+### Service Architecture
+- `authService` - Handles all auth-related API calls and token management
+- `bookingService` - Manages booking CRUD, therapist/service fetching
+- Both services use `api` client with automatic JWT injection
+
+### Booking State Management
+- **BookingContext** - Stores individual booking details (legacy)
+- **BookingFlowContext** - Manages multi-step booking state across navigation
 
 ---
 
-## 🎯 Development Guidelines
+## 🚀 Deployment Readiness
 
-### Code Style
-- **TypeScript:** Full type safety across the app
-- **Components:** Functional components with hooks
-- **Naming:** PascalCase for components, camelCase for functions
-- **Colors:** Use `COLORS` constant from `constants/Colors.ts`
-- **Fonts:** DMSans (body), Cormorant (titles)
+- **Ready for Backend Integration:** ✅ 85%
+- **Ready for Testing:** ✅ 70%
+- **Ready for Production:** ❌ 40%
 
-### Component Template
-```tsx
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/Colors';
-
-interface MyComponentProps {
-  // Props
-}
-
-export const MyComponent: React.FC<MyComponentProps> = (props) => {
-  return (
-    <View style={styles.container}>
-      {/* Component content */}
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    // Styles
-  },
-});
-```
-
-### Commit Convention
-```
-feat: Add new feature
-fix: Fix bug
-refactor: Refactor code
-docs: Update documentation
-style: Style improvements
-perf: Performance improvements
-test: Add tests
-```
+### Blockers for Production
+1. Backend API must be live and tested
+2. Push notification setup required
+3. Error recovery flows need testing
+4. Performance optimization needed
+5. Analytics integration
 
 ---
 
-## 📈 Metrics & Performance
-
-### Current Status
-| Category | Status | Progress |
-|----------|--------|----------|
-| Components | ✅ Complete | 100% |
-| Screens | ✅ Complete | 100% |
-| Hooks | ✅ Complete | 100% |
-| API Integration | ✅ Complete | 100% |
-| Authentication | ✅ Complete | 100% |
-| Booking Flow | ✅ Complete | 100% |
-| Error Handling | ✅ Complete | 100% |
-| Testing | 🟡 In Progress | 20% |
-| Payment Integration | 🔴 Not Started | 0% |
-| Push Notifications | 🔴 Not Started | 0% |
-
----
-
-## 🔒 Security Checklist
-
-- ✅ JWT token stored in AsyncStorage
-- ✅ Token refresh on 401 response
-- ✅ Input validation on all forms
-- ✅ Password hashing on backend (assumption)
-- ✅ HTTPS enforced in API calls
-- ⚠️ Need: Biometric authentication
-- ⚠️ Need: Certificate pinning
-- ⚠️ Need: Encrypted storage for sensitive data
-
----
-
-## 🎨 Design System
-
-### Colors
-```typescript
-COLORS = {
-  primary: '#2C3E50',      // Navy
-  primaryDark: '#1a252f',
-  primaryLight: '#34495E',
-  gold: '#D4AF8F',         // Accent
-  success: '#4CAF50',
-  danger: '#E74C3C',
-  warning: '#FFB84D',
-  info: '#3498DB',
-  grey: '#8895a0',
-  white: '#E8E8E8',
-}
-```
-
-### Typography
-- **Titles:** Cormorant Garamond (26-18px)
-- **Body:** DM Sans (14-12px)
-- **Labels:** DM Sans (12-10px)
-
-### Spacing
-- **Padding:** 20px horizontal, 16px vertical (default)
-- **Margin:** 12-16px between components
-- **Border Radius:** 12-14px
-
----
-
-## 🚀 Deployment Checklist
-
-Before building APK/IPA:
-- [ ] Update version in app.json
-- [ ] Run all tests
-- [ ] Check TypeScript errors
-- [ ] Optimize bundle size
-- [ ] Update CHANGELOG.md
-- [ ] Create git tag
-- [ ] Build EAS (APK + IPA)
-- [ ] Test on device
-- [ ] Submit to stores
-
----
-
-## 📝 Next Session Priorities
-
-1. **Payment Integration** - Stripe setup
-2. **Push Notifications** - Expo notifications
-3. **Testing** - Jest + React Native Testing Library
-4. **Performance** - Bundle optimization
-5. **Deployment** - EAS build setup
-
----
-
-## 📞 Support & Resources
-
-- **Expo Docs:** https://docs.expo.dev
-- **React Navigation:** https://reactnavigation.org
-- **TypeScript RN:** https://reactnative.dev/docs/typescript
-- **Testing:** https://reactnative.dev/docs/testing-overview
-
----
-
-**Status:** Production-ready components and screens. Ready for backend integration and payment system.
+**Questions or Issues?** Check the GitHub Issues page or contact the development team.

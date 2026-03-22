@@ -13,6 +13,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
+import { useBookingFlow } from '../context/BookingFlowContext';
 import { useAuth } from '../context/AuthContext';
 import { useQuickToast } from '../hooks/useToast';
 import { ProgressIndicator } from '../components/ProgressIndicator';
@@ -26,6 +27,7 @@ export default function CalendarSelectionScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { bookingData, setDateTime, resetBooking } = useBooking();
+  const { setBookingState } = useBookingFlow();
   const { user } = useAuth();
   const toast = useQuickToast();
   
@@ -121,11 +123,14 @@ export default function CalendarSelectionScreen() {
 
     setSubmitting(true);
     try {
+      const dateString = formatDateForAPI(selectedDate);
+      setBookingState({ date: dateString, time: selectedTime });
+
       if (isReschedule && rescheduleBookingId) {
         // Reschedule existing booking
         await bookingService.rescheduleBooking(
           rescheduleBookingId,
-          formatDateForAPI(selectedDate),
+          dateString,
           selectedTime
         );
 
@@ -151,12 +156,12 @@ export default function CalendarSelectionScreen() {
         const booking = await bookingService.createBooking({
           serviceId: String(bookingData.service.id),
           therapistId: String(bookingData.therapist.id),
-          date: formatDateForAPI(selectedDate),
+          date: dateString,
           time: selectedTime,
           notes: '',
         });
 
-        setDateTime(formatDateForAPI(selectedDate), selectedTime);
+        setDateTime(dateString, selectedTime);
         resetBooking();
         
         Alert.alert(

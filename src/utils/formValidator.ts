@@ -1,227 +1,200 @@
+'use strict';
+
 /**
- * Enhanced form validation utility with field-level and form-level validation
+ * Comprehensive form validation utilities
  */
 
-import {
-  validateEmail,
-  validatePassword,
-  validatePhone,
-  validateDate,
-  validateName,
-  getPasswordStrength,
-} from './validation';
-
-export interface FormFieldError {
-  field: string;
-  message: string;
-  type: 'error' | 'warning';
-}
-
-export interface FormValidationResult {
+export interface ValidationResult {
   isValid: boolean;
-  errors: FormFieldError[];
-  errorsByField: Record<string, string>;
+  errors: Record<string, string>;
 }
 
-export interface FormRule {
-  required?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  pattern?: RegExp;
-  custom?: (value: any) => boolean | string;
-  message?: string;
-}
+/**
+ * Email validation (RFC 5322 simplified)
+ */
+export const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
 
-export class FormValidator {
-  /**
-   * Validate a single field
-   */
-  static validateField(
-    fieldName: string,
-    value: any,
-    rules: FormRule
-  ): FormFieldError | null {
-    // Check required
-    if (rules.required && (!value || (typeof value === 'string' && !value.trim()))) {
-      return {
-        field: fieldName,
-        message: rules.message || `${fieldName} is required`,
-        type: 'error',
-      };
-    }
+/**
+ * Password strength validation
+ * - Minimum 8 characters
+ * - At least one uppercase letter
+ * - At least one number
+ * - At least one special character (optional but recommended)
+ */
+export const validatePassword = (password: string): { isStrong: boolean; message: string } => {
+  const errors: string[] = [];
 
-    // Skip other validations if value is empty and not required
-    if (!value) {
-      return null;
-    }
-
-    // Check minLength
-    if (rules.minLength && value.length < rules.minLength) {
-      return {
-        field: fieldName,
-        message: rules.message || `Minimum length is ${rules.minLength}`,
-        type: 'error',
-      };
-    }
-
-    // Check maxLength
-    if (rules.maxLength && value.length > rules.maxLength) {
-      return {
-        field: fieldName,
-        message: rules.message || `Maximum length is ${rules.maxLength}`,
-        type: 'error',
-      };
-    }
-
-    // Check pattern
-    if (rules.pattern && !rules.pattern.test(value)) {
-      return {
-        field: fieldName,
-        message: rules.message || `${fieldName} format is invalid`,
-        type: 'error',
-      };
-    }
-
-    // Check custom validation
-    if (rules.custom) {
-      const result = rules.custom(value);
-      if (result !== true) {
-        return {
-          field: fieldName,
-          message: typeof result === 'string' ? result : (rules.message || 'Validation failed'),
-          type: 'error',
-        };
-      }
-    }
-
-    return null;
+  if (password.length < 8) {
+    errors.push('Mínimo 8 caracteres');
+  }
+  if (!/[A-Z]/.test(password)) {
+    errors.push('Pelo menos uma letra maiúscula');
+  }
+  if (!/[0-9]/.test(password)) {
+    errors.push('Pelo menos um número');
   }
 
-  /**
-   * Validate entire form
-   */
-  static validateForm(
-    values: Record<string, any>,
-    rules: Record<string, FormRule>
-  ): FormValidationResult {
-    const errors: FormFieldError[] = [];
-    const errorsByField: Record<string, string> = {};
+  return {
+    isStrong: errors.length === 0,
+    message: errors.length > 0 ? `Palavra-passe fraca: ${errors.join(', ')}` : 'Palavra-passe forte',
+  };
+};
 
-    Object.entries(rules).forEach(([fieldName, fieldRules]) => {
-      const fieldError = this.validateField(fieldName, values[fieldName], fieldRules);
-      if (fieldError) {
-        errors.push(fieldError);
-        errorsByField[fieldName] = fieldError.message;
-      }
-    });
+/**
+ * Phone validation (Portuguese format)
+ * Accepts: +351 XXX XXXXXX or 9XXXXXXXX or +351XXXXXXXXX
+ */
+export const validatePhone = (phone: string): boolean => {
+  const phoneRegex = /^(\+351\s?|9)[0-9\s]{8,}$|^[0-9]{9}$/;
+  return phoneRegex.test(phone.replace(/\s/g, ''));
+};
 
-    return {
-      isValid: errors.length === 0,
-      errors,
-      errorsByField,
-    };
+/**
+ * Date validation (not in the past)
+ */
+export const validateDate = (dateString: string): boolean => {
+  const date = new Date(dateString);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date >= today;
+};
+
+/**
+ * Time validation (valid format HH:MM)
+ */
+export const validateTime = (timeString: string): boolean => {
+  const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+  return timeRegex.test(timeString);
+};
+
+/**
+ * Name validation (at least 2 characters, letters and spaces)
+ */
+export const validateName = (name: string): boolean => {
+  const nameRegex = /^[a-zA-ZÀ-ÿ\s]{2,}$/;
+  return nameRegex.test(name.trim());
+};
+
+/**
+ * Login form validation
+ */
+export const validateLoginForm = (email: string, password: string): ValidationResult => {
+  const errors: Record<string, string> = {};
+
+  if (!email) {
+    errors.email = 'E-mail é obrigatório';
+  } else if (!validateEmail(email)) {
+    errors.email = 'E-mail inválido';
   }
 
-  /**
-   * Specialized validators
-   */
-  static validateEmail(email: string): FormFieldError | null {
-    if (!email) {
-      return {
-        field: 'email',
-        message: 'Email is required',
-        type: 'error',
-      };
-    }
-
-    if (!validateEmail(email)) {
-      return {
-        field: 'email',
-        message: 'Invalid email format',
-        type: 'error',
-      };
-    }
-
-    return null;
+  if (!password) {
+    errors.password = 'Palavra-passe é obrigatória';
+  } else if (password.length < 6) {
+    errors.password = 'Palavra-passe inválida';
   }
 
-  static validatePassword(password: string): FormFieldError | null {
-    if (!password) {
-      return {
-        field: 'password',
-        message: 'Password is required',
-        type: 'error',
-      };
-    }
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
 
-    const strength = getPasswordStrength(password);
-    if (strength.strength === 'weak') {
-      return {
-        field: 'password',
-        message: 'Password must be at least 8 characters with uppercase and number',
-        type: 'error',
-      };
-    }
+/**
+ * Register form validation
+ */
+export const validateRegisterForm = (email: string, password: string, name: string, phone?: string): ValidationResult => {
+  const errors: Record<string, string> = {};
 
-    return null;
+  // Email validation
+  if (!email) {
+    errors.email = 'E-mail é obrigatório';
+  } else if (!validateEmail(email)) {
+    errors.email = 'E-mail inválido';
   }
 
-  static validatePasswordConfirm(password: string, confirm: string): FormFieldError | null {
-    if (password !== confirm) {
-      return {
-        field: 'passwordConfirm',
-        message: 'Passwords do not match',
-        type: 'error',
-      };
+  // Password validation
+  if (!password) {
+    errors.password = 'Palavra-passe é obrigatória';
+  } else {
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.isStrong) {
+      errors.password = passwordCheck.message;
     }
-
-    return null;
   }
 
-  static validatePhone(phone: string): FormFieldError | null {
-    if (!phone) {
-      return {
-        field: 'phone',
-        message: 'Phone is required',
-        type: 'error',
-      };
-    }
-
-    if (!validatePhone(phone)) {
-      return {
-        field: 'phone',
-        message: 'Invalid phone format (e.g., +351 912345678)',
-        type: 'error',
-      };
-    }
-
-    return null;
+  // Name validation
+  if (!name) {
+    errors.name = 'Nome é obrigatório';
+  } else if (!validateName(name)) {
+    errors.name = 'Nome deve ter pelo menos 2 caracteres';
   }
 
-  static validateName(name: string): FormFieldError | null {
-    if (!name) {
-      return {
-        field: 'name',
-        message: 'Name is required',
-        type: 'error',
-      };
-    }
-
-    if (!validateName(name)) {
-      return {
-        field: 'name',
-        message: 'Name must be at least 2 characters (no numbers)',
-        type: 'error',
-      };
-    }
-
-    return null;
+  // Phone validation (optional but if provided, must be valid)
+  if (phone && !validatePhone(phone)) {
+    errors.phone = 'Número de telefone inválido';
   }
 
-  /**
-   * Get password strength indicator
-   */
-  static getPasswordStrength(password: string) {
-    return getPasswordStrength(password);
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+/**
+ * Booking form validation
+ */
+export const validateBookingForm = (serviceId?: number, therapistId?: number, date?: string, time?: string): ValidationResult => {
+  const errors: Record<string, string> = {};
+
+  if (!serviceId) {
+    errors.service = 'Selecione um serviço';
   }
-}
+
+  if (!therapistId) {
+    errors.therapist = 'Selecione um terapeuta';
+  }
+
+  if (!date) {
+    errors.date = 'Selecione uma data';
+  } else if (!validateDate(date)) {
+    errors.date = 'A data não pode ser no passado';
+  }
+
+  if (!time) {
+    errors.time = 'Selecione uma hora';
+  } else if (!validateTime(time)) {
+    errors.time = 'Hora inválida';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};
+
+/**
+ * Profile update form validation
+ */
+export const validateProfileForm = (name?: string, phone?: string, email?: string): ValidationResult => {
+  const errors: Record<string, string> = {};
+
+  if (name && !validateName(name)) {
+    errors.name = 'Nome deve ter pelo menos 2 caracteres';
+  }
+
+  if (phone && !validatePhone(phone)) {
+    errors.phone = 'Número de telefone inválido';
+  }
+
+  if (email && !validateEmail(email)) {
+    errors.email = 'E-mail inválido';
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+};

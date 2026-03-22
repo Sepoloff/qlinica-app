@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { SERVICES } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
+import { useBookingFlow } from '../context/BookingFlowContext';
 import { useQuickToast } from '../hooks/useToast';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -16,6 +17,7 @@ import { convertMockServices } from '../utils/mockDataConverters';
 export default function ServiceSelectionScreen() {
   const navigation = useNavigation();
   const { setService } = useBooking();
+  const { setBookingState } = useBookingFlow();
   const toast = useQuickToast();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,7 @@ export default function ServiceSelectionScreen() {
 
   const handleServiceSelect = (service: Service | typeof SERVICES[0]) => {
     setService(service as any);
+    setBookingState({ serviceId: service.id });
     toast.success(`✅ ${service.name} selecionado`);
     navigation.navigate('TherapistSelection' as never);
   };
