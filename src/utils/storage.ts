@@ -69,7 +69,7 @@ export const authStorage = {
  * User profile management
  */
 export const userStorage = {
-  getProfile: () => getStorageItem(STORAGE_KEYS.USER_PROFILE),
+  getProfile: () => getStorageItem<any>(STORAGE_KEYS.USER_PROFILE),
   setProfile: (profile: any) => setStorageItem(STORAGE_KEYS.USER_PROFILE, profile),
   removeProfile: () => removeStorageItem(STORAGE_KEYS.USER_PROFILE),
 };

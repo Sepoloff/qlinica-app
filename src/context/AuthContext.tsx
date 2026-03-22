@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const userProfile = await userStorage.getProfile();
 
       if (token && userProfile) {
-        setUser(userProfile);
+        setUser(userProfile as User);
       }
     } catch (error) {
       console.error('Failed to restore token:', error);
