@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
 import { useAuth } from '../context/AuthContext';
@@ -20,8 +20,12 @@ import bookingService from '../services/bookingService';
 
 export default function CalendarSelectionScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
   const { bookingData, setDateTime, resetBooking } = useBooking();
   const { user } = useAuth();
+  
+  const isReschedule = (route.params as any)?.isReschedule || false;
+  const rescheduleBookingId = (route.params as any)?.bookingId;
   
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -99,8 +103,8 @@ export default function CalendarSelectionScreen() {
   };
 
   const handleConfirmBooking = async () => {
-    if (!selectedDate || !selectedTime || !bookingData.service || !bookingData.therapist) {
-      Alert.alert('Erro', 'Por favor, selecione data, hora, serviço e terapeuta');
+    if (!selectedDate || !selectedTime) {
+      Alert.alert('Erro', 'Por favor, selecione data e hora');
       return;
     }
 
@@ -112,30 +116,58 @@ export default function CalendarSelectionScreen() {
 
     setSubmitting(true);
     try {
-      const booking = await bookingService.createBooking({
-        serviceId: String(bookingData.service.id),
-        therapistId: String(bookingData.therapist.id),
-        date: formatDateForAPI(selectedDate),
-        time: selectedTime,
-        notes: '',
-      });
+      if (isReschedule && rescheduleBookingId) {
+        // Reschedule existing booking
+        await bookingService.rescheduleBooking(
+          rescheduleBookingId,
+          formatDateForAPI(selectedDate),
+          selectedTime
+        );
 
-      setDateTime(selectedDate, selectedTime);
-      resetBooking();
-      
-      Alert.alert(
-        'Sucesso!',
-        `Sua consulta foi agendada com sucesso!\n\n${bookingData.service.name}\nCom ${bookingData.therapist.name}\n${formatDate(selectedDate)} às ${selectedTime}`,
-        [
-          {
-            text: 'Ir para Marcações',
-            onPress: () => navigation.navigate('bookings' as never),
-          },
-        ]
-      );
+        Alert.alert(
+          'Sucesso!',
+          `Sua consulta foi reagendada com sucesso!\n\n${formatDate(selectedDate)} às ${selectedTime}`,
+          [
+            {
+              text: 'Voltar',
+              onPress: () => {
+                navigation.navigate('bookings' as never);
+              },
+            },
+          ]
+        );
+      } else {
+        // Create new booking
+        if (!bookingData.service || !bookingData.therapist) {
+          Alert.alert('Erro', 'Por favor, selecione serviço e terapeuta');
+          return;
+        }
+
+        const booking = await bookingService.createBooking({
+          serviceId: String(bookingData.service.id),
+          therapistId: String(bookingData.therapist.id),
+          date: formatDateForAPI(selectedDate),
+          time: selectedTime,
+          notes: '',
+        });
+
+        setDateTime(selectedDate, selectedTime);
+        resetBooking();
+        
+        Alert.alert(
+          'Sucesso!',
+          `Sua consulta foi agendada com sucesso!\n\n${bookingData.service.name}\nCom ${bookingData.therapist.name}\n${formatDate(selectedDate)} às ${selectedTime}`,
+          [
+            {
+              text: 'Ir para Marcações',
+              onPress: () => navigation.navigate('bookings' as never),
+            },
+          ]
+        );
+      }
     } catch (error: any) {
-      console.error('Error creating booking:', error);
-      Alert.alert('Erro', 'Falha ao criar agendamento. Tente novamente.');
+      console.error('Error processing booking:', error);
+      Alert.alert('Erro', 'Falha ao processar agendamento. Tente novamente.');
     } finally {
       setSubmitting(false);
     }
@@ -158,7 +190,9 @@ export default function CalendarSelectionScreen() {
         </TouchableOpacity>
         
         <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Escolha a Data e Hora</Text>
+          <Text style={styles.headerTitle}>
+            {isReschedule ? 'Reagendar Consulta' : 'Escolha a Data e Hora'}
+          </Text>
           <Text style={styles.headerSubtitle}>
             {bookingData.therapist?.name || 'Selecione data e horário'}
           </Text>

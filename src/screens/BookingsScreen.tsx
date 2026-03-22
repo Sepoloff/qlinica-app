@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
@@ -8,9 +8,11 @@ import bookingService, { Booking } from '../services/bookingService';
 
 export default function BookingsScreen() {
   const { user } = useAuth();
+  const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState(0);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const tabs = ['Próximas', 'Passadas'];
 
   useFocusEffect(
@@ -19,8 +21,10 @@ export default function BookingsScreen() {
     }, [user])
   );
 
-  const loadBookings = async () => {
-    setLoading(true);
+  const loadBookings = async (fromRefresh = false) => {
+    if (!fromRefresh) {
+      setLoading(true);
+    }
     try {
       if (user) {
         const data = await bookingService.getUserBookings().catch(() => BOOKINGS as any);
@@ -33,7 +37,15 @@ export default function BookingsScreen() {
       setBookings(BOOKINGS as any);
     } finally {
       setLoading(false);
+      if (fromRefresh) {
+        setRefreshing(false);
+      }
     }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadBookings(true);
   };
 
   const handleCancelBooking = async (bookingId: string) => {
@@ -59,6 +71,29 @@ export default function BookingsScreen() {
     );
   };
 
+  const handleRescheduleBooking = (booking: Booking) => {
+    Alert.alert(
+      'Reagendar consulta',
+      'Deseja reagendar esta consulta para outra data?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Reagendar',
+          onPress: () => {
+            // Navigate to calendar selection with booking context
+            // This will require updating BookingContext to handle reschedule mode
+            navigation.navigate('CalendarSelection', { 
+              isReschedule: true, 
+              bookingId: booking.id,
+              therapistId: booking.therapistId,
+              serviceId: booking.serviceId
+            } as any);
+          },
+        },
+      ]
+    );
+  };
+
   const filtered = bookings.filter(b =>
     activeTab === 0 ? b.status === 'confirmed' : b.status !== 'confirmed'
   );
@@ -71,7 +106,19 @@ export default function BookingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={COLORS.gold}
+          titleColor={COLORS.gold}
+          title="Atualizando..."
+        />
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>As minhas marcações</Text>
@@ -131,7 +178,10 @@ export default function BookingsScreen() {
 
                   {booking.status === 'confirmed' && (
                     <View style={styles.actions}>
-                      <TouchableOpacity style={styles.actionReschedule}>
+                      <TouchableOpacity 
+                        style={styles.actionReschedule}
+                        onPress={() => handleRescheduleBooking(booking)}
+                      >
                         <Text style={styles.actionText}>Remarcar</Text>
                       </TouchableOpacity>
                       <TouchableOpacity 

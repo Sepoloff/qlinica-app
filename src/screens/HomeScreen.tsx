@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS, SERVICES } from '../constants/Data';
@@ -14,6 +14,7 @@ export default function HomeScreen() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
@@ -22,8 +23,10 @@ export default function HomeScreen() {
     }, [])
   );
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (fromRefresh = false) => {
+    if (!fromRefresh) {
+      setLoading(true);
+    }
     setError(null);
 
     try {
@@ -50,10 +53,31 @@ export default function HomeScreen() {
       setBookings(user ? convertMockBookings(user.id) : []);
     } finally {
       setLoading(false);
+      if (fromRefresh) {
+        setRefreshing(false);
+      }
     }
   };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData(true);
+  };
+
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={COLORS.gold}
+          titleColor={COLORS.gold}
+          title="Atualizando..."
+        />
+      }
+    >
       {/* Header */}
       <LinearGradient
         colors={[COLORS.primary, COLORS.primaryDark]}
