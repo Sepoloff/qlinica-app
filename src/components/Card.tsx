@@ -1,74 +1,61 @@
 import React from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import { COLORS } from '../constants/Colors';
+
+export type CardVariant = 'elevated' | 'outlined' | 'filled';
 
 interface CardProps {
   children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
-  variant?: 'default' | 'elevated' | 'outline';
-  padding?: 'small' | 'medium' | 'large';
+  variant?: CardVariant;
+  style?: ViewStyle;
+  onPress?: () => void;
 }
 
 export const Card: React.FC<CardProps> = ({
   children,
+  variant = 'elevated',
   style,
-  variant = 'default',
-  padding = 'medium',
+  onPress,
 }) => {
-  const getPaddingValue = () => {
-    switch (padding) {
-      case 'small':
-        return 12;
-      case 'large':
-        return 20;
-      default:
-        return 16;
-    }
-  };
-
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'elevated':
-        return {
-          backgroundColor: COLORS.primaryLight,
-          shadowColor: COLORS.gold,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 8,
-          elevation: 5,
-        };
-      case 'outline':
-        return {
-          backgroundColor: COLORS.primary,
-          borderWidth: 1,
-          borderColor: `${COLORS.gold}20`,
-        };
-      default:
-        return {
-          backgroundColor: COLORS.primaryLight,
-        };
-    }
-  };
+  const Wrapper = onPress ? require('react-native').TouchableOpacity : View;
 
   return (
-    <View
+    <Wrapper
       style={[
-        styles.card,
-        {
-          padding: getPaddingValue(),
-        },
-        getVariantStyles(),
+        styles.container,
+        variant === 'outlined' && styles.outlined,
+        variant === 'filled' && styles.filled,
+        variant === 'elevated' && styles.elevated,
         style,
       ]}
+      onPress={onPress}
+      activeOpacity={0.7}
     >
       {children}
-    </View>
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 14,
-    overflow: 'hidden',
+  container: {
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  elevated: {
+    backgroundColor: COLORS.primaryLight,
+    shadowColor: COLORS.gold,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  outlined: {
+    backgroundColor: COLORS.primaryLight,
+    borderWidth: 1,
+    borderColor: `${COLORS.gold}25`,
+  },
+  filled: {
+    backgroundColor: `${COLORS.primaryDark}80`,
   },
 });
