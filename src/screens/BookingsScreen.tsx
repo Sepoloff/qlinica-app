@@ -34,14 +34,22 @@ export default function BookingsScreen() {
     }
     try {
       if (user) {
-        // Load all bookings, not just upcoming
-        const data = await bookingService.getBookings();
-        setBookings(data || []);
+        // Load all bookings with proper error handling
+        try {
+          const data = await bookingService.getBookings();
+          setBookings(data || []);
+        } catch (error) {
+          console.warn('Failed to fetch bookings from API, using mock data');
+          // Try loading from mock data as fallback
+          const mockBookings = BOOKINGS.filter(b => String(b.userId) === user.id || !b.userId);
+          setBookings(mockBookings as Booking[]);
+        }
       } else {
         setBookings([]);
       }
     } catch (error) {
-      console.error('Error loading bookings:', error);
+      console.error('Unexpected error loading bookings:', error);
+      toast.error('Erro ao carregar agendamentos');
       setBookings([]);
     } finally {
       setLoading(false);

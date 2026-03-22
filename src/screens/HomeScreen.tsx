@@ -37,16 +37,26 @@ export default function HomeScreen() {
     setError(null);
 
     try {
-      // Load services
-      const servicesData = await bookingService.getServices().catch(() => {
-        return convertMockServices();
-      });
+      // Load services - try API first, fallback to mock
+      let servicesData: Service[] = [];
+      try {
+        servicesData = await bookingService.getServices();
+      } catch (err) {
+        console.warn('Failed to fetch services from API, using mock data');
+        servicesData = convertMockServices();
+      }
       setServices(servicesData || []);
 
       // Load user bookings if authenticated
       if (user) {
-        const bookingsData = await bookingService.getUpcomingBookings();
-        setBookings(bookingsData || []);
+        try {
+          const bookingsData = await bookingService.getUpcomingBookings();
+          setBookings(bookingsData || []);
+        } catch (err) {
+          console.warn('Failed to fetch bookings from API, using mock data');
+          const mockBookings = convertMockBookings(user.id);
+          setBookings(mockBookings || []);
+        }
       } else {
         setBookings([]);
       }
@@ -57,7 +67,7 @@ export default function HomeScreen() {
       });
     } catch (err) {
       console.error('Error loading home data:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
+      const errorMessage = err instanceof Error ? err.message : 'Falha ao carregar dados';
       setError(errorMessage);
       trackError(err instanceof Error ? err : new Error(errorMessage), {
         screen: 'home',
