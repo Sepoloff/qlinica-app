@@ -19,12 +19,14 @@ import { TabBarIcon } from './src/components/TabBarIcon';
 import { ToastDisplay } from './src/components/ToastDisplay';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { NetworkStatusBar } from './src/components/NetworkStatusBar';
+import { OfflineQueueStatus } from './src/components/OfflineQueueStatus';
 import { BookingProvider } from './src/context/BookingContext';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { NotificationProvider } from './src/context/NotificationContext';
 import { useAuth } from './src/context/AuthContext';
 import { initializeNotifications } from './src/services/notificationService';
+import { offlineSyncService } from './src/services/offlineSyncService';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -80,11 +82,23 @@ function TabNavigator() {
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Initialize notifications on app start
+  // Initialize notifications and offline sync on app start
   useEffect(() => {
-    initializeNotifications().catch((error) => {
-      console.warn('Notification initialization failed:', error);
-    });
+    const initializeServices = async () => {
+      try {
+        await initializeNotifications();
+      } catch (error) {
+        console.warn('Notification initialization failed:', error);
+      }
+
+      try {
+        await offlineSyncService.initialize();
+      } catch (error) {
+        console.warn('Offline sync initialization failed:', error);
+      }
+    };
+
+    initializeServices();
   }, []);
 
   if (isLoading) {
@@ -177,6 +191,7 @@ export default function App() {
             <NotificationProvider>
               <StatusBar style="light" />
               <NetworkStatusBar />
+              <OfflineQueueStatus position="top" />
               <NavigationContainer>
                 <RootNavigator />
               </NavigationContainer>
