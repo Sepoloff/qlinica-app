@@ -4,83 +4,66 @@
 
 import {
   validateLoginForm,
-  validateRegistrationForm,
+  validateRegisterForm,
   validateBookingForm,
 } from '../utils/formValidator';
 
 describe('Form Validator', () => {
   describe('validateLoginForm', () => {
     it('should validate correct login form', () => {
-      const result = validateLoginForm({
-        email: 'user@example.com',
-        password: 'SecurePass123',
-      });
+      const result = validateLoginForm('user@example.com', 'SecurePass123');
       expect(result.isValid).toBe(true);
       expect(result.errors).toEqual({});
     });
 
     it('should reject invalid email', () => {
-      const result = validateLoginForm({
-        email: 'invalid-email',
-        password: 'SecurePass123',
-      });
+      const result = validateLoginForm('invalid-email', 'SecurePass123');
       expect(result.isValid).toBe(false);
       expect(result.errors.email).toBeDefined();
     });
 
     it('should reject short password', () => {
-      const result = validateLoginForm({
-        email: 'user@example.com',
-        password: 'weak',
-      });
+      const result = validateLoginForm('user@example.com', 'weak');
       expect(result.isValid).toBe(false);
       expect(result.errors.password).toBeDefined();
     });
   });
 
-  describe('validateRegistrationForm', () => {
+  describe('validateRegisterForm', () => {
     it('should validate correct registration form', () => {
-      const result = validateRegistrationForm({
-        email: 'newuser@example.com',
-        password: 'SecurePass123',
-        confirmPassword: 'SecurePass123',
-        name: 'John Doe',
-        phone: '912345678',
-      });
+      const result = validateRegisterForm('newuser@example.com', 'SecurePass123', 'John Doe', '912345678');
       expect(result.isValid).toBe(true);
     });
 
-    it('should reject mismatched passwords', () => {
-      const result = validateRegistrationForm({
-        email: 'newuser@example.com',
-        password: 'SecurePass123',
-        confirmPassword: 'DifferentPass123',
-        name: 'John Doe',
-        phone: '912345678',
-      });
+    it('should reject invalid email', () => {
+      const result = validateRegisterForm('invalid-email', 'SecurePass123', 'John Doe', '912345678');
       expect(result.isValid).toBe(false);
-      expect(result.errors.confirmPassword).toBeDefined();
+      expect(result.errors.email).toBeDefined();
+    });
+
+    it('should reject weak password', () => {
+      const result = validateRegisterForm('newuser@example.com', 'weak', 'John Doe', '912345678');
+      expect(result.isValid).toBe(false);
+      expect(result.errors.password).toBeDefined();
     });
   });
 
   describe('validateBookingForm', () => {
     it('should validate correct booking form', () => {
-      const result = validateBookingForm({
-        serviceId: 'service123',
-        therapistId: 'therapist123',
-        date: new Date(Date.now() + 86400000).toISOString(),
-        time: '14:00',
-      });
+      const futureDate = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const result = validateBookingForm(1, 1, futureDate, '14:00');
       expect(result.isValid).toBe(true);
     });
 
     it('should reject past dates', () => {
-      const result = validateBookingForm({
-        serviceId: 'service123',
-        therapistId: 'therapist123',
-        date: new Date(Date.now() - 86400000).toISOString(),
-        time: '14:00',
-      });
+      const pastDate = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const result = validateBookingForm(1, 1, pastDate, '14:00');
+      expect(result.isValid).toBe(false);
+    });
+
+    it('should reject invalid time format', () => {
+      const futureDate = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const result = validateBookingForm(1, 1, futureDate, 'invalid');
       expect(result.isValid).toBe(false);
     });
   });

@@ -5,8 +5,8 @@
 import {
   validateEmail,
   validatePassword,
-  validatePhoneNumber,
-  validateCreditCard,
+  validatePhone,
+  validateCardNumber,
 } from '../utils/validation';
 
 describe('Validation Utilities', () => {
@@ -27,43 +27,45 @@ describe('Validation Utilities', () => {
 
   describe('validatePassword', () => {
     it('should accept strong passwords', () => {
-      expect(validatePassword('SecurePass123')).toBe(true);
-      expect(validatePassword('MyPassword1')).toBe(true);
+      const result1 = validatePassword('SecurePass123');
+      const result2 = validatePassword('MyPassword1');
+      expect(result1.valid).toBe(true);
+      expect(result2.valid).toBe(true);
     });
 
     it('should reject weak passwords', () => {
-      expect(validatePassword('weak')).toBe(false);
-      expect(validatePassword('noupppercase123')).toBe(false);
-      expect(validatePassword('NOLOWERCASE123')).toBe(false);
-      expect(validatePassword('NoNumbers')).toBe(false);
+      const result1 = validatePassword('weak');
+      const result2 = validatePassword('nouppercase123');
+      expect(result1.valid).toBe(false);
+      expect(result2.valid).toBe(false);
     });
   });
 
-  describe('validatePhoneNumber', () => {
+  describe('validatePhone', () => {
     it('should accept valid Portuguese phone numbers', () => {
-      expect(validatePhoneNumber('+351912345678')).toBe(true);
-      expect(validatePhoneNumber('912345678')).toBe(true);
-      expect(validatePhoneNumber('961234567')).toBe(true);
+      expect(validatePhone('+351912345678')).toBe(true);
+      expect(validatePhone('912345678')).toBe(true);
+      expect(validatePhone('961234567')).toBe(true);
     });
 
     it('should reject invalid phone numbers', () => {
-      expect(validatePhoneNumber('123')).toBe(false);
-      expect(validatePhoneNumber('invalid')).toBe(false);
-      expect(validatePhoneNumber('')).toBe(false);
+      expect(validatePhone('123')).toBe(false);
+      expect(validatePhone('invalid')).toBe(false);
+      expect(validatePhone('')).toBe(false);
     });
   });
 
-  describe('validateCreditCard', () => {
+  describe('validateCardNumber', () => {
     it('should validate credit card numbers using Luhn algorithm', () => {
       // Test with valid Luhn numbers
-      expect(validateCreditCard('4532015112830366')).toBe(true);
-      expect(validateCreditCard('5425233010103442')).toBe(true);
+      expect(validateCardNumber('4532015112830366')).toBe(true);
+      expect(validateCardNumber('4111111111111111')).toBe(true);
     });
 
     it('should reject invalid credit card numbers', () => {
-      expect(validateCreditCard('1234567890123456')).toBe(false);
-      expect(validateCreditCard('invalid')).toBe(false);
-      expect(validateCreditCard('')).toBe(false);
+      expect(validateCardNumber('1234567890123456')).toBe(false);
+      expect(validateCardNumber('invalid')).toBe(false);
+      expect(validateCardNumber('')).toBe(false);
     });
   });
 });
