@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosResponse, AxiosRequestConfig } from 'axios';
 import { authStorage } from '../utils/storage';
 import { analyticsService } from '../services/analyticsService';
+import { logger } from '../utils/logger';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
@@ -38,8 +39,13 @@ api.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      
+      // Log API request
+      const startTime = Date.now();
+      config.metadata = { startTime };
+      logger.debug(`${config.method?.toUpperCase()} ${config.url}`, 'API:Request');
     } catch (error) {
-      console.error('Error retrieving token:', error);
+      logger.error('Error retrieving token', error as Error, 'API:Auth');
     }
     return config;
   },
@@ -52,6 +58,19 @@ api.interceptors.response.use(
     // Reset retry count on success
     const key = `${response.config.method}:${response.config.url}`;
     retryCount.delete(key);
+    
+    // Log successful response with timing
+    const metadata = (response.config as any).metadata;
+    if (metadata?.startTime) {
+      const duration = Date.now() - metadata.startTime;
+      logger.logApiCall(
+        response.config.method?.toUpperCase() || 'UNKNOWN',
+        response.config.url || 'unknown',
+        response.status,
+        duration
+      );
+    }
+    
     return response;
   },
   async (error: AxiosError) => {
@@ -68,13 +87,13 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       try {
         await authStorage.removeToken();
-        console.log('🔐 Token expired - user logged out');
+        logger.warn('🔐 Token expired - user logged out', 'API:Auth', { endpoint: config.url });
         analyticsService.trackError(error, {
           type: 'auth_expired',
           endpoint: config.url,
         });
       } catch (storageError) {
-        console.error('Error clearing storage:', storageError);
+        logger.error('Error clearing storage', storageError as Error, 'API:Auth');
       }
       return Promise.reject(error);
     }
@@ -118,12 +137,21 @@ api.interceptors.response.use(
 
     // Log final error
     retryCount.delete(key);
-    console.error(`❌ API Error after ${currentRetry} retries:`, {
-      method: config.method,
-      url: config.url,
-      status: error.response?.status,
-      message: error.message,
-    });
+    const metadata = (config as any).metadata;
+    const duration = metadata?.startTime ? Date.now() - metadata.startTime : undefined;
+    
+    logger.error(
+      `API Error after ${currentRetry} retries`,
+      error,
+      'API:Response',
+      {
+        method: config.method,
+        url: config.url,
+        status: error.response?.status,
+        durationMs: duration,
+        retries: currentRetry,
+      }
+    );
 
     // Track final error
     analyticsService.trackError(error, {
