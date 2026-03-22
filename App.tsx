@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -20,7 +20,9 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { BookingProvider } from './src/context/BookingContext';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
+import { NotificationProvider } from './src/context/NotificationContext';
 import { useAuth } from './src/context/AuthContext';
+import { initializeNotifications } from './src/services/notificationService';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -75,6 +77,13 @@ function TabNavigator() {
 
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Initialize notifications on app start
+  useEffect(() => {
+    initializeNotifications().catch((error) => {
+      console.warn('Notification initialization failed:', error);
+    });
+  }, []);
 
   if (isLoading) {
     return (
@@ -156,11 +165,13 @@ export default function App() {
       <AuthProvider>
         <BookingProvider>
           <ToastProvider>
-            <StatusBar style="light" />
-            <NavigationContainer>
-              <RootNavigator />
-            </NavigationContainer>
-            <ToastDisplay />
+            <NotificationProvider>
+              <StatusBar style="light" />
+              <NavigationContainer>
+                <RootNavigator />
+              </NavigationContainer>
+              <ToastDisplay />
+            </NotificationProvider>
           </ToastProvider>
         </BookingProvider>
       </AuthProvider>

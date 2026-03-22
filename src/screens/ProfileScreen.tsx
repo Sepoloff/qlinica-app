@@ -193,6 +193,9 @@ export default function ProfileScreen() {
             />
           </View>
         </View>
+        <Text style={styles.notifNote}>
+          💡 Gerir notificações detalhadas nas preferências avançadas
+        </Text>
       </View>
 
       {/* History */}
@@ -390,6 +393,13 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '500',
     fontFamily: 'DMSans',
+  },
+  notifNote: {
+    fontSize: 11,
+    color: COLORS.grey,
+    marginTop: 12,
+    fontFamily: 'DMSans',
+    fontStyle: 'italic',
   },
   historyGrid: {
     flexDirection: 'row',
