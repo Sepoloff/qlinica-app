@@ -22,6 +22,13 @@ import { InfoBox } from '../components/InfoBox';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { Button } from '../components/Button';
 import bookingService from '../services/bookingService';
+import { 
+  getNextBusinessDays, 
+  formatDateDDMMYYYY, 
+  formatDateISO, 
+  getShortDayName,
+  getRelativeTimeString
+} from '../utils/dateHelpers';
 
 export default function CalendarSelectionScreen() {
   const navigation = useNavigation();
@@ -40,21 +47,6 @@ export default function CalendarSelectionScreen() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Generate next 14 days (excluding Sundays)
-  const generateDates = () => {
-    const dates = [];
-    const today = new Date();
-    for (let i = 1; i <= 21; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + i);
-      // Skip Sundays (day 0)
-      if (date.getDay() !== 0) {
-        dates.push(date);
-      }
-    }
-    return dates.slice(0, 14);
-  };
-
   useEffect(() => {
     if (selectedDate && bookingData.therapist?.id) {
       loadAvailableTimes();
@@ -64,7 +56,7 @@ export default function CalendarSelectionScreen() {
   const loadAvailableTimes = async () => {
     setLoading(true);
     try {
-      const formattedDate = formatDateForAPI(selectedDate!);
+      const formattedDate = formatDateISO(selectedDate!);
       const slots = await bookingService.getAvailableSlots(
         String(bookingData.therapist?.id || ''),
         String(bookingData.service?.id || ''),
@@ -89,25 +81,7 @@ export default function CalendarSelectionScreen() {
     }
   };
 
-  const formatDateForAPI = (date: Date) => {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const dates = generateDates();
-
-  const formatDate = (date: Date) => {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    return `${day}/${month}`;
-  };
-
-  const getDayName = (date: Date) => {
-    const days = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
-    return days[date.getDay()];
-  };
+  const dates = getNextBusinessDays(14);
 
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) {
@@ -123,20 +97,21 @@ export default function CalendarSelectionScreen() {
 
     setSubmitting(true);
     try {
-      const dateString = formatDateForAPI(selectedDate);
-      setBookingState({ date: dateString, time: selectedTime });
+      const dateStringISO = formatDateISO(selectedDate);
+      const dateStringDisplay = formatDateDDMMYYYY(selectedDate);
+      setBookingState({ date: dateStringISO, time: selectedTime });
 
       if (isReschedule && rescheduleBookingId) {
         // Reschedule existing booking
         await bookingService.rescheduleBooking(
           rescheduleBookingId,
-          dateString,
+          dateStringISO,
           selectedTime
         );
 
         Alert.alert(
           'Sucesso!',
-          `Sua consulta foi reagendada com sucesso!\n\n${formatDate(selectedDate)} às ${selectedTime}`,
+          `Sua consulta foi reagendada com sucesso!\n\n${dateStringDisplay} às ${selectedTime}`,
           [
             {
               text: 'Voltar',
@@ -246,7 +221,7 @@ export default function CalendarSelectionScreen() {
               ]}
               onPress={() => setSelectedDate(date)}
             >
-              <Text style={styles.dayName}>{getDayName(date)}</Text>
+              <Text style={styles.dayName}>{getShortDayName(date)}</Text>
               <Text 
                 style={[
                   styles.dateText,
