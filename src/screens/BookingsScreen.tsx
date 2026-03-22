@@ -56,11 +56,12 @@ export default function BookingsScreen() {
     setCancelling(bookingId);
     try {
       await bookingService.cancelBooking(bookingId);
-      toast.success('Consulta cancelada com sucesso');
+      toast.success('✅ Consulta cancelada com sucesso');
       await loadBookings();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cancelling booking:', error);
-      toast.error('Falha ao cancelar consulta. Tente novamente.');
+      const errorMsg = error.response?.data?.message || 'Falha ao cancelar consulta. Tente novamente.';
+      toast.error(`❌ ${errorMsg}`);
     } finally {
       setCancelling(null);
     }
@@ -160,6 +161,7 @@ export default function BookingsScreen() {
                 onDetails={() => {
                   // TODO: Navigate to booking details
                 }}
+                isLoading={cancelling === booking.id}
               />
             );
           })
