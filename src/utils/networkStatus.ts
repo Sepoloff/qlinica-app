@@ -4,7 +4,6 @@
  */
 
 import { useEffect, useState } from 'react';
-import NetInfo from '@react-native-community/netinfo';
 import { analyticsService } from '../services/analyticsService';
 
 export interface NetworkState {
@@ -15,11 +14,25 @@ export interface NetworkState {
 
 /**
  * Check if the device is currently online
+ * Uses a simple ping to a reliable endpoint
  */
 export const checkNetworkConnection = async (): Promise<boolean> => {
   try {
-    const state = await NetInfo.fetch();
-    return (state.isConnected ?? false) && (state.isInternetReachable !== false);
+    // Use a HEAD request to a reliable CDN endpoint
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    try {
+      const response = await fetch('https://www.cloudflare.com', {
+        method: 'HEAD',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      return false;
+    }
   } catch (error) {
     console.error('Error checking network status:', error);
     return false;
@@ -34,27 +47,38 @@ export const useNetworkStatus = () => {
   const [networkType, setNetworkType] = useState<string>('unknown');
 
   useEffect(() => {
-    // Subscribe to network changes
-    const unsubscribe = NetInfo.addEventListener((state: any) => {
-      const connected = state.isConnected && state.isInternetReachable !== false;
-      setIsOnline(connected);
-      setNetworkType(state.type);
-
-      // Track network changes in analytics
-      analyticsService.trackEvent('network_status_changed', {
-        isConnected: connected,
-        type: state.type,
-      });
-    });
-
-    // Check initial status
+    // Check network status on mount
     checkNetworkConnection().then((connected) => {
       setIsOnline(connected);
     });
 
-    return () => {
-      unsubscribe();
+    // Listen for online/offline events
+    const handleOnline = () => {
+      setIsOnline(true);
+      analyticsService.trackEvent('network_status_changed', {
+        isConnected: true,
+        type: 'restored',
+      });
     };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      analyticsService.trackEvent('network_status_changed', {
+        isConnected: false,
+        type: 'lost',
+      });
+    };
+
+    // Add event listeners for online/offline
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
   }, []);
 
   return { isOnline, networkType };
