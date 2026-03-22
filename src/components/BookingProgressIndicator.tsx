@@ -1,91 +1,103 @@
-'use strict';
+/**
+ * Visual indicator for booking flow progress
+ */
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/Colors';
 
 export interface BookingProgressIndicatorProps {
-  currentStep: number; // 1-4
-  totalSteps?: number;
-  labels?: string[];
+  currentStep: 'service' | 'therapist' | 'datetime' | 'summary';
+  progress?: number; // 0-100
 }
 
-const DEFAULT_LABELS = [
-  'Serviço',
-  'Terapeuta',
-  'Data & Hora',
-  'Confirmação',
-];
-
-/**
- * Progress indicator for the booking flow
- * Shows which step the user is on (1/4, 2/4, etc)
- * 
- * @example
- * <BookingProgressIndicator 
- *   currentStep={1}
- *   labels={['Serviço', 'Terapeuta', 'Data', 'Confirmação']}
- * />
- */
 export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> = ({
   currentStep,
-  totalSteps = 4,
-  labels = DEFAULT_LABELS,
+  progress = 0,
 }) => {
-  const progressPercentage = (currentStep / totalSteps) * 100;
+  const steps = [
+    { key: 'service', label: 'Serviço', number: 1 },
+    { key: 'therapist', label: 'Terapeuta', number: 2 },
+    { key: 'datetime', label: 'Data & Hora', number: 3 },
+    { key: 'summary', label: 'Resumo', number: 4 },
+  ];
+
+  const currentIndex = steps.findIndex((s) => s.key === currentStep);
 
   return (
     <View style={styles.container}>
       {/* Progress Bar */}
       <View style={styles.progressBarContainer}>
-        <View
-          style={[
-            styles.progressBar,
-            { width: `${progressPercentage}%` },
-          ]}
-        />
+        <View style={styles.progressBarBackground}>
+          <View
+            style={[
+              styles.progressBarFill,
+              { width: `${Math.max(progress, 25)}%` },
+            ]}
+          />
+        </View>
       </View>
 
-      {/* Step Counter */}
-      <View style={styles.stepCounter}>
-        <Text style={styles.stepText}>
-          <Text style={styles.currentStep}>{currentStep}</Text>
-          <Text style={styles.divider}> / </Text>
-          <Text style={styles.totalSteps}>{totalSteps}</Text>
-        </Text>
-        {labels[currentStep - 1] && (
-          <Text style={styles.stepLabel}>{labels[currentStep - 1]}</Text>
-        )}
-      </View>
-
-      {/* Step Dots (Optional Visual) */}
-      <View style={styles.dotsContainer}>
-        {Array.from({ length: totalSteps }).map((_, index) => {
-          const stepNumber = index + 1;
-          const isCompleted = stepNumber < currentStep;
-          const isCurrent = stepNumber === currentStep;
+      {/* Step Indicators */}
+      <View style={styles.stepsContainer}>
+        {steps.map((step, index) => {
+          const isCompleted = index < currentIndex;
+          const isCurrent = index === currentIndex;
+          const isUpcoming = index > currentIndex;
 
           return (
-            <View
-              key={stepNumber}
-              style={[
-                styles.dot,
-                isCompleted && styles.dotCompleted,
-                isCurrent && styles.dotCurrent,
-              ]}
-            >
-              {isCompleted && (
-                <Text style={styles.checkMark}>✓</Text>
-              )}
-              {isCurrent && (
-                <Text style={styles.dotNumber}>{stepNumber}</Text>
-              )}
-              {!isCompleted && !isCurrent && (
-                <Text style={styles.dotNumber}>{stepNumber}</Text>
+            <View key={step.key} style={styles.stepWrapper}>
+              {/* Circle */}
+              <View
+                style={[
+                  styles.stepCircle,
+                  isCompleted && styles.stepCircleCompleted,
+                  isCurrent && styles.stepCircleCurrent,
+                  isUpcoming && styles.stepCircleUpcoming,
+                ]}
+              >
+                {isCompleted ? (
+                  <Text style={styles.checkmark}>✓</Text>
+                ) : (
+                  <Text
+                    style={[
+                      styles.stepNumber,
+                      isCurrent && styles.stepNumberCurrent,
+                    ]}
+                  >
+                    {step.number}
+                  </Text>
+                )}
+              </View>
+
+              {/* Label */}
+              <Text
+                style={[
+                  styles.stepLabel,
+                  (isCompleted || isCurrent) && styles.stepLabelActive,
+                ]}
+                numberOfLines={1}
+              >
+                {step.label}
+              </Text>
+
+              {/* Connector Line */}
+              {index < steps.length - 1 && (
+                <View
+                  style={[
+                    styles.connector,
+                    index < currentIndex && styles.connectorCompleted,
+                  ]}
+                />
               )}
             </View>
           );
         })}
+      </View>
+
+      {/* Percentage Text */}
+      <View style={styles.percentageContainer}>
+        <Text style={styles.percentageText}>{Math.round(progress)}% completo</Text>
       </View>
     </View>
   );
@@ -96,79 +108,98 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: COLORS.primaryLight,
-    borderBottomWidth: 1,
-    borderBottomColor: `${COLORS.gold}20`,
   },
   progressBarContainer: {
+    marginBottom: 16,
+  },
+  progressBarBackground: {
     height: 4,
     backgroundColor: `${COLORS.gold}20`,
     borderRadius: 2,
     overflow: 'hidden',
-    marginBottom: 12,
   },
-  progressBar: {
+  progressBarFill: {
     height: '100%',
     backgroundColor: COLORS.gold,
     borderRadius: 2,
   },
-  stepCounter: {
-    marginBottom: 12,
-  },
-  stepText: {
-    fontSize: 14,
-    fontFamily: 'DMSans',
-    fontWeight: '600',
-  },
-  currentStep: {
-    color: COLORS.gold,
-    fontWeight: '700',
-  },
-  divider: {
-    color: COLORS.grey,
-  },
-  totalSteps: {
-    color: COLORS.grey,
-  },
-  stepLabel: {
-    fontSize: 12,
-    color: COLORS.grey,
-    fontFamily: 'DMSans',
-    marginTop: 2,
-  },
-  dotsContainer: {
+  stepsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
-  dot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: `${COLORS.gold}15`,
+  stepWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  stepCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: `${COLORS.gold}20`,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: `${COLORS.gold}30`,
+    marginBottom: 8,
   },
-  dotCurrent: {
+  stepCircleCompleted: {
     backgroundColor: COLORS.gold,
-    borderColor: COLORS.gold,
   },
-  dotCompleted: {
-    backgroundColor: `${COLORS.gold}40`,
+  stepCircleCurrent: {
+    backgroundColor: COLORS.gold,
+    borderWidth: 2,
     borderColor: COLORS.gold,
+    shadowColor: COLORS.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  dotNumber: {
+  stepCircleUpcoming: {
+    backgroundColor: `${COLORS.gold}15`,
+  },
+  checkmark: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
+  },
+  stepNumber: {
     fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.white,
-    fontFamily: 'DMSans',
+    fontWeight: '700',
+    color: COLORS.grey,
   },
-  checkMark: {
-    fontSize: 16,
+  stepNumberCurrent: {
+    color: COLORS.primaryDark,
+  },
+  stepLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.grey,
+    textAlign: 'center',
+    maxWidth: '100%',
+  },
+  stepLabelActive: {
     color: COLORS.white,
     fontWeight: '700',
   },
+  connector: {
+    position: 'absolute',
+    top: 20,
+    left: '50%',
+    right: '-50%',
+    height: 2,
+    backgroundColor: `${COLORS.gold}20`,
+  },
+  connectorCompleted: {
+    backgroundColor: COLORS.gold,
+  },
+  percentageContainer: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  percentageText: {
+    fontSize: 12,
+    color: COLORS.grey,
+    fontWeight: '500',
+  },
 });
-
-export default BookingProgressIndicator;
