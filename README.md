@@ -2,7 +2,7 @@
 
 Uma aplicação React Native de agendamento de consultas clínicas para iOS e Android, criada com Expo.
 
-**Status:** 🚀 MVP Ready (80% complete) | **Version:** 0.2.0
+**Status:** 🚀 MVP Ready (85% complete) | **Version:** 0.3.0
 
 ## 📱 Plataformas Suportadas
 
@@ -29,7 +29,9 @@ Uma aplicação React Native de agendamento de consultas clínicas para iOS e An
 - ✅ **TherapistSelectionScreen**: Escolha com ratings e disponibilidade
 - ✅ **CalendarSelectionScreen**: Picker de data e horário
 - ✅ **BookingSummaryScreen**: Confirmação com edição
+- ✅ **BookingDetailsScreen**: Visualização com remarcar/cancelar
 - ✅ **Navegação Stack**: Fluxo completo integrado
+- ✅ **TypeScript Compilation**: All files passing type checking
 
 ### Componentes & UX
 - ✅ **6 Serviços Clínicos**: Fisioterapia, Osteopatia, Pilates, Massagem, Terapia da Fala, Nutrição

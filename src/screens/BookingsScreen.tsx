@@ -206,7 +206,9 @@ export default function BookingsScreen() {
                 onReschedule={() => handleRescheduleBooking(booking)}
                 onCancel={handleCancelBooking}
                 onDetails={() => {
-                  // TODO: Navigate to booking details
+                  (navigation.navigate as any)('BookingDetails', {
+                    bookingId: booking.id,
+                  });
                 }}
                 isLoading={cancelling === booking.id}
               />
