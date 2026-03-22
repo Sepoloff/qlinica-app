@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
-import { useQuickToast } from '../hooks/useToast';
+import { useToast } from '../context/ToastContext';
 import { validatePhone } from '../utils/validation';
 import { FormInput } from '../components/FormInput';
 import { Button } from '../components/Button';
 import { AlertModal } from '../components/AlertModal';
 import { logger } from '../utils/logger';
+import { useAnalytics } from '../hooks/useAnalytics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuth();
-  const toast = useQuickToast();
+  const { showToast } = useToast();
+  const { trackScreenView, trackEvent } = useAnalytics();
+  
   const [notifSms, setNotifSms] = useState(true);
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifPush, setNotifPush] = useState(false);
@@ -22,12 +26,16 @@ export default function ProfileScreen() {
   const [tempPhone, setTempPhone] = useState(user?.phone || '');
   const [savingPhone, setSavingPhone] = useState(false);
 
-  useEffect(() => {
-    loadPreferences();
-    if (user?.phone) {
-      setTempPhone(user.phone);
-    }
-  }, [user]);
+  useFocusEffect(
+    React.useCallback(() => {
+      trackScreenView('profile', { userId: user?.id });
+      loadPreferences();
+      if (user?.phone) {
+        setTempPhone(user.phone);
+      }
+      return () => {};
+    }, [user, trackScreenView])
+  );
 
   const loadPreferences = async () => {
     try {
@@ -70,24 +78,47 @@ export default function ProfileScreen() {
     const phoneToValidate = tempPhone?.trim();
     
     if (!phoneToValidate) {
-      toast.error('Telefone não pode estar vazio');
+      showToast({
+        type: 'error',
+        title: 'Validação',
+        message: 'Telefone não pode estar vazio',
+      });
+      trackEvent('profile_phone_save_error', { reason: 'empty' });
       return;
     }
 
     if (!validatePhone(phoneToValidate)) {
-      toast.error('Formato inválido. Use: +351 912345678 ou 912345678');
+      showToast({
+        type: 'error',
+        title: 'Formato Inválido',
+        message: 'Use: +351 912345678 ou 912345678',
+      });
+      trackEvent('profile_phone_save_error', { reason: 'invalid_format' });
       return;
     }
 
     setSavingPhone(true);
     try {
+      logger.debug(`Updating phone to ${phoneToValidate}`, 'ProfileScreen');
       await updateUser({ phone: phoneToValidate });
-      toast.success('✅ Telefone atualizado com sucesso');
+      
+      showToast({
+        type: 'success',
+        title: 'Sucesso',
+        message: 'Telefone atualizado com sucesso',
+      });
+      
       setEditingPhone(false);
+      trackEvent('profile_phone_updated', { success: true });
       logger.debug('Phone updated successfully', 'ProfileScreen');
     } catch (error: any) {
       logger.error('Error updating phone', error, 'ProfileScreen');
-      toast.error('Erro ao atualizar');
+      showToast({
+        type: 'error',
+        title: 'Erro',
+        message: 'Erro ao atualizar telefone',
+      });
+      trackEvent('profile_phone_update_error', { error: error.message });
       setTempPhone(user?.phone || '');
     } finally {
       setSavingPhone(false);
@@ -105,12 +136,25 @@ export default function ProfileScreen() {
           onPress: async () => {
             setLoggingOut(true);
             try {
+              logger.debug('Logging out user', 'ProfileScreen');
               await logout();
-              toast.success('✅ Sessão terminada com sucesso');
+              
+              showToast({
+                type: 'success',
+                title: 'Sucesso',
+                message: 'Sessão terminada com sucesso',
+              });
+              
+              trackEvent('logout_success');
               logger.debug('User logged out successfully', 'ProfileScreen');
             } catch (error) {
               logger.error('Error logging out', error as Error, 'ProfileScreen');
-              toast.error('❌ Falha ao terminar sessão');
+              showToast({
+                type: 'error',
+                title: 'Erro',
+                message: 'Falha ao terminar sessão',
+              });
+              trackEvent('logout_error', { error: (error as Error).message });
               setLoggingOut(false);
             }
           },

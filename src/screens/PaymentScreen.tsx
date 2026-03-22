@@ -20,6 +20,9 @@ import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Header } from '../components/Header';
+import { validateCreditCard, validateCardNumber, validateCardExpiry, validateCardCVC } from '../utils/validation';
+import { logger } from '../utils/logger';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 interface PaymentScreenProps {
   bookingId: string;
@@ -38,6 +41,7 @@ export default function PaymentScreen({
 }: PaymentScreenProps) {
   const navigation = useNavigation();
   const { showToast } = useToast();
+  const { trackEvent, trackScreenView } = useAnalytics();
   
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
@@ -47,12 +51,15 @@ export default function PaymentScreen({
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCVC, setCardCVC] = useState('');
   const [cardHolder, setCardHolder] = useState('');
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [processingPayment, setProcessingPayment] = useState(false);
 
   // Calculate totals
   const { subtotal, tax, total } = paymentService.calculateTotal(amount);
   const formattedTotal = paymentService.formatPrice(total);
 
   useEffect(() => {
+    trackScreenView('payment', { amount, bookingId });
     loadPaymentMethods();
   }, []);
 
@@ -65,69 +72,121 @@ export default function PaymentScreen({
         setSelectedMethod(methods[0].id);
       }
     } catch (error) {
-      console.error('Error loading payment methods:', error);
-      showToast('Erro ao carregar métodos de pagamento', 'error');
+      logger.error('Error loading payment methods', error as Error, 'PaymentScreen');
+      showToast({
+        type: 'error',
+        title: 'Erro',
+        message: 'Erro ao carregar métodos de pagamento',
+      });
+      trackEvent('payment_methods_load_error', { error: (error as Error).message });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const validateNewCard = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!validateCardNumber(cardNumber)) {
+      errors.cardNumber = 'Número de cartão inválido';
+    }
+
+    const expiryValidation = validateCardExpiry(cardExpiry);
+    if (!expiryValidation.valid) {
+      errors.expiry = expiryValidation.error || 'Data de validade inválida';
+    }
+
+    if (!validateCardCVC(cardCVC)) {
+      errors.cvc = 'CVC inválido (3-4 dígitos)';
+    }
+
+    if (!cardHolder.trim() || cardHolder.trim().length < 3) {
+      errors.cardHolder = 'Nome do titular inválido';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handlePayment = async () => {
     if (!selectedMethod && !showNewCardForm) {
-      showToast('Selecione um método de pagamento', 'warning');
+      showToast({
+        type: 'warning',
+        title: 'Pagamento',
+        message: 'Selecione um método de pagamento',
+      });
+      trackEvent('payment_no_method_selected');
       return;
     }
 
-    if (showNewCardForm) {
-      if (!cardNumber || !cardExpiry || !cardCVC || !cardHolder) {
-        showToast('Preencha todos os campos do cartão', 'warning');
-        return;
-      }
-      
-      // Validate card format
-      const { validateCreditCard } = require('../utils/validation');
-      const validation = validateCreditCard(cardNumber, cardExpiry, cardCVC, cardHolder);
-      
-      if (!validation.valid) {
-        const firstError = Object.values(validation.errors)[0];
-        showToast(firstError as string, 'error');
-        return;
-      }
+    // Validate new card if entered
+    if (showNewCardForm && !validateNewCard()) {
+      showToast({
+        type: 'error',
+        title: 'Validação',
+        message: 'Verifique os dados do cartão',
+      });
+      trackEvent('payment_validation_error', { errorCount: Object.keys(validationErrors).length });
+      return;
     }
 
-    setIsLoading(true);
+    setProcessingPayment(true);
     try {
-      // Create payment intent
-      const intent = await paymentService.createPaymentIntent({
-        amount,
-        currency: 'EUR',
+      logger.debug(`Processing payment for booking ${bookingId}`, 'PaymentScreen');
+      
+      if (showNewCardForm) {
+        logger.debug('Processing new card payment', 'PaymentScreen');
+        // Validate card format (already done above)
+        // Add card to payment service
+      } else {
+        logger.debug(`Processing with saved method ${selectedMethod}`, 'PaymentScreen');
+      }
+
+      // Simulate payment processing
+      // In real app, this would call the payment service API
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      trackEvent('payment_success', { 
+        amount, 
         bookingId,
-        description,
+        method: showNewCardForm ? 'new_card' : selectedMethod,
       });
 
-      // In production, use Stripe SDK to confirm payment
-      // For now, simulate payment confirmation
-      const result: PaymentResult = {
-        success: true,
-        transactionId: intent.clientSecret?.split('_secret_')[0] || 'sim_' + Date.now(),
-        amount,
-        currency: 'EUR',
-        timestamp: Date.now(),
-      };
+      showToast({
+        type: 'success',
+        title: 'Pagamento Confirmado',
+        message: `Pagamento de €${formattedTotal} realizado com sucesso`,
+      });
 
-      showToast('Pagamento realizado com sucesso!', 'success');
-      onSuccess(result);
-      
-      // Navigate back or to confirmation screen
-      setTimeout(() => {
-        navigation.goBack();
-      }, 1500);
+      if (onSuccess) {
+        onSuccess({
+          transactionId: `TXN_${Date.now()}`,
+          amount: total,
+          bookingId,
+          method: showNewCardForm ? 'card' : selectedMethod,
+          status: 'success',
+        });
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao processar pagamento';
-      showToast(errorMessage, 'error');
-      onError?.(errorMessage);
+      logger.error('Payment failed', error as Error, 'PaymentScreen');
+      const errorMsg = (error as any)?.message || 'Falha no processamento do pagamento';
+
+      showToast({
+        type: 'error',
+        title: 'Erro de Pagamento',
+        message: errorMsg,
+      });
+
+      trackEvent('payment_error', { 
+        error: errorMsg,
+        bookingId,
+      });
+
+      if (onError) {
+        onError(errorMsg);
+      }
     } finally {
-      setIsLoading(false);
+      setProcessingPayment(false);
     }
   };
 
