@@ -69,6 +69,7 @@ export interface AvailableSlot {
 class BookingService {
   /**
    * Fetch all bookings for the authenticated user
+   * Returns fallback empty array on network errors
    */
   async getBookings(filters?: { status?: string; from?: string; to?: string }): Promise<Booking[]> {
     try {
@@ -77,6 +78,13 @@ class BookingService {
       
       const bookings = response.data?.data || response.data || [];
       logger.logApiCall('GET', '/bookings', response.status, 0);
+      
+      // Validate that bookings is an array
+      if (!Array.isArray(bookings)) {
+        console.warn('Invalid bookings response format, returning empty array');
+        return [];
+      }
+      
       return bookings;
     } catch (error) {
       logger.warn('Failed to fetch bookings from API, using mock data', 'BookingService', error);

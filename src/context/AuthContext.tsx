@@ -63,8 +63,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     try {
       // Validate email and password before sending request
-      if (!email || !password) {
-        throw new Error('Email and password are required');
+      if (!email?.trim() || !password?.trim()) {
+        throw new Error('Email e password são obrigatórios');
+      }
+
+      // Basic validation
+      const { validateEmail } = require('../utils/validation');
+      if (!validateEmail(email)) {
+        throw new Error('Email inválido. Verifique o formato');
+      }
+
+      if (password.length < 6) {
+        throw new Error('Password inválido');
       }
 
       const response = await api.post('/auth/login', { email, password });
@@ -114,22 +124,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Import validation from utils
       const { validateEmail, validatePassword, validateName } = require('../utils/validation');
 
-      // Validate inputs
-      if (!email || !password || !name) {
-        throw new Error('All fields are required');
+      // Validate inputs before API call
+      if (!email?.trim() || !password?.trim() || !name?.trim()) {
+        const missingFields = [];
+        if (!email?.trim()) missingFields.push('email');
+        if (!password?.trim()) missingFields.push('password');
+        if (!name?.trim()) missingFields.push('name');
+        throw new Error(`Os seguintes campos são obrigatórios: ${missingFields.join(', ')}`);
       }
 
       if (!validateEmail(email)) {
-        throw new Error('Invalid email format');
+        throw new Error('Email inválido. Verifique o formato (ex: user@example.com)');
       }
 
       if (!validateName(name)) {
-        throw new Error('Name must be at least 2 characters');
+        throw new Error('Nome deve ter pelo menos 2 caracteres e não pode conter números');
       }
 
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.valid) {
-        throw new Error(passwordValidation.errors[0]);
+        // Return first error as user-friendly message
+        const firstError = passwordValidation.errors[0];
+        const friendlyError = firstError
+          .replace('Password must', 'A senha deve')
+          .replace('at least', 'no mínimo')
+          .replace('uppercase letter', 'uma letra maiúscula')
+          .replace('number', 'um número');
+        throw new Error(friendlyError);
       }
 
       const response = await api.post('/auth/register', { email, password, name });
