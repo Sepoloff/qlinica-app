@@ -62,11 +62,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
 
     try {
+      // Validate email and password before sending request
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+
       const response = await api.post('/auth/login', { email, password });
       const { token, user: userData } = response.data;
 
       if (!token) {
         throw new Error('No token received from server');
+      }
+
+      if (!userData) {
+        throw new Error('No user data received from server');
       }
 
       // Save token and user data
@@ -75,7 +84,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setUser(userData);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+      let errorMessage = 'Login failed';
+      
+      // Handle different error types
+      if (err.response?.status === 401) {
+        errorMessage = 'Invalid email or password';
+      } else if (err.response?.status === 429) {
+        errorMessage = 'Too many login attempts. Please try again later';
+      } else if (err.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -88,16 +111,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setError(null);
 
     try {
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      // Import validation from utils
+      const { validateEmail, validatePassword, validateName } = require('../utils/validation');
+
+      // Validate inputs
+      if (!email || !password || !name) {
+        throw new Error('All fields are required');
+      }
+
+      if (!validateEmail(email)) {
         throw new Error('Invalid email format');
       }
 
-      // Validate password strength (min 8 chars, 1 uppercase, 1 number)
-      const passwordRegex = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
-      if (!passwordRegex.test(password)) {
-        throw new Error('Password must be at least 8 characters with uppercase letter and number');
+      if (!validateName(name)) {
+        throw new Error('Name must be at least 2 characters');
+      }
+
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.valid) {
+        throw new Error(passwordValidation.errors[0]);
       }
 
       const response = await api.post('/auth/register', { email, password, name });
@@ -107,13 +139,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('No token received from server');
       }
 
+      if (!userData) {
+        throw new Error('No user data received from server');
+      }
+
       // Save token and user data
       await authStorage.setToken(token);
       await userStorage.setProfile(userData);
 
       setUser(userData);
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Registration failed';
+      let errorMessage = 'Registration failed';
+
+      // Handle different error types
+      if (err.response?.status === 409) {
+        errorMessage = 'Email already registered. Please login instead';
+      } else if (err.response?.status === 422) {
+        errorMessage = 'Invalid registration data. Please check your inputs';
+      } else if (err.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {

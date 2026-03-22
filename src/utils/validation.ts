@@ -1,9 +1,11 @@
 /**
- * Email validation (RFC 5322 simplified)
+ * Email validation (RFC 5322 compliant)
+ * Matches standard email format with proper validation
  */
 export const validateEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  // RFC 5322 simplified but more comprehensive pattern
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  return emailRegex.test(email) && email.length <= 254;
 };
 
 /**
@@ -122,4 +124,53 @@ export const validateAuthFields = (
     valid: Object.keys(errors).length === 0,
     errors,
   };
+};
+
+/**
+ * Comprehensive booking date validation
+ */
+export const validateBookingDate = (date: Date, timeSlot?: string): {
+  valid: boolean;
+  error?: string;
+} => {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return { valid: false, error: 'Invalid date' };
+  }
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const bookingDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  // Allow bookings up to 90 days in advance
+  const maxDate = new Date(today);
+  maxDate.setDate(maxDate.getDate() + 90);
+
+  if (bookingDate < today) {
+    return { valid: false, error: 'Cannot book in the past' };
+  }
+
+  if (bookingDate > maxDate) {
+    return { valid: false, error: 'Cannot book more than 90 days in advance' };
+  }
+
+  return { valid: true };
+};
+
+/**
+ * Validate time slot format (HH:MM)
+ */
+export const validateTimeSlot = (time: string): boolean => {
+  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  if (!timeRegex.test(time)) return false;
+
+  // Check if time is within business hours (9:00-18:00)
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours >= 9 && (hours < 18 || (hours === 18 && minutes === 0));
+};
+
+/**
+ * Validate booking notes (optional, max 500 chars)
+ */
+export const validateBookingNotes = (notes: string): boolean => {
+  return notes.length <= 500;
 };

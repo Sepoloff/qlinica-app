@@ -1,113 +1,98 @@
-/**
- * useErrorHandler Hook
- * Provides error handling utilities with consistent formatting
- */
+'use strict';
 
-import { useState, useCallback } from 'react';
-import {
-  parseError,
-  logError,
-  getErrorMessage,
-  isRetryable,
-  requiresReauth,
-  getFieldErrors,
-  AppError,
-} from '../utils/errorHandler';
-import { useAuth } from '../context/AuthContext';
-import { useQuickToast } from './useToast';
+import { useCallback, useState } from 'react';
+import { AxiosError } from 'axios';
 
-interface UseErrorHandlerReturn {
-  error: AppError | null;
-  setError: (error: any) => void;
-  clearError: () => void;
-  handleError: (error: any, context?: Record<string, any>) => void;
-  getDisplayMessage: () => string;
-  isRetryable: () => boolean;
-  getFieldErrors: () => Record<string, string>;
+export interface ErrorDetails {
+  message: string;
+  code?: string;
+  status?: number;
+  fields?: Record<string, string>;
+  timestamp?: number;
 }
 
 /**
- * Hook for centralized error handling
+ * Hook for comprehensive error handling
  */
-export const useErrorHandler = (): UseErrorHandlerReturn => {
-  const [error, setErrorState] = useState<AppError | null>(null);
-  const { logout } = useAuth();
-  const toast = useQuickToast();
+export const useErrorHandler = () => {
+  const [error, setError] = useState<ErrorDetails | null>(null);
 
-  const setError = useCallback((rawError: any) => {
-    const parsedError = parseError(rawError);
-    setErrorState(parsedError);
-    return parsedError;
-  }, []);
+  const parseError = useCallback((err: any): ErrorDetails => {
+    const errorObj: ErrorDetails = {
+      message: 'An unexpected error occurred',
+      timestamp: Date.now(),
+    };
 
-  const clearError = useCallback(() => {
-    setErrorState(null);
-  }, []);
+    if (err instanceof AxiosError) {
+      errorObj.status = err.response?.status;
 
-  const handleError = useCallback(
-    (rawError: any, context?: Record<string, any>) => {
-      const parsedError = parseError(rawError);
-      setErrorState(parsedError);
-
-      // Log error
-      logError(parsedError, context);
-
-      // Check if re-authentication is needed
-      if (requiresReauth(parsedError)) {
-        toast.error('Sessão expirada. Por favor, faça login novamente.');
-        logout();
-        return;
+      if (err.response?.data) {
+        const data = err.response.data as any;
+        errorObj.message = data.message || data.error || errorObj.message;
+        errorObj.code = data.code;
+        errorObj.fields = data.fields || data.errors;
       }
 
-      // Show toast notification
-      const message = getErrorMessage(parsedError);
-      toast.error(message);
-    },
-    [logout, toast]
-  );
+      // Handle specific HTTP status codes
+      switch (err.response?.status) {
+        case 400:
+          errorObj.message = errorObj.message || 'Invalid request data';
+          break;
+        case 401:
+          errorObj.message = 'Session expired. Please login again';
+          break;
+        case 403:
+          errorObj.message = 'You do not have permission to perform this action';
+          break;
+        case 404:
+          errorObj.message = 'Resource not found';
+          break;
+        case 409:
+          errorObj.message = 'This resource already exists';
+          break;
+        case 422:
+          errorObj.message = 'Validation failed. Please check your inputs';
+          break;
+        case 429:
+          errorObj.message = 'Too many requests. Please try again later';
+          break;
+        case 500:
+          errorObj.message = 'Server error. Please try again later';
+          break;
+        case 503:
+          errorObj.message = 'Service temporarily unavailable. Please try again later';
+          break;
+      }
+    } else if (err instanceof Error) {
+      errorObj.message = err.message;
+    } else if (typeof err === 'string') {
+      errorObj.message = err;
+    }
 
-  const getDisplayMessage = useCallback((): string => {
-    return error ? getErrorMessage(error) : '';
-  }, [error]);
+    return errorObj;
+  }, []);
 
-  const isRetryableError = useCallback((): boolean => {
-    return error ? isRetryable(error) : false;
-  }, [error]);
+  const handleError = useCallback((err: any): ErrorDetails => {
+    const errorDetails = parseError(err);
+    setError(errorDetails);
+    return errorDetails;
+  }, [parseError]);
 
-  const getFieldErrorsMap = useCallback((): Record<string, string> => {
-    return error ? getFieldErrors(error) : {};
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const hasFieldError = useCallback((fieldName: string): string | undefined => {
+    return error?.fields?.[fieldName];
   }, [error]);
 
   return {
     error,
-    setError,
-    clearError,
-    handleError,
-    getDisplayMessage,
-    isRetryable: isRetryableError,
-    getFieldErrors: getFieldErrorsMap,
-  };
-};
-
-/**
- * Simplified hook for just displaying errors
- */
-export const useSimpleErrorHandler = () => {
-  const [errorMessage, setErrorMessage] = useState<string>('');
-
-  const handleError = useCallback((error: any) => {
-    const parsedError = parseError(error);
-    setErrorMessage(getErrorMessage(parsedError));
-  }, []);
-
-  const clearError = useCallback(() => {
-    setErrorMessage('');
-  }, []);
-
-  return {
-    errorMessage,
     handleError,
     clearError,
-    hasError: errorMessage.length > 0,
+    hasFieldError,
+    isNetworkError: error?.status === undefined && error?.message.includes('network'),
+    isAuthError: error?.status === 401 || error?.status === 403,
+    isValidationError: error?.status === 422 || error?.status === 400,
   };
 };
