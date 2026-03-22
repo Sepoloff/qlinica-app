@@ -22,7 +22,10 @@ export { InputField } from './InputField';
 // Loading & Placeholders
 export { LoadingSpinner } from './LoadingSpinner';
 export { SkeletonLoader } from './SkeletonLoader';
+export { LoadingOverlay } from './LoadingOverlay';
 
 // Status & Feedback
 export { EmptyState } from './EmptyState';
 export { TabBarIcon } from './TabBarIcon';
+export { ErrorFallback } from './ErrorFallback';
+export { OfflineBanner } from './OfflineBanner';
