@@ -1,7 +1,8 @@
 'use strict';
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, LinearGradient } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 

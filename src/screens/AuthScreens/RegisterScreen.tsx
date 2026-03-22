@@ -1,4 +1,5 @@
 'use strict';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useState } from 'react';
 import {
@@ -8,7 +9,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInput,
-  LinearGradient,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,

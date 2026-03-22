@@ -1,7 +1,8 @@
 'use strict';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LinearGradient, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { SERVICES } from '../constants/Data';

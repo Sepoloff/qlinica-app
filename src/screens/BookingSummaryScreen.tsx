@@ -1,17 +1,21 @@
 'use strict';
+import { LinearGradient } from 'expo-linear-gradient';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
   ScrollView, 
   TouchableOpacity, 
   StyleSheet, 
-  LinearGradient,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
+import { useBooking } from '../context/BookingContext';
+import { useToast } from '../context/ToastContext';
+import bookingService from '../services/bookingService';
 
 export interface BookingSummaryParams {
   service: {
@@ -34,9 +38,12 @@ export interface BookingSummaryParams {
 export default function BookingSummaryScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { bookingData, resetBooking } = useBooking();
+  const { showToast } = useToast();
+  const [isConfirming, setIsConfirming] = useState(false);
   
-  // Extract params from route
-  const { service, therapist, date, time } = (route.params || {}) as Partial<BookingSummaryParams>;
+  // Extract params from route or context
+  const { service, therapist, date, time } = (route.params || bookingData) as Partial<BookingSummaryParams>;
 
   if (!service || !therapist || !date || !time) {
     return (
@@ -54,6 +61,37 @@ export default function BookingSummaryScreen() {
 
   const handleEditBooking = () => {
     navigation.goBack();
+  };
+
+  const handleConfirmBooking = async () => {
+    setIsConfirming(true);
+    try {
+      // Create booking via API
+      const bookingData = {
+        serviceId: service.id.toString(),
+        therapistId: therapist.id.toString(),
+        date: date,
+        time: time,
+      };
+
+      await bookingService.createBooking(bookingData);
+
+      // Reset booking context
+      resetBooking();
+
+      // Show success toast
+      showToast('Consulta agendada com sucesso!', 'success', 3000);
+
+      // Navigate to bookings
+      setTimeout(() => {
+        navigation.navigate('bookings' as never);
+      }, 1000);
+    } catch (error: any) {
+      console.error('Error confirming booking:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Falha ao agendar consulta';
+      showToast(errorMessage, 'error', 4000);
+      setIsConfirming(false);
+    }
   };
 
   return (
@@ -163,21 +201,15 @@ export default function BookingSummaryScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => {
-            Alert.alert(
-              'Agendamento Confirmado',
-              'Sua consulta foi agendada com sucesso!\n\nReceberá em breve uma confirmação por email e SMS.',
-              [
-                {
-                  text: 'Ir para Marcações',
-                  onPress: () => navigation.navigate('bookings' as never),
-                }
-              ]
-            );
-          }}
+          style={[styles.primaryButton, isConfirming && styles.buttonDisabled]}
+          onPress={handleConfirmBooking}
+          disabled={isConfirming}
         >
-          <Text style={styles.primaryButtonText}>Confirmar Agendamento</Text>
+          {isConfirming ? (
+            <ActivityIndicator size="small" color={COLORS.primaryDark} />
+          ) : (
+            <Text style={styles.primaryButtonText}>Confirmar Agendamento</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -411,6 +443,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.gold,
     fontFamily: 'DMSans',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   errorText: {
     fontSize: 14,

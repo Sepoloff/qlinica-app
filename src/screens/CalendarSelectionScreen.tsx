@@ -1,4 +1,5 @@
 'use strict';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -7,7 +8,7 @@ import {
   ScrollView, 
   TouchableOpacity, 
   StyleSheet, 
-  LinearGradient, 
+  
   ActivityIndicator,
   Alert
 } from 'react-native';

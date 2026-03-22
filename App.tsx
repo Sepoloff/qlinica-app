@@ -87,8 +87,6 @@ function RootNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        animationEnabled: true,
-        cardStyle: { backgroundColor: '#2C3E50' },
       }}
     >
       {!isAuthenticated ? (
@@ -98,7 +96,6 @@ function RootNavigator() {
             name="Login"
             component={LoginScreen}
             options={{
-              animationEnabled: false,
             }}
           />
           <Stack.Screen
@@ -116,7 +113,6 @@ function RootNavigator() {
             name="MainTabs"
             component={TabNavigator}
             options={{
-              animationEnabled: false,
             }}
           />
           <Stack.Screen
@@ -158,7 +154,7 @@ export default function App() {
     <AuthProvider>
       <BookingProvider>
         <ToastProvider>
-          <StatusBar barStyle="light-content" />
+          <StatusBar style="light" />
           <NavigationContainer>
             <RootNavigator />
           </NavigationContainer>

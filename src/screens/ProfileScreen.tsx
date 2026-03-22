@@ -71,6 +71,7 @@ export default function ProfileScreen() {
         },
       ]
     );
+  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
