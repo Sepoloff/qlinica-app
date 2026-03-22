@@ -15,6 +15,8 @@ import BookingSummaryScreen from './src/screens/BookingSummaryScreen';
 import BookingDetailsScreen from './src/screens/BookingDetailsScreen';
 import LoginScreen from './src/screens/AuthScreens/LoginScreen';
 import RegisterScreen from './src/screens/AuthScreens/RegisterScreen';
+import ForgotPasswordScreen from './src/screens/AuthScreens/ForgotPasswordScreen';
+import ResetPasswordScreen from './src/screens/AuthScreens/ResetPasswordScreen';
 import { TabBarIcon } from './src/components/TabBarIcon';
 import { ToastDisplay } from './src/components/ToastDisplay';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
@@ -129,6 +131,20 @@ function RootNavigator() {
           <Stack.Screen
             name="Register"
             component={RegisterScreen}
+            options={{
+              presentation: 'card',
+            }}
+          />
+          <Stack.Screen
+            name="ForgotPassword"
+            component={ForgotPasswordScreen}
+            options={{
+              presentation: 'card',
+            }}
+          />
+          <Stack.Screen
+            name="ResetPassword"
+            component={ResetPasswordScreen}
             options={{
               presentation: 'card',
             }}
