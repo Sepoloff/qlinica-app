@@ -95,9 +95,9 @@ export const InputField: React.FC<InputFieldProps> = ({
         <TextInput
           style={[
             styles.input,
-            icon && { paddingLeft: 0 } as TextStyle,
+            icon ? { paddingLeft: 0 } : {},
             inputStyle,
-          ]}
+          ] as any}
           placeholder={placeholder}
           placeholderTextColor={COLORS.grey}
           value={value}

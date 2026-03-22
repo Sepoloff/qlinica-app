@@ -194,7 +194,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
       {/* Save Button */}
       {showSaveButton && (
         <Button
-          label={isSaving ? 'Guardando...' : 'Guardar Preferências'}
+          title={isSaving ? 'Guardando...' : 'Guardar Preferências'}
           onPress={handleSave}
           loading={isSaving}
           disabled={isSaving || isLoading}

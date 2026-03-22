@@ -19,11 +19,14 @@ export default function HomeScreen() {
   const { trackScreenView, trackEvent, trackError } = useAnalytics();
   
   // Use API hooks
-  const { services, isLoading: servicesLoading, error: servicesError, refresh: refreshServices } = useServices();
-  const { bookings, isLoading: bookingsLoading, error: bookingsError, fetchBookings } = useBookingAPI();
+  const { services = [], isLoading: servicesLoading, error: servicesError, refresh: refreshServices } = useServices();
+  const { bookings = [], isLoading: bookingsLoading, error: bookingsError, fetchBookings } = useBookingAPI();
   
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Combined loading state
+  const isLoading = authLoading || servicesLoading || bookingsLoading;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -148,7 +151,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {loading && !bookings.length ? (
+        {isLoading && !bookings.length ? (
           <>
             {[0, 1, 2].map((i) => (
               <View key={i} style={{ marginBottom: 12 }}>
@@ -160,7 +163,7 @@ export default function HomeScreen() {
               </View>
             ))}
           </>
-        ) : bookings.filter(b => b.status === 'confirmed').length > 0 ? (
+        ) : bookings && bookings.filter(b => b.status === 'confirmed').length > 0 ? (
           bookings
             .filter(b => b.status === 'confirmed')
             .slice(0, 3)
@@ -197,14 +200,14 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Os nossos serviços</Text>
         <View style={styles.servicesGrid}>
-          {loading && !services.length ? (
+          {isLoading && !services.length ? (
             <>
               <SkeletonLoader width="31%" height={90} borderRadius={14} />
               <SkeletonLoader width="31%" height={90} borderRadius={14} />
               <SkeletonLoader width="31%" height={90} borderRadius={14} />
             </>
           ) : (
-            (services.length > 0 ? services : convertMockServices()).map((service) => (
+            (services && services.length > 0 ? services : convertMockServices()).map((service) => (
               <TouchableOpacity 
                 key={service.id} 
                 style={styles.serviceCard}

@@ -100,8 +100,8 @@ export const FormField: React.FC<FormFieldProps> = ({
           style={[
             styles.input,
             multiline && styles.inputMultiline,
-            icon && styles.inputWithIcon,
-          ]}
+            icon ? styles.inputWithIcon : {},
+          ] as any}
           placeholder={placeholder}
           placeholderTextColor="#8895a0"
           value={value}

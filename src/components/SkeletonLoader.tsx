@@ -73,7 +73,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
             style={[
               styles.skeleton,
               styles.circle,
-              { width: height, height, opacity },
+              { width: height, height, opacity } as any,
               style,
             ]}
           />
@@ -84,7 +84,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
             style={[
               styles.skeleton,
               styles.card,
-              { opacity },
+              { opacity } as any,
               style,
             ]}
           />
@@ -94,7 +94,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
           <Animated.View
             style={[
               styles.skeleton,
-              { width, height, borderRadius, opacity },
+              { width, height, borderRadius, opacity } as any,
               style,
             ]}
           />
@@ -107,7 +107,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
 
 const styles = StyleSheet.create({
   skeleton: {
-    backgroundColor: COLORS.skeletonBg || '#E8E8E8',
+    backgroundColor: COLORS.greyLight || '#E8E8E8',
   },
   circle: {
     borderRadius: 999,
@@ -134,21 +134,33 @@ SkeletonLoader.Circle = (props: SkeletonLoaderProps) => (
 );
 
 // Skeleton Card
-SkeletonLoader.Card = (props: SkeletonLoaderProps & { lines?: number }) => (
-  <View style={styles.cardContainer}>
-    <SkeletonLoader height={200} width="100%" borderRadius={12} {...props} />
-    <View style={styles.cardContent}>
-      {Array.from({ length: props.lines || 2 }).map((_, i) => (
-        <SkeletonLoader
-          key={i}
-          height={14}
-          width={i === 0 ? '80%' : '100%'}
-          style={{ marginBottom: 8 }}
-        />
-      ))}
+SkeletonLoader.Card = (props: SkeletonLoaderProps & { lines?: number }) => {
+  const styles_local = StyleSheet.create({
+    cardContainer: {
+      marginBottom: 16,
+      borderRadius: 12,
+      overflow: 'hidden',
+    },
+    cardContent: {
+      padding: 12,
+    },
+  });
+  return (
+    <View style={styles_local.cardContainer}>
+      <SkeletonLoader height={200} width="100%" borderRadius={12} {...props} />
+      <View style={styles_local.cardContent}>
+        {Array.from({ length: props.lines || 2 }).map((_, i) => (
+          <SkeletonLoader
+            key={i}
+            height={14}
+            width={i === 0 ? '80%' : '100%'}
+            style={{ marginBottom: 8 }}
+          />
+        ))}
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 // Skeleton Booking Item
 SkeletonLoader.BookingItem = (props: { count?: number }) => (
@@ -198,19 +210,11 @@ SkeletonLoader.List = (props: SkeletonGroup) => {
 };
 
 const styles_extended = StyleSheet.create({
-  cardContainer: {
-    marginBottom: 16,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  cardContent: {
-    padding: 12,
-  },
   bookingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.primaryLight,
     borderRadius: 8,
     marginBottom: 8,
   },
@@ -218,7 +222,7 @@ const styles_extended = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.primaryLight,
     borderRadius: 8,
   },
 });
