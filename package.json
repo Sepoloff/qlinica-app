@@ -27,6 +27,7 @@
     "expo-image-picker": "~14.3.2",
     "expo-linear-gradient": "~12.3.0",
     "expo-notifications": "~0.20.1",
+    "expo-secure-store": "^55.0.9",
     "expo-splash-screen": "~0.20.5",
     "expo-status-bar": "~1.6.0",
     "firebase": "^12.11.0",

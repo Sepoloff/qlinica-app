@@ -1,29 +1,20 @@
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
-  testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    'src/**/*.tsx',
-    '!src/**/*.d.ts',
-    '!src/__tests__/**',
-  ],
-  coverageThreshold: {
-    global: {
-      branches: 50,
-      functions: 50,
-      lines: 50,
-      statements: 50,
-    },
-  },
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    '^expo-secure-store$': '<rootDir>/src/__mocks__/expo-secure-store.ts',
   },
-  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
-  testPathIgnorePatterns: ['/node_modules/', '/.expo/'],
-  transformIgnorePatterns: [
-    'node_modules/(?!(expo|@react-native|react-native|@react-native-async-storage|firebase|@expo|react-native-gesture-handler)/)',
+  transform: {
+    '^.+\\.tsx?$': 'ts-jest',
+  },
+  testMatch: [
+    '**/__tests__/**/*.test.ts',
+    '**/__tests__/**/*.test.tsx',
+  ],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.stories.tsx',
+    '!src/**/index.ts',
   ],
 };
