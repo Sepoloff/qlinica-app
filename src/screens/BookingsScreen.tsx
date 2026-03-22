@@ -107,20 +107,34 @@ export default function BookingsScreen() {
   const handleRescheduleBooking = (booking: Booking) => {
     (Alert.alert as any)(
       'Reagendar consulta',
-      'Deseja reagendar esta consulta para outra data?',
+      `Deseja reagendar esta consulta para outra data?\n\nData atual: ${booking.date} às ${booking.time}`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
           text: 'Reagendar',
-          onPress: () => {
-            // Navigate to calendar selection with booking context
-            // This will require updating BookingContext to handle reschedule mode
-            (navigation.navigate as any)('CalendarSelection', { 
-              isReschedule: true, 
-              bookingId: booking.id,
-              therapistId: booking.therapistId,
-              serviceId: booking.serviceId
-            });
+          onPress: async () => {
+            try {
+              // Navigate to calendar selection for rescheduling
+              // The booking details will be available in the screen via route.params
+              (navigation.navigate as any)('BookingStack', {
+                screen: 'CalendarSelection',
+                params: { 
+                  isReschedule: true, 
+                  bookingId: booking.id,
+                  bookingToReschedule: {
+                    therapistId: booking.therapistId,
+                    serviceId: booking.serviceId,
+                    currentDate: booking.date,
+                    currentTime: booking.time
+                  }
+                },
+              });
+              
+              toast.info('ℹ️ Selecione uma nova data e horário para a consulta');
+            } catch (error) {
+              console.error('Error initiating reschedule:', error);
+              toast.error('❌ Erro ao iniciar reagendamento');
+            }
           },
         },
       ]

@@ -18,6 +18,7 @@ import RegisterScreen from './src/screens/AuthScreens/RegisterScreen';
 import { TabBarIcon } from './src/components/TabBarIcon';
 import { ToastDisplay } from './src/components/ToastDisplay';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { NetworkStatusBar } from './src/components/NetworkStatusBar';
 import { BookingProvider } from './src/context/BookingContext';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
@@ -175,6 +176,7 @@ export default function App() {
           <ToastProvider>
             <NotificationProvider>
               <StatusBar style="light" />
+              <NetworkStatusBar />
               <NavigationContainer>
                 <RootNavigator />
               </NavigationContainer>

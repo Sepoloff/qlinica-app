@@ -36,38 +36,42 @@ export const handleAPIError = (error: any): APIError => {
       ? data
       : data?.message || data?.error || `Error ${status}`;
 
-  // Map common HTTP errors
+  // Map common HTTP errors with Portuguese messages
   const errorMap: Record<number, { message: string; code: string }> = {
     400: {
-      message: 'Invalid request. Please check your input.',
+      message: 'Pedido inválido. Verifique os dados inseridos.',
       code: 'BAD_REQUEST',
     },
     401: {
-      message: 'Unauthorized. Please log in again.',
+      message: 'Sessão expirada. Faça login novamente.',
       code: 'UNAUTHORIZED',
     },
     403: {
-      message: 'Forbidden. You do not have permission.',
+      message: 'Sem permissão para executar esta ação.',
       code: 'FORBIDDEN',
     },
     404: {
-      message: 'Resource not found.',
+      message: 'Recurso não encontrado.',
       code: 'NOT_FOUND',
     },
     409: {
-      message: 'Conflict. This resource already exists.',
+      message: 'Este recurso já existe ou entrou em conflito.',
       code: 'CONFLICT',
     },
+    422: {
+      message: 'Dados inválidos. Verifique os campos preenchidos.',
+      code: 'UNPROCESSABLE_ENTITY',
+    },
     429: {
-      message: 'Too many requests. Please try again later.',
+      message: 'Muitos pedidos. Tente novamente em alguns instantes.',
       code: 'RATE_LIMITED',
     },
     500: {
-      message: 'Server error. Please try again later.',
+      message: 'Erro no servidor. Tente novamente mais tarde.',
       code: 'SERVER_ERROR',
     },
     503: {
-      message: 'Service unavailable. Please try again later.',
+      message: 'Serviço indisponível. Tente novamente mais tarde.',
       code: 'SERVICE_UNAVAILABLE',
     },
   };

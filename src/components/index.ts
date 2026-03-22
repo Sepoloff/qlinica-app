@@ -12,6 +12,7 @@ export { Rating, RatingListItem } from './Rating';
 export { AlertModal } from './AlertModal';
 export { LoadingScreen } from './LoadingScreen';
 export { ErrorBoundary } from './ErrorBoundary';
+export { NetworkStatusBar } from './NetworkStatusBar';
 
 // Existing Components (for reference)
 export { BookingCard } from './BookingCard';
