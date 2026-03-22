@@ -1,244 +1,274 @@
+'use strict';
+
 /**
- * Error Handler Utility
- * Centralized error handling and formatting for user-facing messages
+ * Comprehensive Error Handling Utilities
+ * 
+ * Provides typed error responses, error categorization,
+ * and user-friendly error messages
  */
 
-import { AxiosError } from 'axios';
+export type ErrorType = 
+  | 'VALIDATION'
+  | 'NETWORK'
+  | 'AUTHENTICATION'
+  | 'AUTHORIZATION'
+  | 'SERVER'
+  | 'NOT_FOUND'
+  | 'CONFLICT'
+  | 'TIMEOUT'
+  | 'UNKNOWN';
 
 export interface AppError {
-  code: string;
+  type: ErrorType;
   message: string;
   userMessage: string;
   statusCode?: number;
+  originalError?: Error;
   retryable: boolean;
-  details?: Record<string, any>;
+  context?: Record<string, any>;
 }
 
 /**
- * Parse various error types into consistent AppError format
+ * Categorize error and provide user-friendly message
  */
-export const parseError = (error: any): AppError => {
-  // Handle Axios errors
-  if (error.isAxiosError || (error.response && error.config)) {
-    return parseAxiosError(error as AxiosError);
-  }
-
-  // Handle standard Error objects
-  if (error instanceof Error) {
+export const handleError = (error: any, context?: string): AppError => {
+  // Network errors
+  if (error.code === 'ECONNREFUSED' || error.message?.includes('Network')) {
     return {
-      code: 'ERROR',
+      type: 'NETWORK',
       message: error.message,
-      userMessage: formatErrorMessage(error.message),
-      retryable: false,
+      userMessage: 'Problema de conexão. Verifique sua internet.',
+      retryable: true,
+      originalError: error,
+      context: { context },
     };
   }
 
-  // Handle string errors
-  if (typeof error === 'string') {
+  // Timeout errors
+  if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
     return {
-      code: 'ERROR',
-      message: error,
-      userMessage: formatErrorMessage(error),
-      retryable: false,
+      type: 'TIMEOUT',
+      message: error.message,
+      userMessage: 'Solicitação expirou. Tente novamente.',
+      retryable: true,
+      originalError: error,
+      context: { context },
     };
   }
 
-  // Handle unknown errors
+  // API errors
+  if (error.response) {
+    const status = error.response.status;
+    const data = error.response.data;
+
+    switch (status) {
+      case 400:
+        return {
+          type: 'VALIDATION',
+          message: data?.message || 'Validação falhou',
+          userMessage: data?.message || 'Verifique os dados enviados.',
+          statusCode: status,
+          retryable: false,
+          originalError: error,
+          context: { context, validation: data?.errors },
+        };
+
+      case 401:
+        return {
+          type: 'AUTHENTICATION',
+          message: 'Unauthorized',
+          userMessage: 'Sessão expirada. Faça login novamente.',
+          statusCode: status,
+          retryable: true,
+          originalError: error,
+          context: { context },
+        };
+
+      case 403:
+        return {
+          type: 'AUTHORIZATION',
+          message: 'Forbidden',
+          userMessage: 'Você não tem permissão para esta ação.',
+          statusCode: status,
+          retryable: false,
+          originalError: error,
+          context: { context },
+        };
+
+      case 404:
+        return {
+          type: 'NOT_FOUND',
+          message: 'Not found',
+          userMessage: 'Recurso não encontrado.',
+          statusCode: status,
+          retryable: false,
+          originalError: error,
+          context: { context },
+        };
+
+      case 409:
+        return {
+          type: 'CONFLICT',
+          message: 'Conflict',
+          userMessage: data?.message || 'Conflito ao processar solicitação.',
+          statusCode: status,
+          retryable: false,
+          originalError: error,
+          context: { context },
+        };
+
+      case 500:
+      case 502:
+      case 503:
+        return {
+          type: 'SERVER',
+          message: `Server error ${status}`,
+          userMessage: 'Servidor indisponível. Tente mais tarde.',
+          statusCode: status,
+          retryable: true,
+          originalError: error,
+          context: { context },
+        };
+
+      default:
+        return {
+          type: 'SERVER',
+          message: data?.message || `HTTP ${status}`,
+          userMessage: 'Erro ao processar solicitação.',
+          statusCode: status,
+          retryable: true,
+          originalError: error,
+          context: { context },
+        };
+    }
+  }
+
+  // Generic error
   return {
-    code: 'UNKNOWN_ERROR',
-    message: 'Unknown error occurred',
-    userMessage: 'Ocorreu um erro desconhecido. Tente novamente.',
+    type: 'UNKNOWN',
+    message: error.message || 'Unknown error',
+    userMessage: 'Algo deu errado. Tente novamente.',
     retryable: true,
+    originalError: error,
+    context: { context },
   };
 };
 
 /**
- * Parse Axios/HTTP errors
+ * Retry logic with exponential backoff
  */
-const parseAxiosError = (error: AxiosError): AppError => {
-  const status = error.response?.status;
-  const data = error.response?.data as any;
+export const retryAsync = async <T,>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1000,
+  onRetry?: (attempt: number, error: Error) => void
+): Promise<T> => {
+  let lastError: Error;
 
-  // Network error
-  if (!error.response) {
-    return {
-      code: 'NETWORK_ERROR',
-      message: 'Network request failed',
-      userMessage: 'Erro de rede. Verifique sua conexão e tente novamente.',
-      retryable: true,
-      details: {
-        originalError: error.message,
-      },
-    };
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      lastError = error;
+      onRetry?.(attempt + 1, error);
+
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
   }
 
-  // Map specific HTTP status codes
-  switch (status) {
-    case 400:
+  throw lastError!;
+};
+
+/**
+ * Safe async execution with error handling
+ */
+export const safeAsync = async <T,>(
+  fn: () => Promise<T>,
+  onError?: (error: AppError) => void
+): Promise<{ data: T | null; error: AppError | null }> => {
+  try {
+    const data = await fn();
+    return { data, error: null };
+  } catch (error: any) {
+    const appError = handleError(error);
+    onError?.(appError);
+    return { data: null, error: appError };
+  }
+};
+
+/**
+ * Error recovery suggestion based on error type
+ */
+export const getSuggestedAction = (error: AppError): {
+  action: 'retry' | 'reauth' | 'navigate' | 'wait' | 'contact';
+  label: string;
+  description: string;
+} => {
+  switch (error.type) {
+    case 'NETWORK':
       return {
-        code: 'VALIDATION_ERROR',
-        message: data?.message || 'Validation failed',
-        userMessage: data?.message || 'Os dados fornecidos são inválidos.',
-        statusCode: 400,
-        retryable: false,
-        details: data?.errors,
+        action: 'retry',
+        label: 'Tentar Novamente',
+        description: 'Verifique sua conexão e tente novamente',
       };
 
-    case 401:
+    case 'AUTHENTICATION':
       return {
-        code: 'UNAUTHORIZED',
-        message: 'Unauthorized',
-        userMessage: 'Sessão expirada. Por favor, faça login novamente.',
-        statusCode: 401,
-        retryable: false,
-        details: {
-          needsReauth: true,
-        },
+        action: 'reauth',
+        label: 'Fazer Login',
+        description: 'Sua sessão expirou',
       };
 
-    case 403:
+    case 'TIMEOUT':
       return {
-        code: 'FORBIDDEN',
-        message: 'Forbidden',
-        userMessage: 'Não tem permissão para realizar esta ação.',
-        statusCode: 403,
-        retryable: false,
+        action: 'retry',
+        label: 'Tentar Novamente',
+        description: 'Operação demorou muito',
       };
 
-    case 404:
+    case 'SERVER':
       return {
-        code: 'NOT_FOUND',
-        message: 'Resource not found',
-        userMessage: 'O recurso solicitado não foi encontrado.',
-        statusCode: 404,
-        retryable: false,
+        action: 'wait',
+        label: 'Aguardar',
+        description: 'Servidor indisponível, tente em alguns minutos',
       };
 
-    case 409:
+    case 'VALIDATION':
       return {
-        code: 'CONFLICT',
-        message: 'Resource conflict',
-        userMessage: data?.message || 'Este recurso já existe. Tente com dados diferentes.',
-        statusCode: 409,
-        retryable: false,
-      };
-
-    case 429:
-      return {
-        code: 'RATE_LIMITED',
-        message: 'Rate limited',
-        userMessage: 'Muitas requisições. Aguarde um momento e tente novamente.',
-        statusCode: 429,
-        retryable: true,
-        details: {
-          retryAfter: error.response?.headers['retry-after'],
-        },
-      };
-
-    case 500:
-      return {
-        code: 'SERVER_ERROR',
-        message: 'Internal server error',
-        userMessage: 'Erro do servidor. Tente novamente mais tarde.',
-        statusCode: 500,
-        retryable: true,
-      };
-
-    case 502:
-    case 503:
-    case 504:
-      return {
-        code: 'SERVICE_UNAVAILABLE',
-        message: `Service unavailable (${status})`,
-        userMessage: 'Serviço temporariamente indisponível. Tente novamente.',
-        statusCode: status,
-        retryable: true,
+        action: 'navigate',
+        label: 'Corrigir',
+        description: 'Verifique os dados do formulário',
       };
 
     default:
       return {
-        code: 'HTTP_ERROR',
-        message: data?.message || error.message || `HTTP ${status}`,
-        userMessage: data?.message || `Erro HTTP ${status}. Tente novamente.`,
-        statusCode: status,
-        retryable: status >= 500,
+        action: 'contact',
+        label: 'Contacte Suporte',
+        description: 'Algo inesperado aconteceu',
       };
   }
 };
 
 /**
- * Format error messages to Portuguese
+ * Format error for logging
  */
-const formatErrorMessage = (message: string): string => {
-  const translations: Record<string, string> = {
-    'Network Error': 'Erro de rede',
-    'Timeout': 'Tempo limite excedido',
-    'Invalid email': 'Email inválido',
-    'Password too weak': 'Palavra-passe muito fraca',
-    'User already exists': 'Utilizador já existe',
-    'Invalid credentials': 'Credenciais inválidas',
-    'Session expired': 'Sessão expirada',
-    'Unauthorized': 'Não autorizado',
-    'Not found': 'Não encontrado',
-    'Conflict': 'Conflito',
-  };
-
-  // Try to find translation
-  for (const [en, pt] of Object.entries(translations)) {
-    if (message.toLowerCase().includes(en.toLowerCase())) {
-      return pt;
-    }
-  }
-
-  // Return original message if no translation found
-  return message;
+export const formatErrorLog = (error: AppError): string => {
+  return `
+[${error.type}] ${error.message}
+User Message: ${error.userMessage}
+Status: ${error.statusCode || 'N/A'}
+Retryable: ${error.retryable}
+Context: ${JSON.stringify(error.context || {})}
+  `.trim();
 };
 
-/**
- * Log error for analytics
- */
-export const logError = (error: AppError, context?: Record<string, any>): void => {
-  const errorLog = {
-    timestamp: new Date().toISOString(),
-    code: error.code,
-    message: error.message,
-    statusCode: error.statusCode,
-    context,
-  };
-
-  console.error('[ERROR]', JSON.stringify(errorLog, null, 2));
-
-  // You can send this to analytics service here
-  // analyticsService.trackError(error, context);
-};
-
-/**
- * User-friendly error message based on error code
- */
-export const getErrorMessage = (error: AppError): string => {
-  return error.userMessage || 'Ocorreu um erro. Tente novamente.';
-};
-
-/**
- * Check if error is retryable
- */
-export const isRetryable = (error: AppError): boolean => {
-  return error.retryable;
-};
-
-/**
- * Check if error requires re-authentication
- */
-export const requiresReauth = (error: AppError): boolean => {
-  return error.code === 'UNAUTHORIZED' || error.details?.needsReauth === true;
-};
-
-/**
- * Validation error helper - extract field errors
- */
-export const getFieldErrors = (error: AppError): Record<string, string> => {
-  if (error.code === 'VALIDATION_ERROR' && error.details?.errors) {
-    return error.details.errors;
-  }
-  return {};
+export default {
+  handleError,
+  retryAsync,
+  safeAsync,
+  getSuggestedAction,
+  formatErrorLog,
 };
