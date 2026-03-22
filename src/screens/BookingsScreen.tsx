@@ -55,19 +55,20 @@ export default function BookingsScreen() {
     loadBookings(true);
   };
 
-  const handleCancelBooking = (bookingId: string) => {
+  const handleCancelBooking = async (bookingId: string) => {
     // Find the booking to get details
     const booking = bookings.find(b => b.id === bookingId);
     
-    Alert.alert(
-      'Cancelar consulta',
-      'Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser revertida.',
-      [
-        { text: 'Manter', style: 'cancel' },
-        {
-          text: 'Cancelar Consulta',
-          style: 'destructive',
-          onPress: async () => {
+    return new Promise<void>((resolve) => {
+      Alert.alert(
+        'Cancelar consulta',
+        'Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser revertida.',
+        [
+          { text: 'Manter', style: 'cancel', onPress: () => resolve() },
+          {
+            text: 'Cancelar Consulta',
+            style: 'destructive',
+            onPress: async () => {
             setCancelling(bookingId);
             try {
               await bookingService.cancelBooking(bookingId);
@@ -75,10 +76,11 @@ export default function BookingsScreen() {
               // Send cancellation notification
               if (booking) {
                 try {
+                  const dateTime = new Date(`${booking.date}T${booking.time}`);
                   await notifyCancellation(
-                    booking.therapistName || 'Terapeuta',
-                    booking.serviceName || 'Serviço',
-                    new Date(booking.dateTime || new Date())
+                    booking.therapistId || 'Terapeuta',
+                    booking.serviceId || 'Serviço',
+                    dateTime
                   );
                 } catch (notificationError) {
                   console.warn('Cancellation notification failed (non-critical):', notificationError);
@@ -93,15 +95,17 @@ export default function BookingsScreen() {
               toast.error(`❌ ${errorMsg}`);
             } finally {
               setCancelling(null);
+              resolve();
             }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    });
   };
 
   const handleRescheduleBooking = (booking: Booking) => {
-    Alert.alert(
+    (Alert.alert as any)(
       'Reagendar consulta',
       'Deseja reagendar esta consulta para outra data?',
       [
@@ -111,12 +115,12 @@ export default function BookingsScreen() {
           onPress: () => {
             // Navigate to calendar selection with booking context
             // This will require updating BookingContext to handle reschedule mode
-            navigation.navigate('CalendarSelection', { 
+            (navigation.navigate as any)('CalendarSelection', { 
               isReschedule: true, 
               bookingId: booking.id,
               therapistId: booking.therapistId,
               serviceId: booking.serviceId
-            } as any);
+            });
           },
         },
       ]
@@ -179,13 +183,17 @@ export default function BookingsScreen() {
       {/* Bookings List */}
       <View style={styles.bookingsList}>
         {loading ? (
-          <SkeletonLoader
-            width="100%"
-            height={100}
-            borderRadius={14}
-            count={4}
-            spacing={12}
-          />
+          <>
+            {[0, 1, 2, 3].map((i) => (
+              <View key={i} style={{ marginBottom: 12 }}>
+                <SkeletonLoader
+                  width="100%"
+                  height={100}
+                  borderRadius={14}
+                />
+              </View>
+            ))}
+          </>
         ) : filtered.length > 0 ? (
           filtered.map((booking) => {
             const mockBooking = BOOKINGS.find(b => String(b.id) === booking.id);

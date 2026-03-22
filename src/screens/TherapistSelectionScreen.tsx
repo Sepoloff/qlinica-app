@@ -84,13 +84,17 @@ export default function TherapistSelectionScreen() {
       {/* Therapists List */}
       <View style={styles.therapistsContainer}>
         {loading ? (
-          <SkeletonLoader
-            width="100%"
-            height={110}
-            borderRadius={14}
-            count={4}
-            spacing={12}
-          />
+          <>
+            {[0, 1, 2, 3].map((i) => (
+              <View key={i} style={{ marginBottom: 12 }}>
+                <SkeletonLoader
+                  width="100%"
+                  height={110}
+                  borderRadius={14}
+                />
+              </View>
+            ))}
+          </>
         ) : (therapists.length > 0 ? therapists : THERAPISTS).map((therapist) => (
           <TouchableOpacity
             key={therapist.id}

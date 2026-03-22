@@ -5,13 +5,13 @@
 
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { Colors } from '../constants/Colors';
-import Card from './Card';
-import Checkbox from './Checkbox';
-import Button from './Button';
-import Divider from './Divider';
-import TextField from './TextInput';
-import Badge from './Badge';
+import { COLORS } from '../constants/Colors';
+import { Card } from './Card';
+import { Checkbox } from './Checkbox';
+import { Button } from './Button';
+import { Divider } from './Divider';
+import { TextInput as TextField } from './TextInput';
+import { Badge } from './Badge';
 import { useNotifications } from '../context/NotificationContext';
 
 interface NotificationPreferencesProps {
@@ -71,7 +71,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
         {/* Master Toggle */}
         <View style={styles.section}>
           <View style={styles.headerRow}>
-            <Badge label="Importante" variant="warning" size="sm" />
+            <Badge label="Importante" variant="warning" size="small" />
           </View>
           <Checkbox
             label="Ativar Notificações"
@@ -85,7 +85,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
         {/* Booking Notifications */}
         <View style={styles.section}>
           <View style={styles.headerRow}>
-            <Badge label="Agendamentos" variant="info" size="sm" />
+            <Badge label="Agendamentos" variant="info" size="small" />
           </View>
 
           <Checkbox
@@ -101,7 +101,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
         {/* Appointment Reminders */}
         <View style={styles.section}>
           <View style={styles.headerRow}>
-            <Badge label="Lembretes" variant="success" size="sm" />
+            <Badge label="Lembretes" variant="success" size="small" />
           </View>
 
           <Checkbox
@@ -127,7 +127,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
                   <Badge
                     label={`Aviso: ${formatMinutes(localSettings.reminderTime)} antes`}
                     variant="info"
-                    size="sm"
+                    size="small"
                   />
                 </View>
               </View>
@@ -139,7 +139,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
         {/* Cancellation & Reschedule */}
         <View style={styles.section}>
           <View style={styles.headerRow}>
-            <Badge label="Alterações" variant="danger" size="sm" />
+            <Badge label="Alterações" variant="danger" size="small" />
           </View>
 
           <Checkbox
@@ -163,7 +163,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
         {/* Payment & Reviews */}
         <View style={styles.section}>
           <View style={styles.headerRow}>
-            <Badge label="Outros" variant="primary" size="sm" />
+            <Badge label="Outros" variant="primary" size="small" />
           </View>
 
           <Checkbox
@@ -186,7 +186,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
         {/* Error Message */}
         {error && (
           <View style={styles.errorMessage}>
-            <Badge label={`Erro: ${error}`} variant="danger" size="sm" />
+            <Badge label={`Erro: ${error}`} variant="danger" size="small" />
           </View>
         )}
       </Card>
@@ -199,7 +199,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
           loading={isSaving}
           disabled={isSaving || isLoading}
           variant="primary"
-          size="lg"
+          size="large"
           style={styles.saveButton}
         />
       )}
@@ -210,7 +210,7 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: COLORS.offWhite,
   },
   card: {
     margin: 16,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   reminderTimeSection: {
     marginTop: 16,
     marginLeft: 0,
-    backgroundColor: `${Colors.light.primary}08`,
+    backgroundColor: `${COLORS.primary}08`,
     padding: 12,
     borderRadius: 8,
   },
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   errorMessage: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: `${Colors.light.danger}10`,
+    backgroundColor: `${COLORS.danger}10`,
     borderRadius: 8,
   },
   saveButton: {

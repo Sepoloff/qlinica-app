@@ -135,13 +135,17 @@ export default function HomeScreen() {
         </View>
 
         {loading && !bookings.length ? (
-          <SkeletonLoader
-            width="100%"
-            height={90}
-            borderRadius={14}
-            count={3}
-            spacing={12}
-          />
+          <>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={{ marginBottom: 12 }}>
+                <SkeletonLoader
+                  width="100%"
+                  height={90}
+                  borderRadius={14}
+                />
+              </View>
+            ))}
+          </>
         ) : bookings.filter(b => b.status === 'confirmed').length > 0 ? (
           bookings
             .filter(b => b.status === 'confirmed')

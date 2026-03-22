@@ -230,7 +230,7 @@ export default function BookingSummaryScreen() {
           onPress={handleEditBooking}
           disabled={isConfirming}
           variant="secondary"
-          size="md"
+          size="medium"
           style={{ flex: 1 }}
         />
 
@@ -240,7 +240,7 @@ export default function BookingSummaryScreen() {
           disabled={isConfirming}
           loading={isConfirming}
           variant="primary"
-          size="md"
+          size="medium"
           style={{ flex: 1, marginLeft: 12 }}
         />
       </View>

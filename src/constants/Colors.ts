@@ -11,4 +11,6 @@ export const COLORS = {
   greyLight: '#c5ccd3',
   success: '#4CAF50',
   danger: '#E74C3C',
+  info: '#3498DB',
+  warning: '#F39C12',
 };

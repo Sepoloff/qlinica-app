@@ -2,14 +2,14 @@ import { useState, useCallback, useRef } from 'react';
 import { useQuickToast } from './useToast';
 import { APIError, handleAPIError, getErrorMessage } from '../services/errorHandler';
 
-interface UseAPIOptions {
+export interface UseAPIOptions {
   onError?: (error: APIError) => void;
   onSuccess?: () => void;
   showErrorToast?: boolean;
   showSuccessToast?: boolean;
 }
 
-interface UseAPIState<T> {
+export interface UseAPIState<T> {
   data: T | null;
   loading: boolean;
   error: APIError | null;

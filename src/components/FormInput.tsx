@@ -17,6 +17,7 @@ interface FormInputProps {
   numberOfLines?: number;
   onFocus?: () => void;
   onBlur?: () => void;
+  rightIcon?: React.ReactNode;
 }
 
 /**
@@ -37,6 +38,7 @@ export const FormInput: React.FC<FormInputProps> = ({
   numberOfLines = 1,
   onFocus,
   onBlur,
+  rightIcon,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -48,8 +50,8 @@ export const FormInput: React.FC<FormInputProps> = ({
       <View
         style={[
           styles.inputWrapper,
-          isFocused && styles.inputWrapperFocused,
-          error && styles.inputWrapperError,
+          isFocused ? styles.inputWrapperFocused : null,
+          error ? styles.inputWrapperError : null,
         ]}
       >
         <TextInput
@@ -79,7 +81,9 @@ export const FormInput: React.FC<FormInputProps> = ({
           }}
         />
 
-        {secureTextEntry && (
+        {rightIcon ? (
+          rightIcon
+        ) : secureTextEntry ? (
           <TouchableOpacity
             onPress={() => setShowPassword(!showPassword)}
             style={styles.eyeButton}
@@ -88,7 +92,7 @@ export const FormInput: React.FC<FormInputProps> = ({
               {showPassword ? '👁️' : '👁️‍🗨️'}
             </Text>
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
 
       {error && (

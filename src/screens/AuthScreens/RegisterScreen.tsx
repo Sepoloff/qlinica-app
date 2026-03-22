@@ -166,7 +166,7 @@ export default function RegisterScreen() {
                     style={[
                       styles.strengthFill,
                       {
-                        width: passwordStrength.score * 25 + '%',
+                        width: `${Math.min(100, passwordStrength.score * 25)}%` as any,
                         backgroundColor: getStrengthColor(),
                       },
                     ]}
@@ -207,8 +207,8 @@ export default function RegisterScreen() {
                   <Text style={styles.termsLink}>Termos e Condições</Text>
                 </Text>
               }
-              value={agreedToTerms}
-              onValueChange={setAgreedToTerms}
+              checked={agreedToTerms}
+              onPress={(value) => setAgreedToTerms(value)}
             />
           </View>
 
@@ -219,7 +219,7 @@ export default function RegisterScreen() {
             disabled={isLoading}
             loading={isLoading}
             variant="primary"
-            size="lg"
+            size="large"
             style={styles.registerButton}
           />
 

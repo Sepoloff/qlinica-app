@@ -7,6 +7,7 @@ export interface ValidationRule {
   pattern?: RegExp;
   custom?: (value: any) => boolean | string;
   message?: string;
+  validate?: (value: any) => string | null;
 }
 
 export interface ValidationRules {
@@ -17,12 +18,26 @@ export interface FormErrors {
   [field: string]: string;
 }
 
-export const useFormValidation = (rules: ValidationRules) => {
+interface FormValidationOptions {
+  initialValues: Record<string, any>;
+  validationRules: ValidationRules;
+}
+
+export const useFormValidation = (options: FormValidationOptions) => {
+  const { initialValues, validationRules: rules } = options;
+  const [values, setValues] = useState(initialValues);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<FormErrors>({});
 
   const validateField = useCallback((field: string, value: any): string | null => {
     const rule = rules[field];
     if (!rule) return null;
+
+    // Check custom validate method first (more complete validation)
+    if (rule.validate) {
+      const result = rule.validate(value);
+      if (result) return result;
+    }
 
     // Check required
     if (rule.required && (!value || value.toString().trim() === '')) {
@@ -91,10 +106,31 @@ export const useFormValidation = (rules: ValidationRules) => {
     setErrors({});
   }, []);
 
+  const setFieldValue = useCallback((field: string, value: any) => {
+    setValues(prev => ({ ...prev, [field]: value }));
+    setTouched(prev => ({ ...prev, [field]: true }));
+  }, []);
+
+  const validateForm = useCallback((): boolean => {
+    const newErrors = validate(values);
+    return Object.keys(newErrors).length === 0;
+  }, [values, validate]);
+
+  const resetForm = useCallback(() => {
+    setValues(initialValues);
+    setTouched({});
+    setErrors({});
+  }, [initialValues]);
+
   const isValid = Object.keys(errors).length === 0;
 
   return {
+    values,
     errors,
+    touched,
+    setFieldValue,
+    validateForm,
+    resetForm,
     validate,
     validateFieldValue,
     clearErrors,

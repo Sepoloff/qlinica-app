@@ -5,7 +5,7 @@ import { COLORS } from '../constants/Colors';
 interface CheckboxProps {
   checked: boolean;
   onPress: (value: boolean) => void;
-  label?: string;
+  label?: string | React.ReactNode;
   disabled?: boolean;
   style?: ViewStyle;
 }

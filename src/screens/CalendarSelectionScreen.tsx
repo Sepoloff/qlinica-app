@@ -268,13 +268,17 @@ export default function CalendarSelectionScreen() {
           </View>
 
           {loading ? (
-            <SkeletonLoader
-              width="100%"
-              height={50}
-              borderRadius={12}
-              count={4}
-              spacing={12}
-            />
+            <>
+              {[0, 1, 2, 3].map((i) => (
+                <View key={i} style={{ marginBottom: 12 }}>
+                  <SkeletonLoader
+                    width="100%"
+                    height={50}
+                    borderRadius={12}
+                  />
+                </View>
+              ))}
+            </>
           ) : (
             <View style={styles.timesGrid}>
               {availableTimes.length > 0 ? (
@@ -313,7 +317,7 @@ export default function CalendarSelectionScreen() {
           disabled={!selectedDate || !selectedTime || submitting}
           loading={submitting}
           variant="primary"
-          size="lg"
+          size="large"
         />
       </View>
 

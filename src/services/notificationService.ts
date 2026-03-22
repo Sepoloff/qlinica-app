@@ -13,7 +13,9 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
-  }),
+    shouldShowBanner: true,
+    shouldShowList: true,
+  } as any),
 });
 
 export interface NotificationPayload {
@@ -124,8 +126,9 @@ export async function sendLocalNotification(
         badge: 1,
       },
       trigger: {
+        type: 'timeInterval',
         seconds: delaySeconds,
-      },
+      } as any,
     });
 
     return notificationId;
@@ -163,8 +166,9 @@ export async function scheduleNotification(
         badge: 1,
       },
       trigger: {
+        type: 'timeInterval',
         seconds: secondsUntilTrigger,
-      },
+      } as any,
     });
 
     return notificationId;
@@ -199,7 +203,7 @@ export async function cancelAllNotifications(): Promise<void> {
 /**
  * Get all scheduled notifications
  */
-export async function getScheduledNotifications(): Promise<Notifications.Notification[]> {
+export async function getScheduledNotifications(): Promise<any[]> {
   try {
     return await Notifications.getAllScheduledNotificationsAsync();
   } catch (error) {

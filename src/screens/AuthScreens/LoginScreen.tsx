@@ -28,11 +28,14 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   
   const { errors, validate, validateFieldValue, isValid } = useFormValidation({
-    email: { ...emailRule, message: 'Email inválido' },
-    password: {
-      required: true,
-      minLength: 6,
-      message: 'Palavra-passe deve ter pelo menos 6 caracteres',
+    initialValues: { email: '', password: '' },
+    validationRules: {
+      email: { ...emailRule, message: 'Email inválido' },
+      password: {
+        required: true,
+        minLength: 6,
+        message: 'Palavra-passe deve ter pelo menos 6 caracteres',
+      },
     },
   });
 
@@ -119,7 +122,7 @@ export default function LoginScreen() {
             disabled={isLoading}
             loading={isLoading}
             variant="primary"
-            size="lg"
+            size="large"
             style={styles.loginButton}
           />
 

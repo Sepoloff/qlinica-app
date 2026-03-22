@@ -68,13 +68,17 @@ export default function ServiceSelectionScreen() {
       {/* Services Grid */}
       <View style={styles.servicesContainer}>
         {loading ? (
-          <SkeletonLoader
-            width="100%"
-            height={180}
-            borderRadius={16}
-            count={3}
-            spacing={16}
-          />
+          <>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={{ marginBottom: 16 }}>
+                <SkeletonLoader
+                  width="100%"
+                  height={180}
+                  borderRadius={16}
+                />
+              </View>
+            ))}
+          </>
         ) : (services.length > 0 ? services : convertMockServices()).map((service) => (
           <TouchableOpacity 
             key={service.id}

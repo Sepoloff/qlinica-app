@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, Modal, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
@@ -223,7 +223,7 @@ export default function ProfileScreen() {
           disabled={loggingOut}
           loading={loggingOut}
           variant="danger"
-          size="lg"
+          size="large"
           style={styles.logoutButton}
         />
       </View>
@@ -258,7 +258,7 @@ export default function ProfileScreen() {
                 onPress={() => setEditingPhone(false)}
                 disabled={savingPhone}
                 variant="secondary"
-                size="md"
+                size="medium"
                 style={{ flex: 1 }}
               />
               <Button
@@ -267,7 +267,7 @@ export default function ProfileScreen() {
                 disabled={savingPhone}
                 loading={savingPhone}
                 variant="primary"
-                size="md"
+                size="medium"
                 style={{ flex: 1, marginLeft: 12 }}
               />
             </View>
