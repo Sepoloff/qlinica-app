@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS, SERVICES } from '../constants/Data';
@@ -67,6 +67,15 @@ export default function HomeScreen() {
     loadData(true);
   };
 
+  const handleBookingNavigation = () => {
+    if (!user) {
+      Alert.alert('Autenticação', 'Por favor inicie sessão para agendar uma consulta');
+      navigation.navigate('loginStack' as never);
+      return;
+    }
+    navigation.navigate('ServiceSelection' as never);
+  };
+
   return (
     <ScrollView 
       style={styles.container} 
@@ -109,7 +118,7 @@ export default function HomeScreen() {
 
         <TouchableOpacity 
           style={styles.bookButton}
-          onPress={() => navigation.navigate('ServiceSelection' as never)}
+          onPress={handleBookingNavigation}
         >
           <Text style={styles.bookButtonText}>Agendar Consulta</Text>
         </TouchableOpacity>
@@ -151,7 +160,7 @@ export default function HomeScreen() {
             <Text style={styles.emptyStateText}>Nenhuma consulta agendada</Text>
             <TouchableOpacity 
               style={styles.emptyStateButton}
-              onPress={() => navigation.navigate('ServiceSelection' as never)}
+              onPress={handleBookingNavigation}
             >
               <Text style={styles.emptyStateButtonText}>Agendar agora</Text>
             </TouchableOpacity>
@@ -167,7 +176,7 @@ export default function HomeScreen() {
             <TouchableOpacity 
               key={service.id} 
               style={styles.serviceCard}
-              onPress={() => navigation.navigate('ServiceSelection' as never)}
+              onPress={handleBookingNavigation}
             >
               <Text style={styles.serviceIcon}>{service.icon || '✨'}</Text>
               <Text style={styles.serviceName}>{service.name}</Text>
