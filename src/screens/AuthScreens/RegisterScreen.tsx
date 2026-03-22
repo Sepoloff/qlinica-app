@@ -17,16 +17,19 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
+import { useQuickToast } from '../../hooks/useToast';
 import {
   validateEmail,
   validatePassword,
   validateName,
   getPasswordStrength,
 } from '../../utils/validation';
+import { FormInput } from '../../components/FormInput';
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
   const { register, isLoading, error, clearError } = useAuth();
+  const toast = useQuickToast();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -99,9 +102,10 @@ export default function RegisterScreen() {
 
     try {
       await register(email, password, name);
+      toast.success('✅ Conta criada com sucesso!');
       // Navigation will be handled by auth context changes
     } catch (err: any) {
-      Alert.alert('Erro de Registro', err.message || 'Falha ao registrar');
+      toast.error(`❌ ${err.message || 'Falha ao registrar'}`);
     }
   };
 
@@ -148,57 +152,47 @@ export default function RegisterScreen() {
           )}
 
           {/* Name Input */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Nome Completo</Text>
-            <TextInput
-              style={[styles.input, nameError ? styles.inputError : null]}
-              placeholder="João da Silva"
-              placeholderTextColor={COLORS.grey}
-              value={name}
-              onChangeText={setName}
-              editable={!isLoading}
-              autoCapitalize="words"
-            />
-            {nameError && <Text style={styles.fieldError}>{nameError}</Text>}
-          </View>
+          <FormInput
+            label="Nome Completo"
+            placeholder="João da Silva"
+            value={name}
+            onChangeText={(text) => {
+              setName(text);
+              setNameError('');
+            }}
+            error={nameError}
+            autoCapitalize="words"
+            editable={!isLoading}
+          />
 
           {/* Email Input */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[styles.input, emailError ? styles.inputError : null]}
-              placeholder="seu@email.com"
-              placeholderTextColor={COLORS.grey}
-              value={email}
-              onChangeText={setEmail}
-              editable={!isLoading}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {emailError && <Text style={styles.fieldError}>{emailError}</Text>}
-          </View>
+          <FormInput
+            label="Email"
+            placeholder="seu@email.com"
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              setEmailError('');
+            }}
+            error={emailError}
+            keyboardType="email-address"
+            editable={!isLoading}
+          />
 
           {/* Password Input */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Palavra-passe</Text>
-            <View style={[styles.passwordContainer, passwordError ? styles.inputError : null]}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Mínimo 8 caracteres"
-                placeholderTextColor={COLORS.grey}
-                value={password}
-                onChangeText={setPassword}
-                editable={!isLoading}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.togglePasswordButton}
-              >
-                <Text style={styles.togglePasswordText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
-              </TouchableOpacity>
-            </View>
+          <View>
+            <FormInput
+              label="Palavra-passe"
+              placeholder="Mínimo 8 caracteres"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                setPasswordError('');
+              }}
+              error={passwordError}
+              secureTextEntry={true}
+              editable={!isLoading}
+            />
             {password && (
               <View style={styles.strengthContainer}>
                 <View style={styles.strengthBar}>
@@ -217,36 +211,21 @@ export default function RegisterScreen() {
                 </Text>
               </View>
             )}
-            {passwordError && <Text style={styles.fieldError}>{passwordError}</Text>}
           </View>
 
           {/* Confirm Password Input */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Confirmar Palavra-passe</Text>
-            <View
-              style={[styles.passwordContainer, confirmPasswordError ? styles.inputError : null]}
-            >
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Repita a palavra-passe"
-                placeholderTextColor={COLORS.grey}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                editable={!isLoading}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.togglePasswordButton}
-              >
-                <Text style={styles.togglePasswordText}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
-              </TouchableOpacity>
-            </View>
-            {confirmPasswordError && (
-              <Text style={styles.fieldError}>{confirmPasswordError}</Text>
-            )}
-          </View>
+          <FormInput
+            label="Confirmar Palavra-passe"
+            placeholder="Repita a palavra-passe"
+            value={confirmPassword}
+            onChangeText={(text) => {
+              setConfirmPassword(text);
+              setConfirmPasswordError('');
+            }}
+            error={confirmPasswordError}
+            secureTextEntry={true}
+            editable={!isLoading}
+          />
 
           {/* Terms Checkbox */}
           <TouchableOpacity
