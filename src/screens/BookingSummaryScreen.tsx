@@ -8,13 +8,13 @@ import {
   ScrollView, 
   TouchableOpacity, 
   StyleSheet, 
-  Alert,
-  ActivityIndicator
+  Alert
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
 import { useToast } from '../context/ToastContext';
+import { Button } from '../components/Button';
 import bookingService from '../services/bookingService';
 
 export interface BookingSummaryParams {
@@ -193,24 +193,24 @@ export default function BookingSummaryScreen() {
 
       {/* Buttons */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={styles.secondaryButton}
+        <Button
+          label="Editar Detalhes"
           onPress={handleEditBooking}
-        >
-          <Text style={styles.secondaryButtonText}>Editar Detalhes</Text>
-        </TouchableOpacity>
+          disabled={isConfirming}
+          variant="secondary"
+          size="md"
+          style={{ flex: 1 }}
+        />
 
-        <TouchableOpacity
-          style={[styles.primaryButton, isConfirming && styles.buttonDisabled]}
+        <Button
+          label={isConfirming ? 'Confirmando...' : 'Confirmar Agendamento'}
           onPress={handleConfirmBooking}
           disabled={isConfirming}
-        >
-          {isConfirming ? (
-            <ActivityIndicator size="small" color={COLORS.primaryDark} />
-          ) : (
-            <Text style={styles.primaryButtonText}>Confirmar Agendamento</Text>
-          )}
-        </TouchableOpacity>
+          loading={isConfirming}
+          variant="primary"
+          size="md"
+          style={{ flex: 1, marginLeft: 12 }}
+        />
       </View>
 
       {/* Bottom Spacing */}
@@ -412,41 +412,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     gap: 12,
   },
-  primaryButton: {
-    backgroundColor: COLORS.gold,
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-    shadowColor: COLORS.gold,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  primaryButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.primaryDark,
-    fontFamily: 'DMSans',
-    letterSpacing: 0.5,
-  },
-  secondaryButton: {
-    backgroundColor: COLORS.primaryLight,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: `${COLORS.gold}30`,
-  },
-  secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.gold,
-    fontFamily: 'DMSans',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
+
   errorText: {
     fontSize: 14,
     color: '#FF6B6B',
