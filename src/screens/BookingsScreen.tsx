@@ -4,15 +4,19 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
+import { useQuickToast } from '../hooks/useToast';
 import bookingService, { Booking } from '../services/bookingService';
+import { BookingCard } from '../components/BookingCard';
 
 export default function BookingsScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
+  const toast = useQuickToast();
   const [activeTab, setActiveTab] = useState(0);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [cancelling, setCancelling] = useState<string | null>(null);
   const tabs = ['Próximas', 'Passadas'];
 
   useFocusEffect(
@@ -49,26 +53,17 @@ export default function BookingsScreen() {
   };
 
   const handleCancelBooking = async (bookingId: string) => {
-    Alert.alert(
-      'Cancelar consulta',
-      'Tem a certeza que deseja cancelar esta consulta?',
-      [
-        { text: 'Não', onPress: () => {}, style: 'cancel' },
-        {
-          text: 'Sim',
-          onPress: async () => {
-            try {
-              await bookingService.cancelBooking(bookingId);
-              loadBookings();
-              Alert.alert('Sucesso', 'Consulta cancelada com sucesso');
-            } catch (error) {
-              Alert.alert('Erro', 'Falha ao cancelar consulta');
-            }
-          },
-          style: 'destructive',
-        },
-      ]
-    );
+    setCancelling(bookingId);
+    try {
+      await bookingService.cancelBooking(bookingId);
+      toast.success('Consulta cancelada com sucesso');
+      await loadBookings();
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      toast.error('Falha ao cancelar consulta. Tente novamente.');
+    } finally {
+      setCancelling(null);
+    }
   };
 
   const handleRescheduleBooking = (booking: Booking) => {
@@ -152,48 +147,20 @@ export default function BookingsScreen() {
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 40 }} />
         ) : filtered.length > 0 ? (
-          filtered.map((booking, index) => {
-            const st = statusStyles[booking.status as keyof typeof statusStyles] || { bg: `${COLORS.grey}25`, color: COLORS.grey, label: booking.status };
+          filtered.map((booking) => {
+            const mockBooking = BOOKINGS.find(b => String(b.id) === booking.id);
             return (
-              <View key={booking.id} style={styles.bookingItem}>
-                {/* Timeline dot */}
-                <View style={styles.timelineDot} />
-
-                <View style={styles.bookingCard}>
-                  <View style={styles.bookingHeader}>
-                    <Text style={styles.bookingService}>{booking.serviceId}</Text>
-                    <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-                      <Text style={[styles.statusText, { color: st.color }]}>
-                        {st.label}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.bookingTherapist}>{booking.therapistId}</Text>
-
-                  <View style={styles.bookingDetails}>
-                    <Text style={styles.detailItem}>📅 {booking.date}</Text>
-                    <Text style={styles.detailItem}>🕐 {booking.time}</Text>
-                  </View>
-
-                  {booking.status === 'confirmed' && (
-                    <View style={styles.actions}>
-                      <TouchableOpacity 
-                        style={styles.actionReschedule}
-                        onPress={() => handleRescheduleBooking(booking)}
-                      >
-                        <Text style={styles.actionText}>Remarcar</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity 
-                        style={styles.actionCancel}
-                        onPress={() => handleCancelBooking(booking.id)}
-                      >
-                        <Text style={styles.actionCancelText}>Cancelar</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              </View>
+              <BookingCard
+                key={booking.id}
+                booking={booking}
+                serviceName={mockBooking?.service || 'Consulta'}
+                therapistName={mockBooking?.therapist || 'Terapeuta'}
+                onReschedule={() => handleRescheduleBooking(booking)}
+                onCancel={handleCancelBooking}
+                onDetails={() => {
+                  // TODO: Navigate to booking details
+                }}
+              />
             );
           })
         ) : (
