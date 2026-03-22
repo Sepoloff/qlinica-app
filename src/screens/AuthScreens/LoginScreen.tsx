@@ -20,6 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useQuickToast } from '../../hooks/useToast';
 import { validateEmail } from '../../utils/validation';
 import { FormInput } from '../../components/FormInput';
+import { useFormValidation, emailRule, passwordRule } from '../../hooks/useFormValidation';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -28,36 +29,24 @@ export default function LoginScreen() {
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-
-  const validateForm = (): boolean => {
-    let valid = true;
-    setEmailError('');
-    setPasswordError('');
-
-    if (!email) {
-      setEmailError('Email é obrigatório');
-      valid = false;
-    } else if (!validateEmail(email)) {
-      setEmailError('Email inválido');
-      valid = false;
-    }
-
-    if (!password) {
-      setPasswordError('Palavra-passe é obrigatória');
-      valid = false;
-    } else if (password.length < 6) {
-      setPasswordError('Palavra-passe deve ter pelo menos 6 caracteres');
-      valid = false;
-    }
-
-    return valid;
-  };
+  
+  const { errors, validate, validateFieldValue, isValid } = useFormValidation({
+    email: { ...emailRule, message: 'Email inválido' },
+    password: {
+      required: true,
+      minLength: 6,
+      message: 'Palavra-passe deve ter pelo menos 6 caracteres',
+    },
+  });
 
   const handleLogin = async () => {
     clearError();
-    if (!validateForm()) return;
+    const validationErrors = validate({ email, password });
+    
+    if (Object.keys(validationErrors).length > 0) {
+      toast.error('❌ Verifique os campos do formulário');
+      return;
+    }
 
     try {
       await login(email, password);
@@ -105,9 +94,9 @@ export default function LoginScreen() {
             value={email}
             onChangeText={(text) => {
               setEmail(text);
-              setEmailError('');
+              validateFieldValue('email', text);
             }}
-            error={emailError}
+            error={errors.email}
             keyboardType="email-address"
             editable={!isLoading}
           />
@@ -119,9 +108,9 @@ export default function LoginScreen() {
             value={password}
             onChangeText={(text) => {
               setPassword(text);
-              setPasswordError('');
+              validateFieldValue('password', text);
             }}
-            error={passwordError}
+            error={errors.password}
             secureTextEntry={true}
             editable={!isLoading}
           />

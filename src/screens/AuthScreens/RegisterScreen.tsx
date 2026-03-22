@@ -25,6 +25,7 @@ import {
   getPasswordStrength,
 } from '../../utils/validation';
 import { FormInput } from '../../components/FormInput';
+import { useFormValidation, emailRule, passwordRule, nameRule } from '../../hooks/useFormValidation';
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
