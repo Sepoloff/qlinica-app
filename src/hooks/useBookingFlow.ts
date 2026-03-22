@@ -1,134 +1,153 @@
-'use strict';
+/**
+ * Custom hook for managing complete booking flow
+ * Integrates with API, validation, and state management
+ */
 
 import { useCallback, useState } from 'react';
-import { validateBookingDate, validateTimeSlot, validateBookingNotes } from '../utils/validation';
+import { useAuth } from '../context/AuthContext';
+import { useBookingFlow } from '../context/BookingFlowContext';
+import { useToast } from '../context/ToastContext';
+import { bookingsAPI, Booking } from '../services/apiService';
+import { logger } from '../utils/logger';
 
-export interface BookingFlowState {
-  serviceId?: string | number;
-  therapistId?: string | number;
-  date?: string;
-  time?: string;
-  notes?: string;
-  errors: Record<string, string>;
+interface BookingFlowHookState {
+  isLoading: boolean;
+  isSubmitting: boolean;
+  error: string | null;
+  successMessage: string | null;
 }
 
-/**
- * Hook for managing booking flow state and validation
- */
-export const useBookingFlowValidation = () => {
-  const [state, setState] = useState<BookingFlowState>({
-    errors: {},
+export const useBookingFlowHook = () => {
+  const { user } = useAuth();
+  const { bookingState, submitBooking, validateBookingData, resetBookingState } = useBookingFlow();
+  const { showToast } = useToast();
+  const [state, setState] = useState<BookingFlowHookState>({
+    isLoading: false,
+    isSubmitting: false,
+    error: null,
+    successMessage: null,
   });
 
-  const setServiceId = useCallback((serviceId: string | number) => {
-    setState(prev => ({
-      ...prev,
-      serviceId,
-      errors: { ...prev.errors, serviceId: '' },
-    }));
-  }, []);
-
-  const setTherapistId = useCallback((therapistId: string | number) => {
-    setState(prev => ({
-      ...prev,
-      therapistId,
-      errors: { ...prev.errors, therapistId: '' },
-    }));
-  }, []);
-
-  const setDateTime = useCallback((date: string, time: string) => {
-    const errors: Record<string, string> = {};
-
-    // Validate date
-    const dateObj = new Date(date);
-    const dateValidation = validateBookingDate(dateObj);
-    if (!dateValidation.valid) {
-      errors.date = dateValidation.error || 'Invalid date';
-    }
-
-    // Validate time
-    if (!validateTimeSlot(time)) {
-      errors.time = 'Invalid time slot (must be between 09:00 and 18:00)';
-    }
-
-    setState(prev => ({
-      ...prev,
-      date,
-      time,
-      errors: { ...prev.errors, ...errors },
-    }));
-
-    return Object.keys(errors).length === 0;
-  }, []);
-
-  const setNotes = useCallback((notes: string) => {
-    const isValid = validateBookingNotes(notes);
-    setState(prev => ({
-      ...prev,
-      notes,
-      errors: {
-        ...prev.errors,
-        notes: isValid ? '' : 'Notes cannot exceed 500 characters',
-      },
-    }));
-  }, []);
-
-  const validateBooking = useCallback((): boolean => {
-    const errors: Record<string, string> = {};
-
-    if (!state.serviceId) {
-      errors.serviceId = 'Service selection is required';
-    }
-
-    if (!state.therapistId) {
-      errors.therapistId = 'Therapist selection is required';
-    }
-
-    if (!state.date) {
-      errors.date = 'Date selection is required';
-    } else {
-      const dateObj = new Date(state.date);
-      const dateValidation = validateBookingDate(dateObj);
-      if (!dateValidation.valid) {
-        errors.date = dateValidation.error || 'Invalid date';
+  /**
+   * Navigate through booking flow - validates state and submits when complete
+   */
+  const proceedWithBooking = useCallback(async (): Promise<Booking | null> => {
+    try {
+      // Check authentication
+      if (!user) {
+        setState((prev) => ({ ...prev, error: 'Você precisa estar autenticado' }));
+        showToast('error', 'Autenticação necessária');
+        return null;
       }
+
+      // Validate booking data
+      const validation = validateBookingData();
+      if (!validation.valid) {
+        const errorMsg = validation.errors.join('; ');
+        setState((prev) => ({ ...prev, error: errorMsg }));
+        showToast('error', errorMsg);
+        logger.warn(`Booking validation failed: ${errorMsg}`, 'UseBookingFlow');
+        return null;
+      }
+
+      setState((prev) => ({ ...prev, isSubmitting: true, error: null }));
+
+      // Submit booking
+      const booking = await submitBooking();
+
+      setState((prev) => ({
+        ...prev,
+        isSubmitting: false,
+        successMessage: 'Agendamento confirmado com sucesso!',
+        error: null,
+      }));
+
+      showToast('success', 'Agendamento realizado com sucesso! ✅');
+      logger.debug(`Booking submitted successfully: ${booking.id}`, 'UseBookingFlow');
+
+      return booking;
+    } catch (err: any) {
+      const errorMessage =
+        err?.message || 'Falha ao processar agendamento. Tente novamente.';
+
+      setState((prev) => ({
+        ...prev,
+        isSubmitting: false,
+        error: errorMessage,
+      }));
+
+      showToast('error', errorMessage);
+      logger.error(`Booking flow failed: ${errorMessage}`, err, 'UseBookingFlow');
+
+      return null;
     }
+  }, [user, validateBookingData, submitBooking, showToast]);
 
-    if (!state.time) {
-      errors.time = 'Time selection is required';
-    } else if (!validateTimeSlot(state.time)) {
-      errors.time = 'Invalid time slot';
-    }
-
-    if (state.notes && !validateBookingNotes(state.notes)) {
-      errors.notes = 'Notes are too long';
-    }
-
-    setState(prev => ({
-      ...prev,
-      errors,
-    }));
-
-    return Object.keys(errors).length === 0;
-  }, [state]);
-
-  const reset = useCallback(() => {
-    setState({ errors: {} });
+  /**
+   * Clear errors
+   */
+  const clearError = useCallback(() => {
+    setState((prev) => ({ ...prev, error: null }));
   }, []);
+
+  /**
+   * Clear success message
+   */
+  const clearSuccessMessage = useCallback(() => {
+    setState((prev) => ({ ...prev, successMessage: null }));
+  }, []);
+
+  /**
+   * Get human-readable booking summary
+   */
+  const getBookingSummaryText = useCallback((): string => {
+    const parts: string[] = [];
+
+    if (bookingState.serviceName) parts.push(`📋 ${bookingState.serviceName}`);
+    if (bookingState.servicePrice) parts.push(`💰 €${bookingState.servicePrice}`);
+    if (bookingState.therapistName) parts.push(`👨‍⚕️ ${bookingState.therapistName}`);
+    if (bookingState.date) parts.push(`📅 ${bookingState.date}`);
+    if (bookingState.time) parts.push(`⏰ ${bookingState.time}`);
+
+    return parts.join('\n');
+  }, [bookingState]);
+
+  /**
+   * Check if booking is ready to submit
+   */
+  const isBookingComplete = useCallback((): boolean => {
+    return !!(
+      bookingState.serviceId &&
+      bookingState.therapistId &&
+      bookingState.date &&
+      bookingState.time
+    );
+  }, [bookingState]);
+
+  /**
+   * Get progress percentage (0-100)
+   */
+  const getProgressPercentage = useCallback((): number => {
+    let completed = 0;
+    const total = 4; // service, therapist, date, time
+
+    if (bookingState.serviceId) completed++;
+    if (bookingState.therapistId) completed++;
+    if (bookingState.date) completed++;
+    if (bookingState.time) completed++;
+
+    return Math.round((completed / total) * 100);
+  }, [bookingState]);
 
   return {
-    state,
-    setServiceId,
-    setTherapistId,
-    setDateTime,
-    setNotes,
-    validateBooking,
-    reset,
-    isComplete:
-      !!state.serviceId &&
-      !!state.therapistId &&
-      !!state.date &&
-      !!state.time &&
-      Object.keys(state.errors).length === 0,
+    ...state,
+    bookingState,
+    isBookingComplete: isBookingComplete(),
+    progressPercentage: getProgressPercentage(),
+    proceedWithBooking,
+    clearError,
+    clearSuccessMessage,
+    getBookingSummaryText,
+    resetBookingState,
   };
 };

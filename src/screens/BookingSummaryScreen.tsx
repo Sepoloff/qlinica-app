@@ -13,6 +13,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
+import { useBookingFlow } from '../context/BookingFlowContext';
 import { useToast } from '../context/ToastContext';
 import { useNotificationManager } from '../hooks/useNotificationManager';
 import { useBookingAPI } from '../hooks/useBookingAPI';
@@ -43,8 +44,9 @@ export default function BookingSummaryScreen() {
   const { bookingData, resetBooking } = useBooking();
   const { showToast } = useToast();
   const { notifyBookingConfirmation, scheduleAppointmentReminder } = useNotificationManager();
-  const { createBooking } = useBookingAPI();
+  const { submitBooking, error: flowError, clearError } = useBookingFlow();
   const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmationError, setConfirmationError] = useState<string | null>(null);
   
   // Extract params from route or context
   const { service, therapist, date, time } = (route.params || bookingData) as Partial<BookingSummaryParams>;
@@ -69,16 +71,11 @@ export default function BookingSummaryScreen() {
 
   const handleConfirmBooking = async () => {
     setIsConfirming(true);
+    setConfirmationError(null);
+    
     try {
-      // Create booking via API
-      const bookingPayload = {
-        serviceId: service.id.toString(),
-        therapistId: therapist.id.toString(),
-        date: date,
-        time: time,
-      };
-
-      const booking = await createBooking(bookingPayload);
+      // Submit booking via context
+      const booking = await submitBooking();
       logger.debug(`Booking created: ${booking.id}`, 'BookingSummaryScreen');
 
       // Parse date and time to create appointment datetime
@@ -121,9 +118,49 @@ export default function BookingSummaryScreen() {
       setTimeout(() => {
         navigation.navigate('bookings' as never);
       }, 1000);
+      // Parse date and time to create appointment datetime
+      const [day, month, year] = date.split('/');
+      const [hours, minutes] = time.split(':');
+      const appointmentDate = new Date(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes)
+      );
+
+      // Send booking confirmation notification
+      try {
+        await notifyBookingConfirmation(therapist.name, service.name, appointmentDate);
+      } catch (notificationError) {
+        logger.warn('Notification send failed (non-critical)', notificationError as Error, 'BookingSummaryScreen');
+      }
+
+      // Schedule reminder
+      try {
+        await scheduleAppointmentReminder(
+          therapist.name,
+          service.name,
+          appointmentDate
+        );
+      } catch (reminderError) {
+        logger.warn('Reminder schedule failed (non-critical)', reminderError as Error, 'BookingSummaryScreen');
+      }
+
+      // Reset booking context
+      resetBooking();
+
+      // Show success toast
+      showToast('Consulta agendada com sucesso!', 'success', 3000);
+
+      // Navigate to bookings
+      setTimeout(() => {
+        navigation.navigate('bookings' as never);
+      }, 1000);
     } catch (error: any) {
       console.error('Error confirming booking:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Falha ao agendar consulta';
+      const errorMessage = error?.message || 'Falha ao agendar consulta';
+      setConfirmationError(errorMessage);
       showToast(errorMessage, 'error', 4000);
       setIsConfirming(false);
     }
