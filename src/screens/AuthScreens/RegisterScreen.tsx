@@ -1,6 +1,6 @@
 'use strict';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
-import { useQuickToast } from '../../hooks/useToast';
-import { getPasswordStrength } from '../../utils/validation';
+import { useToast } from '../../context/ToastContext';
+import { getPasswordStrength, validatePassword } from '../../utils/validation';
+import { useAnalytics } from '../../hooks/useAnalytics';
+import { logger } from '../../utils/logger';
 import { FormInput } from '../../components/FormInput';
 import { Checkbox } from '../../components/Checkbox';
 import { Button } from '../../components/Button';
@@ -22,12 +24,23 @@ import { useFormValidation, emailRule, passwordRule, nameRule } from '../../hook
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
-  const { register, isLoading } = useAuth();
-  const toast = useQuickToast();
+  const { register, isLoading, error, clearError } = useAuth();
+  const { showToast } = useToast();
+  const { trackScreenView, trackEvent } = useAnalytics();
 
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      trackScreenView('register');
+      clearError();
+      setRegistrationError(null);
+      return () => {};
+    }, [trackScreenView, clearError])
+  );
 
   // Use form validation hook
   const {
@@ -61,21 +74,70 @@ export default function RegisterScreen() {
   const passwordStrength = getPasswordStrength(values.password);
 
   const handleRegister = async () => {
+    clearError();
+    setRegistrationError(null);
+
     const formIsValid = await validateForm();
-    if (!formIsValid || !agreedToTerms) {
-      if (!agreedToTerms) {
-        toast.error('Por favor aceite os termos e condições');
-      }
+    if (!formIsValid) {
+      showToast({
+        type: 'error',
+        title: 'Validação',
+        message: 'Verifique todos os campos do formulário',
+      });
+      trackEvent('register_validation_error');
+      return;
+    }
+
+    if (!agreedToTerms) {
+      showToast({
+        type: 'error',
+        title: 'Termos e Condições',
+        message: 'Por favor aceite os termos e condições',
+      });
+      trackEvent('register_terms_not_accepted');
+      return;
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(values.password);
+    if (!passwordValidation.valid) {
+      setRegistrationError(passwordValidation.errors[0]);
+      showToast({
+        type: 'error',
+        title: 'Palavra-passe fraca',
+        message: passwordValidation.errors[0],
+      });
+      trackEvent('register_weak_password');
       return;
     }
 
     try {
+      logger.debug(`Attempting registration for ${values.email}`, 'RegisterScreen');
       await register(values.email, values.password, values.name);
-      toast.success('✅ Conta criada com sucesso!');
+      
+      logger.debug(`Registration successful for ${values.email}`, 'RegisterScreen');
+      showToast({
+        type: 'success',
+        title: 'Sucesso',
+        message: 'Conta criada com sucesso!',
+      });
+      trackEvent('register_success');
       resetForm();
       // Navigation handled by auth context
     } catch (err: any) {
-      toast.error(`❌ ${err.message || 'Falha ao registrar'}`);
+      const errorMessage = err.message || 'Falha ao registrar';
+      logger.error(`Registration failed: ${errorMessage}`, err, 'RegisterScreen');
+      setRegistrationError(errorMessage);
+      
+      showToast({
+        type: 'error',
+        title: 'Erro de Registro',
+        message: errorMessage,
+      });
+
+      trackEvent('register_error', { 
+        errorType: err.response?.status || 'unknown',
+      });
     }
   };
 

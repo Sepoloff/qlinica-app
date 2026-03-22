@@ -1,7 +1,7 @@
 'use strict';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,22 +10,28 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
-import { useQuickToast } from '../../hooks/useToast';
+import { useToast } from '../../context/ToastContext';
 import { FormInput } from '../../components/FormInput';
 import { Button } from '../../components/Button';
 import { useFormValidation, emailRule, passwordRule } from '../../hooks/useFormValidation';
+import { useAnalytics } from '../../hooks/useAnalytics';
+import { logger } from '../../utils/logger';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const { login, isLoading, error, clearError } = useAuth();
-  const toast = useQuickToast();
+  const { showToast } = useToast();
+  const { trackScreenView, trackEvent } = useAnalytics();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isRateLimited, setIsRateLimited] = useState(false);
   
   const { errors, validate, validateFieldValue, isValid } = useFormValidation({
     initialValues: { email: '', password: '' },
@@ -33,27 +39,84 @@ export default function LoginScreen() {
       email: { ...emailRule, message: 'Email inválido' },
       password: {
         required: true,
-        minLength: 6,
-        message: 'Palavra-passe deve ter pelo menos 6 caracteres',
+        minLength: 8,
+        message: 'Palavra-passe deve ter pelo menos 8 caracteres',
       },
     },
   });
 
+  useFocusEffect(
+    React.useCallback(() => {
+      trackScreenView('login');
+      clearError();
+      return () => {};
+    }, [trackScreenView, clearError])
+  );
+
   const handleLogin = async () => {
+    // Rate limiting check
+    if (isRateLimited) {
+      showToast({
+        type: 'error',
+        title: 'Demasiadas tentativas',
+        message: 'Aguarde alguns minutos antes de tentar novamente',
+      });
+      return;
+    }
+
     clearError();
     const validationErrors = validate({ email, password });
     
     if (Object.keys(validationErrors).length > 0) {
-      toast.error('❌ Verifique os campos do formulário');
+      showToast({
+        type: 'error',
+        title: 'Validação',
+        message: 'Verifique os campos do formulário',
+      });
+      trackEvent('login_validation_error', { errorCount: Object.keys(validationErrors).length });
       return;
     }
 
     try {
+      logger.debug(`Attempting login for ${email}`, 'LoginScreen');
       await login(email, password);
-      toast.success('✅ Login realizado com sucesso');
+      
+      logger.debug(`Login successful for ${email}`, 'LoginScreen');
+      showToast({
+        type: 'success',
+        title: 'Sucesso',
+        message: 'Login realizado com sucesso',
+      });
+      trackEvent('login_success');
+      
       // Navigation will be handled by auth context changes
     } catch (err: any) {
-      toast.error(`❌ ${err.message || 'Falha ao fazer login'}`);
+      const errorMessage = err.message || 'Falha ao fazer login';
+      logger.error(`Login failed: ${errorMessage}`, err, 'LoginScreen');
+      
+      // Increment login attempts
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+
+      // Rate limit after 5 failed attempts
+      if (newAttempts >= 5) {
+        setIsRateLimited(true);
+        setTimeout(() => {
+          setIsRateLimited(false);
+          setLoginAttempts(0);
+        }, 60000); // 1 minute lockout
+      }
+
+      showToast({
+        type: 'error',
+        title: 'Erro de Login',
+        message: errorMessage,
+      });
+
+      trackEvent('login_error', { 
+        errorType: err.response?.status || 'unknown',
+        attempts: newAttempts,
+      });
     }
   };
 
@@ -115,9 +178,19 @@ export default function LoginScreen() {
             editable={!isLoading}
           />
 
+          {/* Rate limit warning */}
+          {isRateLimited && (
+            <View style={styles.rateLimitWarning}>
+              <Text style={styles.rateLimitText}>
+                ⏱️ Demasiadas tentativas. Tente novamente em 1 minuto.
+              </Text>
+            </View>
+          )}
+
           {/* Login Button */}
           <Button
-            label={isLoading ? 'Iniciando...' : 'Iniciar Sessão'}
+            label={isLoading ? 'Iniciando sessão...' : 'Iniciar Sessão'}
+            disabled={isLoading || isRateLimited || !isValid}
             onPress={handleLogin}
             disabled={isLoading}
             loading={isLoading}
@@ -150,6 +223,19 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  rateLimitWarning: {
+    backgroundColor: `${COLORS.danger}20`,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.danger,
+  },
+  rateLimitText: {
+    color: COLORS.danger,
+    fontSize: 12,
+    fontWeight: '500',
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.primary,

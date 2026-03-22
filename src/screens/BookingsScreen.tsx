@@ -4,19 +4,22 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
-import { useQuickToast } from '../hooks/useToast';
+import { useToast } from '../context/ToastContext';
 import { useNotificationManager } from '../hooks/useNotificationManager';
 import { useBookingAPI } from '../hooks/useBookingAPI';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { Booking } from '../services/apiService';
 import { BookingCard } from '../components/BookingCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { EmptyState } from '../components/EmptyState';
 import { logger } from '../utils/logger';
 
 export default function BookingsScreen() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigation = useNavigation();
-  const toast = useQuickToast();
+  const { showToast } = useToast();
   const { notifyCancellation, notifyReschedule } = useNotificationManager();
+  const { trackScreenView, trackEvent } = useAnalytics();
   
   // Use API hook
   const { 
@@ -31,28 +34,41 @@ export default function BookingsScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [operationError, setOperationError] = useState<string | null>(null);
   const tabs = ['Próximas', 'Passadas'];
 
   useFocusEffect(
     React.useCallback(() => {
-      loadBookings();
-    }, [user])
+      trackScreenView('bookings', { userId: user?.id });
+      if (user) {
+        loadBookings();
+      }
+    }, [user, trackScreenView])
   );
 
   const loadBookings = async () => {
     try {
+      setOperationError(null);
       if (user) {
         await fetchBookings();
         logger.debug('Bookings loaded successfully', 'BookingsScreen');
+        trackEvent('bookings_loaded', { count: bookings?.length || 0 });
       }
     } catch (error) {
       logger.error('Error loading bookings', error as Error, 'BookingsScreen');
-      toast.error('Erro ao carregar agendamentos');
+      setOperationError('Erro ao carregar agendamentos');
+      showToast({
+        type: 'error',
+        title: 'Erro',
+        message: 'Erro ao carregar agendamentos',
+      });
+      trackEvent('bookings_load_error', { error: (error as Error).message });
     }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
+    setOperationError(null);
     loadBookings().finally(() => setRefreshing(false));
   };
 
@@ -71,8 +87,10 @@ export default function BookingsScreen() {
             style: 'destructive',
             onPress: async () => {
               setCancelling(bookingId);
+              setOperationError(null);
               try {
                 await cancelBookingAPI(bookingId);
+                logger.debug(`Booking cancelled: ${bookingId}`, 'BookingsScreen');
                 
                 // Send cancellation notification
                 if (booking) {
