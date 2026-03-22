@@ -11,7 +11,10 @@
     "build": "expo build",
     "build-android": "eas build --platform android",
     "build-ios": "eas build --platform ios",
-    "submit": "eas submit"
+    "submit": "eas submit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@expo/webpack-config": "^19.0.0",
@@ -38,7 +41,12 @@
   },
   "devDependencies": {
     "@babel/core": "^7.23.0",
-    "@types/react": "~18.2.14"
+    "@babel/preset-typescript": "^7.28.5",
+    "@types/jest": "^30.0.0",
+    "@types/react": "~18.2.14",
+    "babel-jest": "^30.3.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.6"
   },
   "private": true
 }
