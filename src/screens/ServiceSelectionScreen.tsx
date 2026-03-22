@@ -1,18 +1,38 @@
 'use strict';
 
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LinearGradient } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LinearGradient, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { SERVICES } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
+import bookingService, { Service } from '../services/bookingService';
 
 export default function ServiceSelectionScreen() {
   const navigation = useNavigation();
   const { setService } = useBooking();
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleServiceSelect = (service: typeof SERVICES[0]) => {
-    setService(service);
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  const loadServices = async () => {
+    setLoading(true);
+    try {
+      const data = await bookingService.getServices().catch(() => SERVICES as any);
+      setServices(data || SERVICES);
+    } catch (error) {
+      console.error('Error loading services:', error);
+      setServices(SERVICES as any);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleServiceSelect = (service: Service | typeof SERVICES[0]) => {
+    setService(service as any);
     navigation.navigate('TherapistSelection' as never);
   };
 
@@ -40,7 +60,9 @@ export default function ServiceSelectionScreen() {
 
       {/* Services Grid */}
       <View style={styles.servicesContainer}>
-        {SERVICES.map((service) => (
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 40 }} />
+        ) : (services.length > 0 ? services : SERVICES).map((service) => (
           <TouchableOpacity 
             key={service.id}
             style={styles.serviceCard}
@@ -48,21 +70,21 @@ export default function ServiceSelectionScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.iconContainer}>
-              <Text style={styles.serviceIcon}>{service.icon}</Text>
+              <Text style={styles.serviceIcon}>{'icon' in service ? service.icon : '✨'}</Text>
             </View>
             
             <Text style={styles.serviceName}>{service.name}</Text>
-            <Text style={styles.serviceDesc} numberOfLines={2}>{service.desc}</Text>
+            <Text style={styles.serviceDesc} numberOfLines={2}>{service.description || ('desc' in service ? service.desc : '')}</Text>
             
             <View style={styles.serviceDetails}>
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Duração</Text>
-                <Text style={styles.detailValue}>{service.duration}</Text>
+                <Text style={styles.detailValue}>{'duration' in service ? `${service.duration}min` : service.duration}</Text>
               </View>
               <View style={styles.divider} />
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Preço</Text>
-                <Text style={styles.detailValue}>{service.price}</Text>
+                <Text style={styles.detailValue}>{'price' in service ? `€${service.price}` : service.price}</Text>
               </View>
             </View>
 

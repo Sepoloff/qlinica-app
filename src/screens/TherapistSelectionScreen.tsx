@@ -1,20 +1,45 @@
 'use strict';
 
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LinearGradient } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LinearGradient, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { THERAPISTS } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
+import bookingService, { Therapist } from '../services/bookingService';
 
 export default function TherapistSelectionScreen() {
   const navigation = useNavigation();
   const { bookingData, setTherapist } = useBooking();
-  const [selectedTherapist, setSelectedTherapist] = React.useState<number | null>(null);
+  const [selectedTherapist, setSelectedTherapist] = React.useState<string | null>(null);
+  const [therapists, setTherapists] = useState<Therapist[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleTherapistSelect = (therapist: typeof THERAPISTS[0]) => {
-    setSelectedTherapist(therapist.id);
-    setTherapist(therapist);
+  useEffect(() => {
+    loadTherapists();
+  }, [bookingData.service]);
+
+  const loadTherapists = async () => {
+    setLoading(true);
+    try {
+      if (bookingData.service?.id) {
+        const data = await bookingService.getTherapistsByService(String(bookingData.service.id)).catch(() => THERAPISTS as any);
+        setTherapists(data || THERAPISTS);
+      } else {
+        const data = await bookingService.getTherapists().catch(() => THERAPISTS as any);
+        setTherapists(data || THERAPISTS);
+      }
+    } catch (error) {
+      console.error('Error loading therapists:', error);
+      setTherapists(THERAPISTS as any);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTherapistSelect = (therapist: Therapist | typeof THERAPISTS[0]) => {
+    setSelectedTherapist(String(therapist.id));
+    setTherapist(therapist as any);
   };
 
   const handleContinue = () => {
@@ -49,12 +74,14 @@ export default function TherapistSelectionScreen() {
 
       {/* Therapists List */}
       <View style={styles.therapistsContainer}>
-        {THERAPISTS.map((therapist) => (
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 40 }} />
+        ) : (therapists.length > 0 ? therapists : THERAPISTS).map((therapist) => (
           <TouchableOpacity
             key={therapist.id}
             style={[
               styles.therapistCard,
-              selectedTherapist === therapist.id && styles.therapistCardSelected,
+              String(selectedTherapist) === String(therapist.id) && styles.therapistCardSelected,
             ]}
             onPress={() => handleTherapistSelect(therapist)}
             activeOpacity={0.7}
@@ -104,7 +131,7 @@ export default function TherapistSelectionScreen() {
             </View>
 
             {/* Selection Indicator */}
-            {selectedTherapist === therapist.id && (
+            {String(selectedTherapist) === String(therapist.id) && (
               <View style={styles.checkmark}>
                 <Text style={styles.checkmarkText}>✓</Text>
               </View>
