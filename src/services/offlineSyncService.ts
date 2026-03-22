@@ -4,7 +4,6 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as NetInfo from '@react-native-community/netinfo';
 import bookingService, { Booking } from './bookingService';
 import { analyticsService } from './analyticsService';
 
@@ -37,7 +36,6 @@ class OfflineSyncService {
   async initialize(): Promise<void> {
     try {
       await this.loadQueue();
-      this.setupNetworkListener();
       await this.syncIfConnected();
     } catch (error) {
       console.error('Error initializing offline sync:', error);
@@ -138,15 +136,11 @@ class OfflineSyncService {
   }
 
   /**
-   * Setup network status listener
+   * Setup network status listener (offline sync disabled for now)
    */
   private setupNetworkListener(): void {
-    NetInfo.addEventListener((state) => {
-      if (state.isConnected && state.isInternetReachable) {
-        console.log('📡 Network restored - attempting sync');
-        this.sync();
-      }
-    });
+    // NetInfo removed - will sync manually when needed
+    console.log('📡 Offline sync initialized');
   }
 
   /**
@@ -154,8 +148,8 @@ class OfflineSyncService {
    */
   private async syncIfConnected(): Promise<void> {
     try {
-      const state = await NetInfo.fetch();
-      if (state.isConnected && state.isInternetReachable && this.queue.length > 0) {
+      // Assume connected for now (no NetInfo)
+      if (this.queue.length > 0) {
         await this.sync();
       }
     } catch (error) {
