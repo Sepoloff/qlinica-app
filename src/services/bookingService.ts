@@ -1,131 +1,216 @@
-import {
-  collection,
-  addDoc,
-  query,
-  where,
-  getDocs,
-  updateDoc,
-  doc,
-  Timestamp,
-  QueryConstraint,
-} from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { api } from '../config/api';
 
 export interface Booking {
-  id?: string;
+  id: string;
   userId: string;
   serviceId: string;
-  serviceName: string;
   therapistId: string;
-  therapistName: string;
-  date: Date | Timestamp;
+  date: string;
   time: string;
-  location: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
-  createdAt?: Date | Timestamp;
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/**
- * Criar novo agendamento
- */
-export async function createBooking(
-  userId: string,
-  booking: Omit<Booking, 'userId' | 'createdAt'>
-): Promise<string> {
-  try {
-    const docRef = await addDoc(collection(db, 'bookings'), {
-      ...booking,
-      userId,
-      createdAt: Timestamp.now(),
-      date: booking.date instanceof Date 
-        ? Timestamp.fromDate(booking.date)
-        : booking.date,
-    });
-    return docRef.id;
-  } catch (error) {
-    console.error('Erro ao criar agendamento:', error);
-    throw error;
+export interface Service {
+  id: string;
+  name: string;
+  description: string;
+  duration: number; // in minutes
+  price: number;
+  icon: string;
+}
+
+export interface Therapist {
+  id: string;
+  name: string;
+  specialty: string;
+  rating: number;
+  reviews: number;
+  available: boolean;
+  avatar: string;
+  phone: string;
+  email: string;
+}
+
+export interface AvailableSlot {
+  date: string;
+  time: string;
+  therapistId: string;
+}
+
+class BookingService {
+  // Get all available services
+  async getServices(): Promise<Service[]> {
+    try {
+      const response = await api.get('/services');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching services:', error);
+      throw error;
+    }
+  }
+
+  // Get service by ID
+  async getService(serviceId: string): Promise<Service> {
+    try {
+      const response = await api.get(`/services/${serviceId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching service:', error);
+      throw error;
+    }
+  }
+
+  // Get all therapists
+  async getTherapists(): Promise<Therapist[]> {
+    try {
+      const response = await api.get('/therapists');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching therapists:', error);
+      throw error;
+    }
+  }
+
+  // Get therapists by service
+  async getTherapistsByService(serviceId: string): Promise<Therapist[]> {
+    try {
+      const response = await api.get(`/therapists?serviceId=${serviceId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching therapists by service:', error);
+      throw error;
+    }
+  }
+
+  // Get single therapist
+  async getTherapist(therapistId: string): Promise<Therapist> {
+    try {
+      const response = await api.get(`/therapists/${therapistId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching therapist:', error);
+      throw error;
+    }
+  }
+
+  // Get available time slots
+  async getAvailableSlots(
+    therapistId: string,
+    serviceId: string,
+    date: string
+  ): Promise<string[]> {
+    try {
+      const response = await api.get(`/availability/slots`, {
+        params: {
+          therapistId,
+          serviceId,
+          date,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching available slots:', error);
+      throw error;
+    }
+  }
+
+  // Create booking
+  async createBooking(bookingData: {
+    serviceId: string;
+    therapistId: string;
+    date: string;
+    time: string;
+    notes?: string;
+  }): Promise<Booking> {
+    try {
+      const response = await api.post('/bookings', bookingData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      throw error;
+    }
+  }
+
+  // Get user bookings
+  async getUserBookings(): Promise<Booking[]> {
+    try {
+      const response = await api.get('/bookings');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user bookings:', error);
+      throw error;
+    }
+  }
+
+  // Get booking by ID
+  async getBooking(bookingId: string): Promise<Booking> {
+    try {
+      const response = await api.get(`/bookings/${bookingId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching booking:', error);
+      throw error;
+    }
+  }
+
+  // Update booking
+  async updateBooking(bookingId: string, data: Partial<Booking>): Promise<Booking> {
+    try {
+      const response = await api.put(`/bookings/${bookingId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating booking:', error);
+      throw error;
+    }
+  }
+
+  // Cancel booking
+  async cancelBooking(bookingId: string, reason?: string): Promise<void> {
+    try {
+      await api.post(`/bookings/${bookingId}/cancel`, { reason });
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      throw error;
+    }
+  }
+
+  // Reschedule booking
+  async rescheduleBooking(
+    bookingId: string,
+    newDate: string,
+    newTime: string
+  ): Promise<Booking> {
+    try {
+      const response = await api.post(`/bookings/${bookingId}/reschedule`, {
+        date: newDate,
+        time: newTime,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error rescheduling booking:', error);
+      throw error;
+    }
+  }
+
+  // Check availability for multiple dates
+  async checkMultipleDatesAvailability(
+    therapistId: string,
+    dates: string[]
+  ): Promise<Record<string, boolean>> {
+    try {
+      const response = await api.post('/availability/check-dates', {
+        therapistId,
+        dates,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error checking dates availability:', error);
+      throw error;
+    }
   }
 }
 
-/**
- * Obter agendamentos do utilizador
- */
-export async function getUserBookings(userId: string): Promise<Booking[]> {
-  try {
-    const q = query(
-      collection(db, 'bookings'),
-      where('userId', '==', userId)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Booking[];
-  } catch (error) {
-    console.error('Erro ao obter agendamentos:', error);
-    throw error;
-  }
-}
-
-/**
- * Obter agendamentos próximos (status: upcoming)
- */
-export async function getUpcomingBookings(userId: string): Promise<Booking[]> {
-  try {
-    const q = query(
-      collection(db, 'bookings'),
-      where('userId', '==', userId),
-      where('status', '==', 'upcoming')
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Booking[];
-  } catch (error) {
-    console.error('Erro ao obter próximos agendamentos:', error);
-    throw error;
-  }
-}
-
-/**
- * Atualizar status de agendamento
- */
-export async function updateBookingStatus(
-  bookingId: string,
-  status: 'upcoming' | 'completed' | 'cancelled'
-): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'bookings', bookingId), { status });
-  } catch (error) {
-    console.error('Erro ao atualizar agendamento:', error);
-    throw error;
-  }
-}
-
-/**
- * Cancelar agendamento
- */
-export async function cancelBooking(bookingId: string): Promise<void> {
-  return updateBookingStatus(bookingId, 'cancelled');
-}
-
-/**
- * Remarcar agendamento (atualizar data/hora)
- */
-export async function rescheduleBooking(
-  bookingId: string,
-  newDate: Date,
-  newTime: string
-): Promise<void> {
-  try {
-    await updateDoc(doc(db, 'bookings', bookingId), {
-      date: Timestamp.fromDate(newDate),
-      time: newTime,
-    });
-  } catch (error) {
-    console.error('Erro ao remarcar agendamento:', error);
-    throw error;
-  }
-}
+export default new BookingService();

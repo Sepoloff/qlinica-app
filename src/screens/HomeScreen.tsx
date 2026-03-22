@@ -1,11 +1,51 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LinearGradient } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LinearGradient, ActivityIndicator } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS, SERVICES } from '../constants/Data';
+import { useAuth } from '../context/AuthContext';
+import bookingService, { Booking, Service } from '../services/bookingService';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const { user, isLoading: authLoading } = useAuth();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [])
+  );
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Load services
+      const servicesData = await bookingService.getServices().catch(() => SERVICES as any);
+      setServices(servicesData || SERVICES);
+
+      // Load user bookings if authenticated
+      if (user) {
+        const bookingsData = await bookingService.getUserBookings().catch(() => BOOKINGS as any);
+        setBookings(bookingsData || BOOKINGS);
+      } else {
+        setBookings(BOOKINGS);
+      }
+    } catch (err) {
+      console.error('Error loading home data:', err);
+      setError('Failed to load data');
+      // Fallback to mock data
+      setServices(SERVICES as any);
+      setBookings(BOOKINGS as any);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
@@ -29,7 +69,7 @@ export default function HomeScreen() {
 
         <View style={styles.greeting}>
           <Text style={styles.greetingText}>
-            Olá, <Text style={{ fontWeight: 'bold' }}>Maria</Text>
+            Olá, <Text style={{ fontWeight: 'bold' }}>{user?.name || 'Maria'}</Text>
           </Text>
           <Text style={styles.subGreeting}>Como podemos ajudá-la hoje?</Text>
         </View>
@@ -46,34 +86,53 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Próximas consultas</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('bookings' as never)}>
             <Text style={styles.seeMore}>Ver todas →</Text>
           </TouchableOpacity>
         </View>
 
-        {BOOKINGS.filter(b => b.status === 'upcoming').map((booking) => (
-          <View key={booking.id} style={styles.appointmentCard}>
-            <Text style={styles.appointmentIcon}>
-              {booking.service === 'Fisioterapia' ? '🦴' : '🧘'}
-            </Text>
-            <View style={styles.appointmentInfo}>
-              <Text style={styles.appointmentService}>{booking.service}</Text>
-              <Text style={styles.appointmentTherapist}>{booking.therapist}</Text>
-              <Text style={styles.appointmentTime}>
-                📅 {booking.date} · 🕐 {booking.time}
-              </Text>
-            </View>
+        {loading && !bookings.length ? (
+          <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 20 }} />
+        ) : bookings.filter(b => b.status === 'confirmed').length > 0 ? (
+          bookings
+            .filter(b => b.status === 'confirmed')
+            .slice(0, 3)
+            .map((booking) => (
+              <View key={booking.id} style={styles.appointmentCard}>
+                <Text style={styles.appointmentIcon}>🗓️</Text>
+                <View style={styles.appointmentInfo}>
+                  <Text style={styles.appointmentService}>{booking.serviceId}</Text>
+                  <Text style={styles.appointmentTherapist}>{booking.therapistId}</Text>
+                  <Text style={styles.appointmentTime}>
+                    📅 {booking.date} · 🕐 {booking.time}
+                  </Text>
+                </View>
+              </View>
+            ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>Nenhuma consulta agendada</Text>
+            <TouchableOpacity 
+              style={styles.emptyStateButton}
+              onPress={() => navigation.navigate('ServiceSelection' as never)}
+            >
+              <Text style={styles.emptyStateButtonText}>Agendar agora</Text>
+            </TouchableOpacity>
           </View>
-        ))}
+        )}
       </View>
 
       {/* Services Grid */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Os nossos serviços</Text>
         <View style={styles.servicesGrid}>
-          {SERVICES.map((service) => (
-            <TouchableOpacity key={service.id} style={styles.serviceCard}>
-              <Text style={styles.serviceIcon}>{service.icon}</Text>
+          {(services.length > 0 ? services : SERVICES).map((service) => (
+            <TouchableOpacity 
+              key={service.id} 
+              style={styles.serviceCard}
+              onPress={() => navigation.navigate('ServiceSelection' as never)}
+            >
+              <Text style={styles.serviceIcon}>{'icon' in service ? service.icon : '✨'}</Text>
               <Text style={styles.serviceName}>{service.name}</Text>
             </TouchableOpacity>
           ))}
@@ -250,6 +309,31 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     textAlign: 'center',
     lineHeight: 13,
+    fontFamily: 'DMSans',
+  },
+  emptyState: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 14,
+    marginBottom: 12,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: COLORS.grey,
+    marginBottom: 12,
+    fontFamily: 'DMSans',
+  },
+  emptyStateButton: {
+    backgroundColor: COLORS.gold,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  emptyStateButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primaryDark,
     fontFamily: 'DMSans',
   },
 });

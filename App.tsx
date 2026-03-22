@@ -12,6 +12,7 @@ import TherapistSelectionScreen from './src/screens/TherapistSelectionScreen';
 import CalendarSelectionScreen from './src/screens/CalendarSelectionScreen';
 import { TabBarIcon } from './src/components/TabBarIcon';
 import { BookingProvider } from './src/context/BookingContext';
+import { AuthProvider } from './src/context/AuthContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -66,45 +67,47 @@ function TabNavigator() {
 
 export default function App() {
   return (
-    <BookingProvider>
-      <>
-        <StatusBar barStyle="light-content" />
-        <NavigationContainer>
-          <Stack.Navigator
-            screenOptions={{
-              headerShown: false,
-              animationEnabled: true,
-              cardStyle: { backgroundColor: '#2C3E50' },
-            }}
-          >
-            <Stack.Screen
-              name="MainTabs"
-              component={TabNavigator}
-            />
-            <Stack.Screen
-              name="ServiceSelection"
-              component={ServiceSelectionScreen}
-              options={{
-                presentation: 'card',
+    <AuthProvider>
+      <BookingProvider>
+        <>
+          <StatusBar barStyle="light-content" />
+          <NavigationContainer>
+            <Stack.Navigator
+              screenOptions={{
+                headerShown: false,
+                animationEnabled: true,
+                cardStyle: { backgroundColor: '#2C3E50' },
               }}
-            />
-            <Stack.Screen
-              name="TherapistSelection"
-              component={TherapistSelectionScreen}
-              options={{
-                presentation: 'card',
-              }}
-            />
-            <Stack.Screen
-              name="CalendarSelection"
-              component={CalendarSelectionScreen}
-              options={{
-                presentation: 'card',
-              }}
-            />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </>
-    </BookingProvider>
+            >
+              <Stack.Screen
+                name="MainTabs"
+                component={TabNavigator}
+              />
+              <Stack.Screen
+                name="ServiceSelection"
+                component={ServiceSelectionScreen}
+                options={{
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="TherapistSelection"
+                component={TherapistSelectionScreen}
+                options={{
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="CalendarSelection"
+                component={CalendarSelectionScreen}
+                options={{
+                  presentation: 'card',
+                }}
+              />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </>
+      </BookingProvider>
+    </AuthProvider>
   );
 }

@@ -1,11 +1,76 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants/Colors';
+import { useAuth } from '../context/AuthContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
+  const { user, logout } = useAuth();
   const [notifSms, setNotifSms] = useState(true);
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifPush, setNotifPush] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  useEffect(() => {
+    loadPreferences();
+  }, []);
+
+  const loadPreferences = async () => {
+    try {
+      const prefs = await AsyncStorage.getItem('notificationPrefs');
+      if (prefs) {
+        const parsed = JSON.parse(prefs);
+        setNotifSms(parsed.sms ?? true);
+        setNotifEmail(parsed.email ?? true);
+        setNotifPush(parsed.push ?? false);
+      }
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+    }
+  };
+
+  const savePreferences = async (sms: boolean, email: boolean, push: boolean) => {
+    try {
+      await AsyncStorage.setItem('notificationPrefs', JSON.stringify({ sms, email, push }));
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+    }
+  };
+
+  const handleNotifChange = (type: 'sms' | 'email' | 'push', value: boolean) => {
+    if (type === 'sms') {
+      setNotifSms(value);
+      savePreferences(value, notifEmail, notifPush);
+    } else if (type === 'email') {
+      setNotifEmail(value);
+      savePreferences(notifSms, value, notifPush);
+    } else {
+      setNotifPush(value);
+      savePreferences(notifSms, notifEmail, value);
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Terminar sessão',
+      'Tem a certeza que deseja terminar a sua sessão?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Terminar',
+          onPress: async () => {
+            setLoggingOut(true);
+            try {
+              await logout();
+            } catch (error) {
+              Alert.alert('Erro', 'Falha ao terminar sessão');
+              setLoggingOut(false);
+            }
+          },
+          style: 'destructive',
+        },
+      ]
+    );
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -17,10 +82,10 @@ export default function ProfileScreen() {
       {/* Avatar Section */}
       <View style={styles.avatarSection}>
         <View style={styles.avatarLarge}>
-          <Text style={styles.avatarText}>MC</Text>
+          <Text style={styles.avatarText}>{user?.name?.substring(0, 2).toUpperCase() || 'MC'}</Text>
         </View>
-        <Text style={styles.userName}>Maria Costa</Text>
-        <Text style={styles.userContact}>maria.costa@email.pt · +351 912 345 678</Text>
+        <Text style={styles.userName}>{user?.name || 'Maria Costa'}</Text>
+        <Text style={styles.userContact}>{user?.email || 'maria.costa@email.pt'} · {user?.phone || '+351 912 345 678'}</Text>
       </View>
 
       {/* Personal Info */}
@@ -28,16 +93,15 @@ export default function ProfileScreen() {
         <Text style={styles.sectionLabel}>Dados Pessoais</Text>
         <View style={styles.card}>
           {[
-            { label: 'Nome', value: 'Maria Costa' },
-            { label: 'Contacto', value: '+351 912 345 678' },
-            { label: 'Email', value: 'maria.costa@email.pt' },
-            { label: 'Emergência', value: '+351 918 765 432' },
+            { label: 'Nome', value: user?.name || 'Maria Costa' },
+            { label: 'Contacto', value: user?.phone || '+351 912 345 678' },
+            { label: 'Email', value: user?.email || 'maria.costa@email.pt' },
           ].map((item, i) => (
             <View
               key={i}
               style={[
                 styles.infoItem,
-                i < 3 && styles.infoItemBorder,
+                i < 2 && styles.infoItemBorder,
               ]}
             >
               <Text style={styles.infoLabel}>{item.label}</Text>
@@ -51,27 +115,33 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Notificações</Text>
         <View style={styles.card}>
-          {[
-            { label: 'SMS', value: notifSms, setValue: setNotifSms },
-            { label: 'Email', value: notifEmail, setValue: setNotifEmail },
-            { label: 'Push', value: notifPush, setValue: setNotifPush },
-          ].map((item, i) => (
-            <View
-              key={i}
-              style={[
-                styles.notifItem,
-                i < 2 && styles.notifItemBorder,
-              ]}
-            >
-              <Text style={styles.notifLabel}>{item.label}</Text>
-              <Switch
-                value={item.value}
-                onValueChange={item.setValue}
-                trackColor={{ false: COLORS.primaryLight, true: COLORS.gold }}
-                thumbColor={item.value ? COLORS.white : COLORS.grey}
-              />
-            </View>
-          ))}
+          <View style={styles.notifItem}>
+            <Text style={styles.notifLabel}>SMS</Text>
+            <Switch
+              value={notifSms}
+              onValueChange={(value) => handleNotifChange('sms', value)}
+              trackColor={{ false: COLORS.primaryLight, true: COLORS.gold }}
+              thumbColor={notifSms ? COLORS.white : COLORS.grey}
+            />
+          </View>
+          <View style={[styles.notifItem, styles.notifItemBorder]}>
+            <Text style={styles.notifLabel}>Email</Text>
+            <Switch
+              value={notifEmail}
+              onValueChange={(value) => handleNotifChange('email', value)}
+              trackColor={{ false: COLORS.primaryLight, true: COLORS.gold }}
+              thumbColor={notifEmail ? COLORS.white : COLORS.grey}
+            />
+          </View>
+          <View style={[styles.notifItem, styles.notifItemBorder]}>
+            <Text style={styles.notifLabel}>Push</Text>
+            <Switch
+              value={notifPush}
+              onValueChange={(value) => handleNotifChange('push', value)}
+              trackColor={{ false: COLORS.primaryLight, true: COLORS.gold }}
+              thumbColor={notifPush ? COLORS.white : COLORS.grey}
+            />
+          </View>
         </View>
       </View>
 
@@ -94,8 +164,16 @@ export default function ProfileScreen() {
 
       {/* Logout */}
       <View style={styles.section}>
-        <TouchableOpacity style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Terminar sessão</Text>
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={handleLogout}
+          disabled={loggingOut}
+        >
+          {loggingOut ? (
+            <ActivityIndicator color={COLORS.danger} />
+          ) : (
+            <Text style={styles.logoutText}>Terminar sessão</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>

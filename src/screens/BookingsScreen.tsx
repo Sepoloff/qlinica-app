@@ -1,19 +1,73 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS } from '../constants/Data';
+import { useAuth } from '../context/AuthContext';
+import bookingService, { Booking } from '../services/bookingService';
 
 export default function BookingsScreen() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(0);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
   const tabs = ['Próximas', 'Passadas'];
-  const filtered = BOOKINGS.filter(b =>
-    activeTab === 0 ? b.status === 'upcoming' : b.status !== 'upcoming'
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadBookings();
+    }, [user])
+  );
+
+  const loadBookings = async () => {
+    setLoading(true);
+    try {
+      if (user) {
+        const data = await bookingService.getUserBookings().catch(() => BOOKINGS as any);
+        setBookings(data || BOOKINGS);
+      } else {
+        setBookings(BOOKINGS as any);
+      }
+    } catch (error) {
+      console.error('Error loading bookings:', error);
+      setBookings(BOOKINGS as any);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    Alert.alert(
+      'Cancelar consulta',
+      'Tem a certeza que deseja cancelar esta consulta?',
+      [
+        { text: 'Não', onPress: () => {}, style: 'cancel' },
+        {
+          text: 'Sim',
+          onPress: async () => {
+            try {
+              await bookingService.cancelBooking(bookingId);
+              loadBookings();
+              Alert.alert('Sucesso', 'Consulta cancelada com sucesso');
+            } catch (error) {
+              Alert.alert('Erro', 'Falha ao cancelar consulta');
+            }
+          },
+          style: 'destructive',
+        },
+      ]
+    );
+  };
+
+  const filtered = bookings.filter(b =>
+    activeTab === 0 ? b.status === 'confirmed' : b.status !== 'confirmed'
   );
 
   const statusStyles = {
-    upcoming: { bg: `${COLORS.success}25`, color: COLORS.success, label: 'Agendada' },
-    past: { bg: `${COLORS.grey}25`, color: COLORS.grey, label: 'Concluída' },
+    confirmed: { bg: `${COLORS.success}25`, color: COLORS.success, label: 'Confirmada' },
+    completed: { bg: `${COLORS.grey}25`, color: COLORS.grey, label: 'Concluída' },
     cancelled: { bg: `${COLORS.danger}25`, color: COLORS.danger, label: 'Cancelada' },
+    pending: { bg: `#FFB84D25`, color: '#FFB84D', label: 'Pendente' },
   };
 
   return (
@@ -48,45 +102,57 @@ export default function BookingsScreen() {
 
       {/* Bookings List */}
       <View style={styles.bookingsList}>
-        {filtered.map((booking, index) => {
-          const st = statusStyles[booking.status as keyof typeof statusStyles];
-          return (
-            <View key={booking.id} style={styles.bookingItem}>
-              {/* Timeline dot */}
-              <View style={styles.timelineDot} />
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 40 }} />
+        ) : filtered.length > 0 ? (
+          filtered.map((booking, index) => {
+            const st = statusStyles[booking.status as keyof typeof statusStyles] || { bg: `${COLORS.grey}25`, color: COLORS.grey, label: booking.status };
+            return (
+              <View key={booking.id} style={styles.bookingItem}>
+                {/* Timeline dot */}
+                <View style={styles.timelineDot} />
 
-              <View style={styles.bookingCard}>
-                <View style={styles.bookingHeader}>
-                  <Text style={styles.bookingService}>{booking.service}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
-                    <Text style={[styles.statusText, { color: st.color }]}>
-                      {st.label}
-                    </Text>
+                <View style={styles.bookingCard}>
+                  <View style={styles.bookingHeader}>
+                    <Text style={styles.bookingService}>{booking.serviceId}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: st.bg }]}>
+                      <Text style={[styles.statusText, { color: st.color }]}>
+                        {st.label}
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                <Text style={styles.bookingTherapist}>{booking.therapist}</Text>
+                  <Text style={styles.bookingTherapist}>{booking.therapistId}</Text>
 
-                <View style={styles.bookingDetails}>
-                  <Text style={styles.detailItem}>📅 {booking.date}</Text>
-                  <Text style={styles.detailItem}>🕐 {booking.time}</Text>
-                  <Text style={styles.detailItem}>📍 {booking.location}</Text>
-                </View>
-
-                {booking.status === 'upcoming' && (
-                  <View style={styles.actions}>
-                    <TouchableOpacity style={styles.actionReschedule}>
-                      <Text style={styles.actionText}>Remarcar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionCancel}>
-                      <Text style={styles.actionCancelText}>Cancelar</Text>
-                    </TouchableOpacity>
+                  <View style={styles.bookingDetails}>
+                    <Text style={styles.detailItem}>📅 {booking.date}</Text>
+                    <Text style={styles.detailItem}>🕐 {booking.time}</Text>
                   </View>
-                )}
+
+                  {booking.status === 'confirmed' && (
+                    <View style={styles.actions}>
+                      <TouchableOpacity style={styles.actionReschedule}>
+                        <Text style={styles.actionText}>Remarcar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.actionCancel}
+                        onPress={() => handleCancelBooking(booking.id)}
+                      >
+                        <Text style={styles.actionCancelText}>Cancelar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
               </View>
-            </View>
-          );
-        })}
+            );
+          })
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              {activeTab === 0 ? 'Sem consultas agendadas' : 'Sem histórico de consultas'}
+            </Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -240,6 +306,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: COLORS.danger,
+    fontFamily: 'DMSans',
+  },
+  emptyState: {
+    paddingVertical: 60,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: COLORS.grey,
     fontFamily: 'DMSans',
   },
 });
