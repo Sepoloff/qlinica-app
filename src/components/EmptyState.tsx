@@ -5,7 +5,7 @@ import { COLORS } from '../constants/Colors';
 interface EmptyStateProps {
   icon?: string;
   title: string;
-  message: string;
+  subtitle?: string;
   actionLabel?: string;
   onAction?: () => void;
 }
@@ -13,7 +13,7 @@ interface EmptyStateProps {
 export const EmptyState: React.FC<EmptyStateProps> = ({
   icon = '📭',
   title,
-  message,
+  subtitle,
   actionLabel,
   onAction,
 }) => {
@@ -21,7 +21,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     <View style={styles.container}>
       <Text style={styles.icon}>{icon}</Text>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.message}>{message}</Text>
+      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+
       {actionLabel && onAction && (
         <TouchableOpacity style={styles.button} onPress={onAction}>
           <Text style={styles.buttonText}>{actionLabel}</Text>
@@ -33,12 +34,12 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 60,
-    paddingHorizontal: 20,
     alignItems: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 20,
   },
   icon: {
-    fontSize: 48,
+    fontSize: 56,
     marginBottom: 16,
   },
   title: {
@@ -46,10 +47,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.white,
     fontFamily: 'DMSans',
-    marginBottom: 8,
     textAlign: 'center',
+    marginBottom: 8,
   },
-  message: {
+  subtitle: {
     fontSize: 13,
     color: COLORS.grey,
     fontFamily: 'DMSans',
@@ -59,13 +60,13 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: COLORS.gold,
-    paddingVertical: 10,
     paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 10,
     marginTop: 8,
   },
   buttonText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.primaryDark,
     fontFamily: 'DMSans',
