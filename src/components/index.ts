@@ -1,20 +1,32 @@
-// Reusable Components
-export { Button } from './Button';
-export { Card } from './Card';
-export { Header } from './Header';
-export { InputField } from './InputField';
-export { LoadingSpinner } from './LoadingSpinner';
-export { EmptyState } from './EmptyState';
+'use strict';
 
-// Other Components
-export { TabBarIcon } from './TabBarIcon';
-export { ToastDisplay } from './ToastDisplay';
-export { ErrorBoundary } from './ErrorBoundary';
-export { NetworkStatusBar } from './NetworkStatusBar';
-export { OfflineQueueStatus } from './OfflineQueueStatus';
-export { BookingCard } from './BookingCard';
+/**
+ * Components Barrel Export
+ * Central export point for all reusable components
+ */
+
+// Buttons
+export { Button } from './Button';
+
+// Cards & Containers
+export { Card } from './Card';
+export { AlertBanner } from './AlertBanner';
+
+// Headers & Navigation
+export { Header } from './Header';
+
+// Input Components
+export { FormInput } from './FormInput';
+export { InputField } from './InputField';
+
+// Loading & Placeholders
+export { LoadingSpinner } from './LoadingSpinner';
 export { SkeletonLoader } from './SkeletonLoader';
-export { ProgressIndicator } from './ProgressIndicator';
-export { RatingDisplay } from './RatingDisplay';
-export { TimeSlotPicker } from './TimeSlotPicker';
-export { InfoBox } from './InfoBox';
+
+// Status & Feedback
+export { EmptyState } from './EmptyState';
+export { TabBarIcon } from './TabBarIcon';
+
+// Specialized
+export { default as AlertBanner } from './AlertBanner';
+export { default as SkeletonLoader } from './SkeletonLoader';
