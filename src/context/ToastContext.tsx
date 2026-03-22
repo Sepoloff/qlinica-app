@@ -11,21 +11,26 @@ export interface Toast {
   duration?: number;
 }
 
-interface ToastContextType {
+export interface ToastContextType {
   toasts: Toast[];
+  show: (toast: Omit<Toast, 'id'>) => void;
   showToast: (message: string, type?: ToastType, duration?: number) => void;
   removeToast: (id: string) => void;
   clearAll: () => void;
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+export const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback(
-    (message: string, type: ToastType = 'info', duration: number = 3000) => {
-      const id = Date.now().toString();
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  const show = useCallback(
+    ({ message, type = 'info', duration = 3000 }: Omit<Toast, 'id'>) => {
+      const id = Date.now().toString() + Math.random();
       const newToast: Toast = { id, message, type, duration };
 
       setToasts((prev) => [...prev, newToast]);
@@ -36,19 +41,22 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }, duration);
       }
     },
-    []
+    [removeToast]
   );
 
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
+  const showToast = useCallback(
+    (message: string, type: ToastType = 'info', duration: number = 3000) => {
+      show({ message, type, duration });
+    },
+    [show]
+  );
 
   const clearAll = useCallback(() => {
     setToasts([]);
   }, []);
 
   return (
-    <ToastContext.Provider value={{ toasts, showToast, removeToast, clearAll }}>
+    <ToastContext.Provider value={{ toasts, show, showToast, removeToast, clearAll }}>
       {children}
     </ToastContext.Provider>
   );
