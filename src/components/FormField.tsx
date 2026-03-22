@@ -1,154 +1,134 @@
-'use strict';
-
 import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
-  KeyboardTypeOptions,
+  ViewStyle,
+  TextStyle,
+  TouchableOpacity,
 } from 'react-native';
 import { COLORS } from '../constants/Colors';
 
-export interface FormFieldProps {
+interface FormFieldProps {
   label: string;
-  placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
-  error?: string;
-  hint?: string;
-  required?: boolean;
-  disabled?: boolean;
-  secureTextEntry?: boolean;
-  keyboardType?: KeyboardTypeOptions;
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  maxLength?: number;
-  multiline?: boolean;
-  numberOfLines?: number;
   onBlur?: () => void;
-  onFocus?: () => void;
-  icon?: React.ReactNode;
-  rightElement?: React.ReactNode;
+  placeholder?: string;
+  error?: string | null;
+  touched?: boolean;
+  secureTextEntry?: boolean;
+  keyboardType?: 'default' | 'email-address' | 'phone-pad' | 'numeric';
+  editable?: boolean;
+  multiline?: boolean;
+  maxLength?: number;
+  testID?: string;
+  icon?: string;
+  onIconPress?: () => void;
+  showCharCount?: boolean;
+  required?: boolean;
 }
 
-/**
- * Enhanced form field component with validation display,
- * error messages, hints, and optional icons
- */
 export const FormField: React.FC<FormFieldProps> = ({
   label,
-  placeholder,
   value,
   onChangeText,
+  onBlur,
+  placeholder,
   error,
-  hint,
-  required = false,
-  disabled = false,
+  touched = false,
   secureTextEntry = false,
   keyboardType = 'default',
-  autoCapitalize = 'none',
-  maxLength,
+  editable = true,
   multiline = false,
-  numberOfLines = 1,
-  onBlur,
-  onFocus,
+  maxLength,
+  testID,
   icon,
-  rightElement,
+  onIconPress,
+  showCharCount = false,
+  required = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [hidePassword, setHidePassword] = useState(secureTextEntry);
 
-  const handleFocus = () => {
-    setIsFocused(true);
-    onFocus?.();
-  };
+  const hasError = touched && error;
 
+  const handleFocus = () => setIsFocused(true);
   const handleBlur = () => {
     setIsFocused(false);
     onBlur?.();
   };
 
-  const isSecure = secureTextEntry && !showPassword;
-  const hasError = !!error;
-  const isValid = value.length > 0 && !hasError;
+  const togglePasswordVisibility = () => {
+    setHidePassword(!hidePassword);
+  };
+
+  const charCount = maxLength && showCharCount ? `${value.length}/${maxLength}` : null;
 
   return (
     <View style={styles.container}>
-      {/* Label */}
       <View style={styles.labelContainer}>
         <Text style={styles.label}>
           {label}
           {required && <Text style={styles.required}> *</Text>}
         </Text>
-        {isValid && <Text style={styles.checkmark}>✓</Text>}
-      </View>
-
-      {/* Input Wrapper */}
-      <View
-        style={[
-          styles.inputWrapper,
-          isFocused && styles.inputWrapperFocused,
-          hasError && styles.inputWrapperError,
-          isValid && styles.inputWrapperValid,
-          disabled && styles.inputWrapperDisabled,
-        ]}
-      >
-        {icon && <View style={styles.icon}>{icon}</View>}
-
-        <TextInput
-          style={[
-            styles.input,
-            multiline && styles.inputMultiline,
-            icon ? styles.inputWithIcon : {},
-          ] as any}
-          placeholder={placeholder}
-          placeholderTextColor="#8895a0"
-          value={value}
-          onChangeText={onChangeText}
-          secureTextEntry={isSecure}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          editable={!disabled}
-          maxLength={maxLength}
-          multiline={multiline}
-          numberOfLines={numberOfLines}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-        />
-
-        {/* Password toggle or right element */}
-        {secureTextEntry ? (
-          <TouchableOpacity
-            style={styles.toggleButton}
-            onPress={() => setShowPassword(!showPassword)}
+        {charCount && (
+          <Text
+            style={[
+              styles.charCount,
+              value.length >= maxLength! * 0.9 && styles.charCountWarning,
+            ]}
           >
-            <Text style={styles.toggleText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
-          </TouchableOpacity>
-        ) : (
-          rightElement && <View style={styles.rightElement}>{rightElement}</View>
+            {charCount}
+          </Text>
         )}
       </View>
 
-      {/* Error Message */}
+      <View
+        style={[
+          styles.inputContainer,
+          isFocused && styles.inputContainerFocused,
+          hasError && styles.inputContainerError,
+          !editable && styles.inputContainerDisabled,
+        ]}
+      >
+        {icon && (
+          <TouchableOpacity onPress={onIconPress} disabled={!onIconPress}>
+            <Text style={styles.icon}>{icon}</Text>
+          </TouchableOpacity>
+        )}
+
+        <TextInput
+          style={[styles.input, multiline && styles.inputMultiline]}
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          placeholderTextColor={COLORS.grey}
+          secureTextEntry={hidePassword}
+          keyboardType={keyboardType}
+          editable={editable}
+          multiline={multiline}
+          maxLength={maxLength}
+          testID={testID}
+        />
+
+        {secureTextEntry && (
+          <TouchableOpacity
+            onPress={togglePasswordVisibility}
+            style={styles.iconButton}
+          >
+            <Text style={styles.eyeIcon}>
+              {hidePassword ? '👁️' : '🙈'}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       {hasError && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>⚠️ {error}</Text>
-        </View>
-      )}
-
-      {/* Hint */}
-      {hint && !hasError && (
-        <View style={styles.hintContainer}>
-          <Text style={styles.hintText}>💡 {hint}</Text>
-        </View>
-      )}
-
-      {/* Character count for limited input */}
-      {maxLength && value.length > maxLength * 0.7 && (
-        <Text style={styles.charCount}>
-          {value.length}/{maxLength}
-        </Text>
+        <Text style={styles.errorText}>{error}</Text>
       )}
     </View>
   );
@@ -167,93 +147,71 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#E8E8E8',
+    color: COLORS.white,
     fontFamily: 'DMSans',
   },
   required: {
-    color: '#DC3545',
+    color: COLORS.danger,
+    fontWeight: '700',
   },
-  checkmark: {
-    fontSize: 16,
-    color: '#28A745',
-    fontWeight: 'bold',
+  charCount: {
+    fontSize: 12,
+    color: COLORS.grey,
+    fontFamily: 'DMSans',
   },
-  inputWrapper: {
+  charCountWarning: {
+    color: COLORS.gold,
+  },
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#34495E',
+    backgroundColor: COLORS.primaryLight,
     borderRadius: 12,
-    paddingHorizontal: 12,
     borderWidth: 1.5,
-    borderColor: '#34495E',
-    overflow: 'hidden',
+    borderColor: `${COLORS.gold}20`,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 48,
   },
-  inputWrapperFocused: {
+  inputContainerFocused: {
     borderColor: COLORS.gold,
-    backgroundColor: '#3D536B',
+    backgroundColor: `${COLORS.gold}05`,
   },
-  inputWrapperError: {
-    borderColor: '#DC3545',
-    backgroundColor: '#4A3A3A',
+  inputContainerError: {
+    borderColor: COLORS.danger,
+    backgroundColor: `${COLORS.danger}08`,
   },
-  inputWrapperValid: {
-    borderColor: '#28A745',
-  },
-  inputWrapperDisabled: {
-    backgroundColor: '#2C3E50',
+  inputContainerDisabled: {
+    backgroundColor: `${COLORS.grey}15`,
     opacity: 0.6,
-  },
-  icon: {
-    marginRight: 8,
-    fontSize: 16,
   },
   input: {
     flex: 1,
-    color: '#E8E8E8',
     fontSize: 14,
+    color: COLORS.white,
     fontFamily: 'DMSans',
-    paddingVertical: 12,
-  },
-  inputWithIcon: {
-    marginLeft: 4,
+    padding: 0,
   },
   inputMultiline: {
-    paddingVertical: 10,
-    maxHeight: 120,
+    minHeight: 100,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
-  toggleButton: {
-    padding: 8,
-    marginLeft: 4,
-  },
-  toggleText: {
+  icon: {
     fontSize: 18,
+    marginRight: 10,
   },
-  rightElement: {
+  iconButton: {
+    padding: 8,
     marginLeft: 8,
   },
-  errorContainer: {
-    marginTop: 6,
+  eyeIcon: {
+    fontSize: 16,
   },
   errorText: {
     fontSize: 12,
-    color: '#DC3545',
-    fontFamily: 'DMSans',
-    fontWeight: '500',
-  },
-  hintContainer: {
+    color: COLORS.danger,
     marginTop: 6,
-  },
-  hintText: {
-    fontSize: 12,
-    color: '#8895a0',
     fontFamily: 'DMSans',
-    fontStyle: 'italic',
-  },
-  charCount: {
-    fontSize: 11,
-    color: '#8895a0',
-    fontFamily: 'DMSans',
-    marginTop: 4,
-    textAlign: 'right',
   },
 });

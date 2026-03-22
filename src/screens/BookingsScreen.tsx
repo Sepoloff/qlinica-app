@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, RefreshControl, ToastAndroid } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS } from '../constants/Data';
@@ -106,11 +106,21 @@ export default function BookingsScreen() {
                   }
                 }
                 
-                toast.success('✅ Consulta cancelada com sucesso');
+                showToast({
+                  type: 'success',
+                  title: 'Sucesso',
+                  message: 'Consulta cancelada com sucesso'
+                });
+                trackEvent('booking_cancelled', { bookingId });
               } catch (error: any) {
                 logger.error('Error cancelling booking', error, 'BookingsScreen');
                 const errorMsg = error.message || 'Falha ao cancelar consulta. Tente novamente.';
-                toast.error(`❌ ${errorMsg}`);
+                showToast({
+                  type: 'error',
+                  title: 'Erro',
+                  message: errorMsg
+                });
+                trackEvent('booking_cancel_error', { error: errorMsg });
               } finally {
                 setCancelling(null);
                 resolve();
