@@ -1,80 +1,217 @@
-import { useEffect, useState, useRef } from 'react';
+/**
+ * useFetch Hook
+ * Centralized data fetching with error handling, loading states, and retries
+ */
 
-interface UseFetchOptions {
-  skip?: boolean;
-  retryCount?: number;
-  onError?: (error: Error) => void;
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { analyticsService } from '../services/analyticsService';
+import { useNetworkStatus } from '../utils/networkStatus';
+import { MESSAGES } from '../constants/Messages';
+
+export interface FetchOptions<T = any> {
+  onSuccess?: (data: T) => void;
+  onError?: (error: Error | string) => void;
+  retries?: number;
+  retryDelay?: number;
+  timeout?: number;
+  skip?: boolean; // Don't fetch automatically
 }
 
-interface UseFetchResult<T> {
+export interface FetchState<T> {
   data: T | null;
   loading: boolean;
-  error: Error | null;
-  refetch: () => Promise<void>;
+  error: Error | string | null;
+  retry: () => Promise<void>;
 }
 
 /**
- * Generic hook for data fetching with error handling and retry logic
+ * Hook for fetching data with automatic error handling
  */
-export const useFetch = <T,>(
+export const useFetch = <T = any,>(
   fetchFn: () => Promise<T>,
-  options: UseFetchOptions = {}
-): UseFetchResult<T> => {
-  const { skip = false, retryCount: maxRetries = 3, onError } = options;
-  
+  options?: FetchOptions<T>
+): FetchState<T> => {
+  const { isOnline } = useNetworkStatus();
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(!skip);
-  const [error, setError] = useState<Error | null>(null);
-  
-  const retries = useRef(0);
-  const isMounted = useRef(true);
+  const [loading, setLoading] = useState(!options?.skip);
+  const [error, setError] = useState<Error | string | null>(null);
+  const attemptsRef = useRef(0);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
-  const fetchData = async () => {
+  const {
+    onSuccess,
+    onError,
+    retries = 3,
+    retryDelay = 1000,
+    timeout = 10000,
+    skip = false,
+  } = options || {};
+
+  const performFetch = useCallback(async () => {
     if (skip) return;
 
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
+      // Check network connection
+      if (!isOnline) {
+        throw new Error(MESSAGES.NETWORK.NO_CONNECTION);
+      }
+
+      // Set timeout
+      const fetchPromise = Promise.race([
+        fetchFn(),
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error(MESSAGES.NETWORK.TIMEOUT)), timeout)
+        ),
+      ]);
+
+      const result = await fetchPromise;
+      setData(result);
       setError(null);
-      
-      const result = await fetchFn();
-      
-      if (isMounted.current) {
-        setData(result);
-        retries.current = 0;
+      attemptsRef.current = 0;
+
+      // Track successful fetch
+      analyticsService.trackEvent('fetch_success', {
+        dataSize: typeof result === 'string' ? result.length : 'unknown',
+      });
+
+      if (onSuccess) {
+        onSuccess(result);
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
-      
-      if (retries.current < maxRetries) {
-        retries.current++;
-        // Exponential backoff: 1s, 2s, 4s
-        const delay = 1000 * Math.pow(2, retries.current - 1);
-        setTimeout(fetchData, delay);
+      attemptsRef.current += 1;
+
+      // Retry logic
+      if (attemptsRef.current < retries) {
+        const delay = retryDelay * Math.pow(2, attemptsRef.current - 1);
+        console.log(`Fetch failed. Retrying in ${delay}ms (${attemptsRef.current}/${retries})`);
+
+        analyticsService.trackEvent('fetch_retry', {
+          attempt: attemptsRef.current,
+          error: error.message,
+          nextDelay: delay,
+        });
+
+        timeoutRef.current = setTimeout(() => {
+          performFetch();
+        }, delay);
       } else {
-        if (isMounted.current) {
-          setError(error);
+        // All retries exhausted
+        setError(error);
+        setData(null);
+
+        analyticsService.trackError(error, {
+          operation: 'useFetch',
+          totalAttempts: attemptsRef.current,
+        });
+
+        if (onError) {
+          onError(error);
         }
-        onError?.(error);
       }
     } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
-  };
+  }, [fetchFn, isOnline, retries, retryDelay, timeout, skip, onSuccess, onError]);
 
+  // Initial fetch
   useEffect(() => {
-    fetchData();
+    if (!skip) {
+      performFetch();
+    }
 
     return () => {
-      isMounted.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
   }, []);
 
-  const refetch = async () => {
-    retries.current = 0;
-    await fetchData();
-  };
+  const retry = useCallback(async () => {
+    attemptsRef.current = 0;
+    await performFetch();
+  }, [performFetch]);
 
-  return { data, loading, error, refetch };
+  return { data, loading, error, retry };
+};
+
+/**
+ * Hook for mutations (POST, PUT, DELETE)
+ */
+export interface MutationOptions<T = any> {
+  onSuccess?: (data: T) => void;
+  onError?: (error: Error | string) => void;
+  timeout?: number;
+}
+
+export interface MutationState<T> {
+  loading: boolean;
+  error: Error | string | null;
+  mutate: (fn: () => Promise<T>) => Promise<T | null>;
+  reset: () => void;
+}
+
+export const useMutation = <T = any,>(
+  options?: MutationOptions<T>
+): MutationState<T> => {
+  const { isOnline } = useNetworkStatus();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | string | null>(null);
+
+  const { onSuccess, onError, timeout = 10000 } = options || {};
+
+  const mutate = useCallback(async (fn: () => Promise<T>): Promise<T | null> => {
+    if (!isOnline) {
+      const networkError = MESSAGES.NETWORK.NO_CONNECTION;
+      setError(networkError);
+      if (onError) onError(networkError);
+      return null;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await Promise.race([
+        fn(),
+        new Promise<T>((_, reject) =>
+          setTimeout(() => reject(new Error(MESSAGES.NETWORK.TIMEOUT)), timeout)
+        ),
+      ]);
+
+      setError(null);
+      analyticsService.trackEvent('mutation_success');
+
+      if (onSuccess) {
+        onSuccess(result);
+      }
+
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+
+      analyticsService.trackError(error, {
+        operation: 'useMutation',
+      });
+
+      if (onError) {
+        onError(error);
+      }
+
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [isOnline, timeout, onSuccess, onError]);
+
+  const reset = useCallback(() => {
+    setLoading(false);
+    setError(null);
+  }, []);
+
+  return { loading, error, mutate, reset };
 };
