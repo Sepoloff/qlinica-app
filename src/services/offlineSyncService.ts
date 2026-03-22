@@ -4,7 +4,8 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import bookingService, { Booking } from './bookingService';
+import { bookingService } from './bookingService';
+import type { Booking } from './bookingService';
 import { analyticsService } from './analyticsService';
 
 export interface OfflineBookingQueue {

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEYS = {
   AUTH_TOKEN: 'authToken',
+  REFRESH_TOKEN: 'refreshToken',
   USER_PROFILE: 'userProfile',
   NOTIFICATION_PREFS: 'notificationPrefs',
   BOOKINGS_CACHE: 'bookingsCache',
@@ -63,6 +64,9 @@ export const authStorage = {
   getToken: () => getStorageItem<string>(STORAGE_KEYS.AUTH_TOKEN),
   setToken: (token: string) => setStorageItem(STORAGE_KEYS.AUTH_TOKEN, token),
   removeToken: () => removeStorageItem(STORAGE_KEYS.AUTH_TOKEN),
+  getRefreshToken: () => getStorageItem<string>(STORAGE_KEYS.REFRESH_TOKEN),
+  setRefreshToken: (token: string) => setStorageItem(STORAGE_KEYS.REFRESH_TOKEN, token),
+  removeRefreshToken: () => removeStorageItem(STORAGE_KEYS.REFRESH_TOKEN),
 };
 
 /**

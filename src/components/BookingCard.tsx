@@ -29,11 +29,13 @@ const getStatusColor = (status: Booking['status']) => {
 };
 
 const getStatusLabel = (status: Booking['status']) => {
-  const labels: Record<Booking['status'], string> = {
+  const labels: Record<'confirmed' | 'completed' | 'cancelled' | 'pending' | 'upcoming' | 'past', string> = {
     confirmed: 'Confirmada',
     completed: 'Concluída',
     cancelled: 'Cancelada',
     pending: 'Pendente',
+    upcoming: 'Próxima',
+    past: 'Passada',
   };
   return labels[status];
 };

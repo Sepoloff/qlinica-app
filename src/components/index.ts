@@ -26,7 +26,3 @@ export { SkeletonLoader } from './SkeletonLoader';
 // Status & Feedback
 export { EmptyState } from './EmptyState';
 export { TabBarIcon } from './TabBarIcon';
-
-// Specialized
-export { default as AlertBanner } from './AlertBanner';
-export { default as SkeletonLoader } from './SkeletonLoader';

@@ -14,4 +14,10 @@ export const COLORS = {
   danger: '#E74C3C',
   info: '#3498DB',
   warning: '#F39C12',
+  // Text colors for alerts/messages
+  text: '#FFFFFF',
+  textDark: '#2C3E50',
+  textLight: '#8895a0',
+  textError: '#E74C3C',
+  error: '#E74C3C',
 };

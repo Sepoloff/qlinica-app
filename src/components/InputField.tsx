@@ -86,7 +86,7 @@ export const InputField: React.FC<InputFieldProps> = ({
           isFocused && styles.inputWrapperFocused,
           error && styles.inputWrapperError,
           disabled && styles.inputWrapperDisabled,
-        ]}
+        ] as ViewStyle}
       >
         {icon && (
           <Text style={styles.leftIcon}>{icon}</Text>
@@ -95,7 +95,7 @@ export const InputField: React.FC<InputFieldProps> = ({
         <TextInput
           style={[
             styles.input,
-            icon && { paddingLeft: 0 },
+            icon && { paddingLeft: 0 } as TextStyle,
             inputStyle,
           ]}
           placeholder={placeholder}

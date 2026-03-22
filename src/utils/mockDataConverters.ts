@@ -33,15 +33,12 @@ export const convertMockBooking = (mockBooking: typeof BOOKINGS[0], userId?: str
  * Convert mock service data to proper Service type
  */
 export const convertMockService = (mockService: typeof SERVICES[0]): Service => {
-  const durationMin = parseInt(mockService.duration);
-  const priceNum = parseFloat(mockService.price);
-  
   return {
     id: String(mockService.id),
     name: mockService.name,
-    description: mockService.desc,
-    duration: durationMin,
-    price: priceNum,
+    description: mockService.description,
+    duration: mockService.duration,
+    price: mockService.price,
     icon: mockService.icon,
   };
 };
@@ -55,11 +52,10 @@ export const convertMockTherapist = (mockTherapist: typeof THERAPISTS[0]): Thera
     name: mockTherapist.name,
     specialty: mockTherapist.specialty,
     rating: mockTherapist.rating,
-    reviews: mockTherapist.reviews,
+    reviews_count: mockTherapist.reviews_count,
     available: mockTherapist.available,
     avatar: mockTherapist.avatar,
     phone: '+351 912 345 678',
-    email: 'therapist@qlinica.pt',
   };
 };
 
