@@ -1,4 +1,5 @@
 import { api } from '../config/api';
+import { handleAPIError, logAPIError } from './errorHandler';
 
 export interface Booking {
   id: string;
@@ -46,9 +47,10 @@ class BookingService {
     try {
       const response = await api.get('/services');
       return response.data;
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      throw error;
+    } catch (error: any) {
+      const apiError = handleAPIError(error);
+      logAPIError(apiError, 'BookingService.getServices');
+      throw apiError;
     }
   }
 

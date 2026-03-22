@@ -13,3 +13,7 @@ export type { FormErrors, UseFormOptions } from './useForm';
 
 // Local storage
 export { useLocalStorage, useLocalStorageMultiple } from './useLocalStorage';
+
+// API management
+export { useAPI, useSequentialAPI } from './useAPI';
+export type { UseAPIState, UseAPIOptions } from './useAPI';
