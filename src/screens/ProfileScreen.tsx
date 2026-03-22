@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, ActivityIndicator, TextInput, Modal, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
 import { useQuickToast } from '../hooks/useToast';
-import { validatePhone, validateEmail } from '../utils/validation';
+import { validatePhone } from '../utils/validation';
 import { FormInput } from '../components/FormInput';
+import { Button } from '../components/Button';
+import { AlertModal } from '../components/AlertModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
@@ -97,8 +99,9 @@ export default function ProfileScreen() {
             setLoggingOut(true);
             try {
               await logout();
+              toast.success('✅ Sessão terminada com sucesso');
             } catch (error) {
-              Alert.alert('Erro', 'Falha ao terminar sessão');
+              toast.error('❌ Falha ao terminar sessão');
               setLoggingOut(false);
             }
           },
@@ -211,17 +214,15 @@ export default function ProfileScreen() {
 
       {/* Logout */}
       <View style={styles.section}>
-        <TouchableOpacity 
-          style={styles.logoutButton}
+        <Button
+          label={loggingOut ? 'Terminando...' : 'Terminar sessão'}
           onPress={handleLogout}
           disabled={loggingOut}
-        >
-          {loggingOut ? (
-            <ActivityIndicator color={COLORS.danger} />
-          ) : (
-            <Text style={styles.logoutText}>Terminar sessão</Text>
-          )}
-        </TouchableOpacity>
+          loading={loggingOut}
+          variant="danger"
+          size="lg"
+          style={styles.logoutButton}
+        />
       </View>
 
       {/* Edit Phone Modal */}
@@ -249,24 +250,23 @@ export default function ProfileScreen() {
               </Text>
             </View>
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalButtonSecondary}
+              <Button
+                label="Cancelar"
                 onPress={() => setEditingPhone(false)}
                 disabled={savingPhone}
-              >
-                <Text style={styles.modalButtonSecondaryText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButtonPrimary, savingPhone && styles.modalButtonDisabled]}
+                variant="secondary"
+                size="md"
+                style={{ flex: 1 }}
+              />
+              <Button
+                label={savingPhone ? 'Guardando...' : 'Guardar'}
                 onPress={handleSavePhone}
                 disabled={savingPhone}
-              >
-                {savingPhone ? (
-                  <ActivityIndicator color={COLORS.primaryDark} />
-                ) : (
-                  <Text style={styles.modalButtonPrimaryText}>Guardar</Text>
-                )}
-              </TouchableOpacity>
+                loading={savingPhone}
+                variant="primary"
+                size="md"
+                style={{ flex: 1, marginLeft: 12 }}
+              />
             </View>
           </View>
         </View>
@@ -415,18 +415,7 @@ const styles = StyleSheet.create({
     fontFamily: 'DMSans',
   },
   logoutButton: {
-    backgroundColor: `${COLORS.danger}08`,
-    borderWidth: 1,
-    borderColor: `${COLORS.danger}20`,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.danger,
-    fontFamily: 'DMSans',
+    marginTop: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -470,36 +459,5 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     gap: 12,
-  },
-  modalButtonSecondary: {
-    flex: 1,
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: `${COLORS.gold}30`,
-  },
-  modalButtonSecondaryText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.gold,
-    fontFamily: 'DMSans',
-  },
-  modalButtonPrimary: {
-    flex: 1,
-    backgroundColor: COLORS.gold,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  modalButtonPrimaryText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.primaryDark,
-    fontFamily: 'DMSans',
-  },
-  modalButtonDisabled: {
-    opacity: 0.5,
   },
 });
