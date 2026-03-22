@@ -16,6 +16,7 @@ import LoginScreen from './src/screens/AuthScreens/LoginScreen';
 import RegisterScreen from './src/screens/AuthScreens/RegisterScreen';
 import { TabBarIcon } from './src/components/TabBarIcon';
 import { ToastDisplay } from './src/components/ToastDisplay';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { BookingProvider } from './src/context/BookingContext';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
@@ -151,16 +152,18 @@ function RootNavigator() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BookingProvider>
-        <ToastProvider>
-          <StatusBar style="light" />
-          <NavigationContainer>
-            <RootNavigator />
-          </NavigationContainer>
-          <ToastDisplay />
-        </ToastProvider>
-      </BookingProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BookingProvider>
+          <ToastProvider>
+            <StatusBar style="light" />
+            <NavigationContainer>
+              <RootNavigator />
+            </NavigationContainer>
+            <ToastDisplay />
+          </ToastProvider>
+        </BookingProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
