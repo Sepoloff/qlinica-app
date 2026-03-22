@@ -250,10 +250,17 @@
 - [ ] Refund support
 
 ### Push Notifications
-- [ ] expo-notifications setup
-- [ ] Permission handling
-- [ ] Booking notifications
-- [ ] Tap handling
+- [x] expo-notifications setup
+- [x] Permission handling
+- [x] Booking notifications
+- [x] Tap handling
+- [x] NotificationContext for preferences
+- [x] useNotificationManager hook
+- [x] NotificationPreferences component
+- [ ] Integration into BookingSummaryScreen
+- [ ] Integration into BookingsScreen
+- [ ] Integration into HomeScreen
+- [ ] Backend push token sync
 
 ### Testing
 - [ ] Unit tests for components
