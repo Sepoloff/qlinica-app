@@ -1,348 +1,396 @@
-# Qlinica Development Guide
+# Qlinica App - Guia de Desenvolvimento
 
-## 📚 Project Structure
+## 📋 Visão Geral
+
+Aplicação React Native para agendamento de consultas clínicas com:
+- ✅ Autenticação JWT com AuthContext
+- ✅ Integração API com retry logic e fallback
+- ✅ Fluxo de booking multi-step
+- ✅ Offline support com sincronização
+- ✅ Notificações e lembretes
+- ✅ Validação robusta de inputs
+- ✅ Error boundaries e tratamento centralizado de erros
+
+## 🏗️ Arquitetura
 
 ```
-qlinica-app/
-├── src/
-│   ├── screens/
-│   │   ├── AuthScreens/
-│   │   │   ├── LoginScreen.tsx       # Login with email/password
-│   │   │   └── RegisterScreen.tsx    # Registration with validation
-│   │   ├── HomeScreen.tsx            # Dashboard with upcoming bookings
-│   │   ├── BookingsScreen.tsx        # Booking history & management
-│   │   ├── ProfileScreen.tsx         # User profile & preferences
-│   │   ├── ServiceSelectionScreen.tsx    # Step 1: Choose service
-│   │   ├── TherapistSelectionScreen.tsx  # Step 2: Choose therapist
-│   │   ├── CalendarSelectionScreen.tsx   # Step 3: Choose date/time
-│   │   └── BookingSummaryScreen.tsx      # Step 4: Confirm booking
-│   ├── components/
-│   │   ├── Button.tsx                # Reusable button (primary/secondary/danger)
-│   │   ├── Card.tsx                  # Card container
-│   │   ├── ErrorBoundary.tsx         # Error boundary wrapper
-│   │   ├── Header.tsx                # Reusable header with back button
-│   │   ├── LoadingSpinner.tsx        # Loading indicator
-│   │   ├── TabBarIcon.tsx            # Bottom tab icons
-│   │   ├── ToastDisplay.tsx          # Toast notifications
-│   │   └── EmptyState.tsx            # Empty state UI
-│   ├── context/
-│   │   ├── AuthContext.tsx           # Authentication state (login/register/logout)
-│   │   ├── BookingContext.tsx        # Booking form state
-│   │   └── ToastContext.tsx          # Toast notifications state
-│   ├── services/
-│   │   └── bookingService.ts         # API calls for bookings
-│   ├── config/
-│   │   ├── api.ts                    # Axios setup with JWT interceptors
-│   │   └── firebase.ts               # Firebase config (optional)
-│   ├── constants/
-│   │   ├── Colors.ts                 # Color palette
-│   │   └── Data.ts                   # Mock data for development
-│   ├── utils/
-│   │   ├── validation.ts             # Form validation utilities
-│   │   └── storage.ts                # AsyncStorage helpers
-│   ├── hooks/
-│   │   └── useBooking.ts             # Custom hook for booking
-│   └── App.tsx                       # Root component with navigation
-└── package.json
+src/
+├── screens/          # Écrans principais
+│   ├── AuthScreens/  # Login, Register, ResetPassword
+│   └── BookingScreens/ # Fluxo de agendamento
+├── context/          # Estado global (Auth, Booking, Toast)
+├── services/         # Lógica de negócio (API, Auth, Booking)
+├── hooks/            # Custom hooks reutilizáveis
+├── components/       # Componentes UI reutilizáveis
+├── utils/            # Utilitários (validation, storage, etc)
+├── constants/        # Cores, dados mock, mensagens
+└── config/           # Configurações (API, Firebase)
 ```
 
-## 🔐 Authentication Flow
+## 🔐 Autenticação
 
-### Login/Register
-1. User opens app → checks AuthContext for token
-2. If no token → shows LoginScreen
-3. User can login or navigate to RegisterScreen
-4. On successful auth → token saved to AsyncStorage
-5. Navigation automatically shows MainTabs
+### AuthContext (`src/context/AuthContext.tsx`)
+```typescript
+const { user, isAuthenticated, login, register, logout, updateUser, error } = useAuth();
 
-### Protected Routes
-- BookingsScreen: Shows user's bookings (requires auth)
-- ProfileScreen: Shows user profile (requires auth)
-- Booking flow: Requires authentication before confirmation
+// Login
+await login('user@example.com', 'password123');
 
-## 📋 Booking Flow
+// Register
+await register('user@example.com', 'Password123', 'João Silva');
 
-1. **HomeScreen**: User clicks "Agendar Consulta"
-2. **ServiceSelectionScreen**: Choose service (e.g., Fisioterapia)
-3. **TherapistSelectionScreen**: Choose therapist from available list
-4. **CalendarSelectionScreen**: Choose date and time slot
-5. **BookingSummaryScreen**: Review and confirm booking
-6. **Success**: Alert + navigate to BookingsScreen
-
-### Data Flow
-```
-HomeScreen
-  ↓
-ServiceSelectionScreen (setService in BookingContext)
-  ↓
-TherapistSelectionScreen (setTherapist in BookingContext)
-  ↓
-CalendarSelectionScreen (setDateTime in BookingContext)
-  ↓
-API call: createBooking() with bookingData
-  ↓
-Success → BookingsScreen
+// Logout
+await logout();
 ```
 
-## 🎯 Key Features
+**Validação:**
+- Email: RFC 5322 compliant
+- Password: Min 8 chars, 1 uppercase, 1 number
+- Name: Min 2 chars, sem números
 
-### Authentication
-- ✅ Email/password login
-- ✅ Email/password registration
-- ✅ Password strength indicator
-- ✅ Form validation
-- ✅ Auto-login on app start
-- ✅ Secure token storage
+### Token Storage
+- Guardado em AsyncStorage
+- Incluído automaticamente em todos os requests via interceptor
+- Auto-refresh em caso de expiração
 
-### Booking Management
-- ✅ Step-by-step booking wizard
-- ✅ Service selection with descriptions
-- ✅ Therapist selection with ratings
-- ✅ Date/time slot selection
-- ✅ Booking confirmation
-- ✅ Booking cancellation
-- ✅ Booking rescheduling
+## 🛒 Fluxo de Booking
 
-### Notifications
-- ✅ Toast notifications (success/error/info/warning)
-- ✅ Auto-dismiss after 3 seconds
-- ✅ Stackable notifications
+### Passos:
+1. **ServiceSelectionScreen** - Escolher serviço
+2. **TherapistSelectionScreen** - Escolher terapeuta
+3. **CalendarSelectionScreen** - Data e hora
+4. **BookingSummaryScreen** - Confirmar agendamento
 
-### UI/UX
-- ✅ Dark theme with gold accents
-- ✅ Responsive design
-- ✅ Loading states
-- ✅ Error handling & boundaries
-- ✅ Empty states
-- ✅ Smooth animations
+### Estado Global
+```typescript
+const { bookingData, setService, setTherapist, setDateTime, resetBooking } = useBooking();
 
-## 📝 Validation Rules
+// Ou via BookingFlowContext
+const { bookingState, setBookingState, submitBooking } = useBookingFlow();
+```
 
-### Email
-- Standard email format
-- Must contain @ and domain
+### Criar Booking
+```typescript
+const booking = await bookingService.createBooking({
+  serviceId: 1,
+  therapistId: 2,
+  date: '22/03/2026',
+  time: '14:30',
+  notes: 'Observações opcionais'
+});
+```
 
-### Password
-- Minimum 8 characters
-- At least 1 uppercase letter
-- At least 1 number
-
-### Phone (optional)
-- Portuguese format: +351 9XXXXXXXX or 9XXXXXXXX
-
-### Name
-- Minimum 2 characters
-- No numbers
-
-### Booking Dates
-- Cannot select dates in the past
-- Excludes Sundays by default
-
-## 🔌 API Integration
+## 📱 API & Integração
 
 ### Base URL
 ```
 http://localhost:3000/api (development)
 ```
 
-Set via `REACT_APP_API_URL` environment variable.
+### Endpoints Utilizados
 
-### Authentication
-- All requests include JWT token in Authorization header
-- Expired tokens trigger logout
-- Requests auto-retry on network failure
+**Auth:**
+- `POST /auth/login` - Login
+- `POST /auth/register` - Registro
+- `POST /auth/logout` - Logout
+- `PUT /auth/user` - Atualizar perfil
 
-### Endpoints Used
+**Bookings:**
+- `GET /bookings` - Listar agendamentos
+- `GET /bookings/:id` - Detalhes de agendamento
+- `POST /bookings` - Criar agendamento
+- `PUT /bookings/:id` - Atualizar agendamento
+- `DELETE /bookings/:id` - Cancelar agendamento
+
+**Services:**
+- `GET /services` - Listar serviços
+- `GET /therapists` - Listar terapeutas
+- `GET /therapists/:id/slots` - Horários disponíveis
+
+### Retry Logic
+
+Implementado em `src/config/api.ts`:
+- Max 3 tentativas
+- Exponential backoff com jitter
+- 500ms inicial, máx 8s
+- Falha em 401 (não tenta novamente)
 
 ```
-POST   /auth/login              # Login
-POST   /auth/register           # Register
-POST   /auth/logout             # Logout
-PUT    /auth/user               # Update user profile
-GET    /services                # Get all services
-GET    /services/:id            # Get service details
-GET    /therapists              # Get all therapists
-GET    /therapists/:id          # Get therapist details
-GET    /therapists?serviceId=X  # Get therapists by service
-GET    /availability/slots      # Get available time slots
-POST   /availability/check-dates # Check multiple dates
-POST   /bookings                # Create booking
-GET    /bookings                # Get user bookings
-GET    /bookings/:id            # Get booking details
-PUT    /bookings/:id            # Update booking
-POST   /bookings/:id/cancel     # Cancel booking
-POST   /bookings/:id/reschedule # Reschedule booking
+Attempt 1: 500ms + random(0-500)
+Attempt 2: 1000ms + random(0-500)
+Attempt 3: 2000ms + random(0-500)
+```
+
+### Fallback de Dados Mock
+
+Todos os serviços têm fallback:
+```typescript
+const services = await bookingService.getServices()
+  .catch(() => convertMockServices());
+```
+
+## ✅ Validação
+
+### Hooks Utilitários
+
+```typescript
+const { errors, validateField, validateForm, clearErrors } = useFormValidation();
+
+// Validar campo individual
+const error = validateField('email', 'user@example.com');
+
+// Validar formulário inteiro
+const result = validateForm('register', { 
+  email, password, name 
+});
+```
+
+### Validadores (`src/utils/validation.ts`)
+- `validateEmail()` - RFC 5322
+- `validatePassword()` - Min 8 chars, uppercase, number
+- `validatePhone()` - Números portugueses
+- `validateName()` - Min 2 chars
+- `validateDate()` - Não passado
+
+## 📲 Notificações
+
+### Toast Notifications
+```typescript
+const toast = useQuickToast();
+
+toast.success('Sucesso!');
+toast.error('Erro!');
+toast.info('Informação');
+toast.warning('Aviso');
+```
+
+Duração padrão:
+- Success: 3s
+- Error: 4s
+- Info: 3s
+- Warning: 3.5s
+
+### Sistema de Notificações
+```typescript
+const { 
+  notifyBookingConfirmation, 
+  scheduleAppointmentReminder 
+} = useNotificationManager();
+
+await notifyBookingConfirmation(
+  'Dr. João', 
+  'Fisioterapia', 
+  new Date('2026-03-22T14:30:00')
+);
+```
+
+## 🔄 Offline Support
+
+### Fila de Sincronização
+```typescript
+const { queueCount, isSyncing, sync } = useOfflineSync();
+
+// Sincronizar manualmente
+await sync();
+```
+
+Operações offline:
+- Agendamentos criados offline
+- Edições guardadas localmente
+- Sincronização automática quando online
+
+## 📊 Analytics
+
+### Eventos Rastreados
+```typescript
+const { trackScreenView, trackEvent, trackError } = useAnalytics();
+
+trackScreenView('home');
+trackEvent('booking_created', { serviceId: 1, therapistId: 2 });
+trackError(error, { context: 'booking' });
+```
+
+## 🎨 Componentes Principais
+
+### FormInput
+```typescript
+<FormInput
+  label="Email"
+  placeholder="user@example.com"
+  value={email}
+  onChangeText={setEmail}
+  keyboardType="email-address"
+  error={errors.email}
+/>
+```
+
+### LoadingSpinner
+```typescript
+<LoadingSpinner 
+  fullScreen
+  message="Carregando..."
+  showProgress
+  progress={45}
+/>
+```
+
+### Button
+```typescript
+<Button
+  label="Confirmar"
+  onPress={handleConfirm}
+  loading={isLoading}
+  disabled={!isValid}
+  variant="primary" // ou "secondary", "danger"
+/>
+```
+
+### Card
+```typescript
+<Card style={{ marginBottom: 12 }}>
+  <Text>Conteúdo do card</Text>
+</Card>
 ```
 
 ## 🧪 Testing
 
-### Test Login
+### Estrutura
 ```
-Email: test@qlinica.com
-Password: Test123
+src/__tests__/
+├── services/
+├── utils/
+└── hooks/
 ```
 
-### Test Registration
-Create account with any valid email/password combo.
+### Executar Testes
+```bash
+npm run test
+```
 
-### Mock Data
-In development, if API calls fail, app falls back to mock data from `constants/Data.ts`.
-
-## 📦 Build & Deploy
+## 📱 Build & Deploy
 
 ### Android
 ```bash
-npm run build-android
-# Or with EAS
 eas build --platform android
 ```
 
 ### iOS
 ```bash
-npm run build-ios
-# Or with EAS
 eas build --platform ios
 ```
 
-### Web
+### EAS Submit
 ```bash
-npm run web
+eas submit --platform android --latest
 ```
 
-## 🛠️ Development Commands
+## 🐛 Debugging
 
-```bash
-# Start development server
-npm start
-
-# Start with Android emulator
-npm run android
-
-# Start with iOS simulator
-npm run ios
-
-# Start with web
-npm run web
-
-# Build for platforms
-npm run build-android
-npm run build-ios
-
-# Submit to app stores (after building with EAS)
-npm run submit
-```
-
-## 🎨 Color Palette
-
+### Logs
 ```typescript
-primary: '#2C3E50'           // Dark navy
-primaryLight: '#34495E'      // Slightly lighter navy
-primaryDark: '#1a252f'       // Darker navy
-gold: '#D4AF8F'              // Main accent color
-goldLight: '#e0c4a8'         // Lighter gold
-goldDark: '#b8956f'          // Darker gold
-white: '#FFFFFF'             // White
-grey: '#8895a0'              // Text color
-success: '#4CAF50'           // Green
-danger: '#E74C3C'            // Red
+import { logger } from '@/utils/logger';
+
+logger.debug('Mensagem', 'Module', { data });
+logger.warn('Aviso', 'Module', error);
+logger.error('Erro', error, 'Module');
 ```
 
-## 📐 Responsive Design
-
-- **Mobile**: 360px - 480px width (focus)
-- **Tablet**: 481px - 1024px width
-- **Desktop**: 1025px+ width (via web)
-
-### Safe Area
-- Top: Navigation + status bar
-- Bottom: Tab bar (mobile)
-
-## 🐛 Error Handling
-
-### Global Error Boundary
-Wraps entire app to catch unexpected errors.
-
-### API Error Handling
-- Network errors: Show toast + retry logic
-- 401 Unauthorized: Auto-logout
-- Validation errors: Show field-level errors
-- Server errors: Show error toast
-
-### Form Validation
-- Real-time validation on change
-- Clear error messages
-- Disabled submit until valid
-
-## 🚦 Performance Tips
-
-1. **Lazy Loading**: Images load as needed
-2. **Memoization**: Components use React.memo
-3. **Caching**: User data cached in AsyncStorage
-4. **Pagination**: Bookings list pagination (optional)
-5. **Image Optimization**: Use expo-image
-
-## 📱 Native Features (Future)
-
-- 📍 Geolocation (show clinic location)
-- 📸 Camera (profile picture upload)
-- 🔔 Push Notifications (booking reminders)
-- 📞 Call/SMS integration
-- 🗓️ Calendar integration (iOS/Android)
-- 👆 Haptic feedback
-
-## 🔒 Security
-
-- JWT tokens for authentication
-- Tokens stored securely in AsyncStorage
-- API base URL configurable
-- CORS headers configured
-- Input validation on all forms
-- Password strength requirements
-
-## 📖 Additional Resources
-
-- [React Native Docs](https://reactnative.dev)
-- [Expo Docs](https://docs.expo.dev)
-- [React Navigation](https://reactnavigation.org)
-- [Axios Docs](https://axios-http.com)
-
-## 📝 Contributing
-
-1. Create feature branch: `git checkout -b feature/feature-name`
-2. Make changes and commit: `git commit -m "✨ feat: description"`
-3. Push: `git push origin feature/feature-name`
-4. Create Pull Request
-
-## 📄 Commit Message Format
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
+### React DevTools
+```bash
+npx react-native-debugger
 ```
 
-### Types
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation
-- `style`: Code style
-- `refactor`: Refactoring
-- `perf`: Performance
-- `test`: Tests
-- `chore`: Build/dependencies
+### Network Inspection
+O API client registra todas as requisições com timing e status.
 
-### Examples
+## 🚀 Best Practices
+
+### 1. Usar Hooks Customizados
+```typescript
+// ✅ Bom
+const { user } = useAuth();
+const { error, validateField } = useFormValidation();
+
+// ❌ Evitar
+const context = useContext(AuthContext);
 ```
-✨ feat(auth): Add login validation
-🐛 fix(booking): Fix date selection bug
-📝 docs: Update README
-🎨 style: Format code
-♻️ refactor: Simplify booking flow
+
+### 2. Validação Antes de Submeter
+```typescript
+// ✅ Bom
+const result = validateForm('register', data);
+if (result.isValid) {
+  await register(...);
+}
+
+// ❌ Evitar
+await register(email, password, name); // Sem validação
 ```
+
+### 3. Error Handling
+```typescript
+// ✅ Bom
+try {
+  await bookingService.createBooking(data);
+  toast.success('Agendamento criado');
+} catch (error) {
+  const message = error.response?.data?.message || 'Erro desconhecido';
+  toast.error(message);
+}
+
+// ❌ Evitar
+await bookingService.createBooking(data); // Sem try/catch
+```
+
+### 4. Loading States
+```typescript
+// ✅ Bom
+const [isLoading, setIsLoading] = useState(false);
+
+const handleSubmit = async () => {
+  setIsLoading(true);
+  try {
+    // ... operação
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// ❌ Evitar
+await bookingService.createBooking(data); // Sem feedback visual
+```
+
+### 5. Cleanup em useEffect
+```typescript
+// ✅ Bom
+useEffect(() => {
+  const subscription = onBookingUpdated(handleUpdate);
+  return () => subscription?.unsubscribe();
+}, []);
+
+// ❌ Evitar
+useEffect(() => {
+  onBookingUpdated(handleUpdate); // Sem cleanup
+}, []);
+```
+
+## 📚 Recursos
+
+- [React Navigation](https://reactnavigation.org/)
+- [Expo Documentation](https://docs.expo.dev/)
+- [Axios Documentation](https://axios-http.com/)
+- [React Hooks Guide](https://react.dev/reference/react/hooks)
+
+## 🎯 Próximas Melhorias
+
+- [ ] Push notifications via Firebase
+- [ ] Sistema de avaliações
+- [ ] Integração de pagamento
+- [ ] Chat com terapeutas
+- [ ] Histórico de consultas detalhado
+- [ ] A/B testing setup
+- [ ] Performance monitoring
 
 ---
 
-**Last Updated**: March 2026
-**Status**: Development Phase 1 Complete
+**Última atualização:** Março 22, 2026
