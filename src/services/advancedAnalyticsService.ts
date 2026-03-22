@@ -1,344 +1,384 @@
 /**
  * Advanced Analytics Service
- * Comprehensive user behavior and app event tracking
+ * Tracks user behavior, engagement, and business metrics
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '../config/api';
+import { analyticsService } from './analyticsService';
 
-export interface AnalyticsEvent {
+export interface UserSession {
   id: string;
-  type: 'screen_view' | 'user_action' | 'api_call' | 'error' | 'conversion' | 'custom';
-  category?: string;
-  name: string;
-  value?: number | string;
-  metadata?: Record<string, any>;
-  timestamp: number;
-  userId?: string;
-  sessionId: string;
-}
-
-export interface ConversionEvent extends AnalyticsEvent {
-  type: 'conversion';
-  conversionType: 'booking' | 'signup' | 'payment' | 'review';
-  conversionValue?: number;
-}
-
-export interface PerformanceMetric {
-  metric: string;
-  value: number;
-  unit: string;
-  timestamp: number;
-}
-
-interface SessionData {
-  sessionId: string;
+  userId: string;
   startTime: number;
-  userId?: string;
-  deviceInfo?: Record<string, any>;
-  events: AnalyticsEvent[];
+  endTime?: number;
+  duration?: number;
+  screenPath: string[];
+  events: number;
 }
+
+export interface ConversionMetrics {
+  sessionId: string;
+  bookingStarted: boolean;
+  bookingCompleted: boolean;
+  paymentAttempted: boolean;
+  paymentCompleted: boolean;
+  timeToConversion?: number;
+  abandonmentReason?: string;
+}
+
+export interface EngagementMetrics {
+  totalSessions: number;
+  totalScreenViews: number;
+  totalEvents: number;
+  averageSessionDuration: number;
+  lastActiveTime: number;
+  daysSinceLastActive: number;
+}
+
+export interface BusinessMetrics {
+  totalBookings: number;
+  totalRevenue: number;
+  averageBookingValue: number;
+  conversionRate: number;
+  returnCustomerRate: number;
+  averageRating: number;
+}
+
+const ANALYTICS_STORAGE_KEY = '@qlinica_analytics';
+const SESSION_STORAGE_KEY = '@qlinica_session';
+const CONVERSION_STORAGE_KEY = '@qlinica_conversions';
 
 class AdvancedAnalyticsService {
-  private sessionId: string = '';
-  private sessionData: SessionData | null = null;
-  private eventQueue: AnalyticsEvent[] = [];
-  private isEnabled = true;
-  private readonly MAX_BATCH_SIZE = 50;
-  private readonly BATCH_TIMEOUT_MS = 30000; // 30 seconds
-  private batchTimer: NodeJS.Timeout | null = null;
-  private readonly STORAGE_KEY = '@qlinica_analytics_events';
+  private currentSession: UserSession | null = null;
+  private sessionScreens: string[] = [];
+  private conversionMetrics: ConversionMetrics | null = null;
+  private batchEvents: Array<{
+    name: string;
+    params: Record<string, any>;
+    timestamp: number;
+  }> = [];
 
   /**
-   * Initialize analytics service
+   * Initialize a new session
    */
-  async initialize(userId?: string): Promise<void> {
-    try {
-      this.sessionId = this.generateSessionId();
-      this.sessionData = {
-        sessionId: this.sessionId,
-        startTime: Date.now(),
-        userId,
-        events: [],
-      };
+  initializeSession(userId: string): void {
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // Load any pending events from storage
-      await this.loadPendingEvents();
+    this.currentSession = {
+      id: sessionId,
+      userId,
+      startTime: Date.now(),
+      screenPath: [],
+      events: 0,
+    };
 
-      console.log(`📊 Analytics initialized with session: ${this.sessionId}`);
-    } catch (error) {
-      console.error('Error initializing analytics:', error);
-    }
-  }
+    this.conversionMetrics = {
+      sessionId,
+      bookingStarted: false,
+      bookingCompleted: false,
+      paymentAttempted: false,
+      paymentCompleted: false,
+    };
 
-  /**
-   * Generate unique session ID
-   */
-  private generateSessionId(): string {
-    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    this.saveSession();
+
+    console.log(`📊 Session initialized: ${sessionId}`);
   }
 
   /**
    * Track screen view
    */
-  trackScreenView(screenName: string, metadata?: Record<string, any>): void {
-    this.trackEvent({
-      type: 'screen_view',
-      name: screenName,
-      metadata,
-    });
-  }
+  trackScreenView(screenName: string): void {
+    if (!this.currentSession) {
+      console.warn('Session not initialized');
+      return;
+    }
 
-  /**
-   * Track user action
-   */
-  trackUserAction(action: string, category?: string, metadata?: Record<string, any>): void {
-    this.trackEvent({
-      type: 'user_action',
-      category,
-      name: action,
-      metadata,
-    });
-  }
+    this.currentSession.screenPath.push(screenName);
+    this.sessionScreens.push(screenName);
 
-  /**
-   * Track API call
-   */
-  trackAPICall(
-    method: string,
-    endpoint: string,
-    statusCode?: number,
-    duration?: number,
-    metadata?: Record<string, any>
-  ): void {
-    this.trackEvent({
-      type: 'api_call',
-      name: `${method} ${endpoint}`,
-      value: duration,
-      metadata: {
-        method,
-        endpoint,
-        statusCode,
-        duration,
-        ...metadata,
-      },
+    this.batchEvent('screen_view', {
+      screenName,
+      sessionId: this.currentSession.id,
+      screenNumber: this.currentSession.screenPath.length,
     });
-  }
 
-  /**
-   * Track error
-   */
-  trackError(error: Error, context?: Record<string, any>): void {
-    this.trackEvent({
-      type: 'error',
-      name: error.name || 'Unknown Error',
-      metadata: {
-        message: error.message,
-        stack: error.stack,
-        ...context,
-      },
-    });
-  }
-
-  /**
-   * Track conversion (booking, signup, payment, etc.)
-   */
-  trackConversion(
-    conversionType: 'booking' | 'signup' | 'payment' | 'review',
-    conversionValue?: number,
-    metadata?: Record<string, any>
-  ): void {
-    this.trackEvent({
-      type: 'conversion',
-      name: `conversion_${conversionType}`,
-      value: conversionValue,
-      metadata: {
-        conversionType,
-        ...metadata,
-      },
-    });
+    console.log(`📱 Screen view: ${screenName}`);
   }
 
   /**
    * Track custom event
    */
-  trackCustomEvent(name: string, metadata?: Record<string, any>): void {
-    this.trackEvent({
-      type: 'custom',
-      name,
-      metadata,
-    });
-  }
-
-  /**
-   * Track performance metric
-   */
-  trackPerformanceMetric(metric: string, value: number, unit: string = 'ms'): void {
-    this.trackCustomEvent(`performance_${metric}`, {
-      metric,
-      value,
-      unit,
-    });
-  }
-
-  /**
-   * Core event tracking method
-   */
-  private trackEvent(event: Omit<AnalyticsEvent, 'id' | 'timestamp' | 'sessionId'>): void {
-    if (!this.isEnabled || !this.sessionData) return;
-
-    const analyticsEvent: AnalyticsEvent = {
-      id: `${this.sessionId}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      timestamp: Date.now(),
-      sessionId: this.sessionId,
-      userId: this.sessionData.userId,
-      ...event,
-    };
-
-    this.eventQueue.push(analyticsEvent);
-    this.sessionData.events.push(analyticsEvent);
-
-    // Check if should batch send
-    if (this.eventQueue.length >= this.MAX_BATCH_SIZE) {
-      this.flushEvents();
-    } else if (!this.batchTimer) {
-      this.scheduleBatchSend();
-    }
-  }
-
-  /**
-   * Schedule batch send with timeout
-   */
-  private scheduleBatchSend(): void {
-    this.batchTimer = setTimeout(() => {
-      if (this.eventQueue.length > 0) {
-        this.flushEvents();
-      }
-    }, this.BATCH_TIMEOUT_MS);
-  }
-
-  /**
-   * Send all queued events
-   */
-  async flushEvents(): Promise<void> {
-    if (this.eventQueue.length === 0) {
+  trackEvent(eventName: string, params?: Record<string, any>): void {
+    if (!this.currentSession) {
+      console.warn('Session not initialized');
       return;
     }
 
-    if (this.batchTimer) {
-      clearTimeout(this.batchTimer);
-      this.batchTimer = null;
+    this.currentSession.events++;
+
+    this.batchEvent(eventName, {
+      ...params,
+      sessionId: this.currentSession.id,
+    });
+
+    console.log(`📈 Event tracked: ${eventName}`, params);
+  }
+
+  /**
+   * Track conversion funnel
+   */
+  trackConversionFunnel(step: keyof Omit<ConversionMetrics, 'sessionId' | 'timeToConversion' | 'abandonmentReason'>): void {
+    if (!this.currentSession || !this.conversionMetrics) {
+      return;
     }
 
-    const eventsToSend = [...this.eventQueue];
-    this.eventQueue = [];
+    const currentTime = Date.now();
+    const timeToStep = currentTime - this.currentSession.startTime;
 
-    try {
-      // Try to send to backend
-      await this.sendAnalyticsEvents(eventsToSend);
-      console.log(`📤 Sent ${eventsToSend.length} analytics events`);
-    } catch (error) {
-      console.warn('Failed to send analytics events, storing locally:', error);
-      // Save to storage for later retry
-      await this.savePendingEvents(eventsToSend);
+    if (step === 'bookingStarted') {
+      this.conversionMetrics.bookingStarted = true;
+      this.trackEvent('funnel_booking_started', { timeMs: timeToStep });
+    } else if (step === 'bookingCompleted') {
+      this.conversionMetrics.bookingCompleted = true;
+      this.conversionMetrics.timeToConversion = timeToStep;
+      this.trackEvent('funnel_booking_completed', { timeMs: timeToStep });
+    } else if (step === 'paymentAttempted') {
+      this.conversionMetrics.paymentAttempted = true;
+      this.trackEvent('funnel_payment_attempted', { timeMs: timeToStep });
+    } else if (step === 'paymentCompleted') {
+      this.conversionMetrics.paymentCompleted = true;
+      this.conversionMetrics.timeToConversion = timeToStep;
+      this.trackEvent('funnel_payment_completed', { timeMs: timeToStep });
+    }
+
+    this.saveConversionMetrics();
+  }
+
+  /**
+   * Track abandonment
+   */
+  trackAbandonment(reason: string): void {
+    if (!this.conversionMetrics) {
+      return;
+    }
+
+    this.conversionMetrics.abandonmentReason = reason;
+    this.trackEvent('funnel_abandoned', { reason });
+
+    console.log(`❌ Conversion abandoned: ${reason}`);
+  }
+
+  /**
+   * Track user engagement
+   */
+  trackEngagement(action: string, metadata?: Record<string, any>): void {
+    this.trackEvent('user_engagement', {
+      action,
+      ...metadata,
+    });
+  }
+
+  /**
+   * Track error with context
+   */
+  trackErrorWithContext(
+    error: Error,
+    context: {
+      screen?: string;
+      action?: string;
+      data?: Record<string, any>;
+    }
+  ): void {
+    this.trackEvent('error_occurred', {
+      message: error.message,
+      screen: context.screen,
+      action: context.action,
+      ...context.data,
+    });
+
+    // Also send to default analytics service
+    analyticsService.trackError(error, context);
+  }
+
+  /**
+   * Batch event (internal)
+   */
+  private batchEvent(
+    name: string,
+    params?: Record<string, any>
+  ): void {
+    this.batchEvents.push({
+      name,
+      params: params || {},
+      timestamp: Date.now(),
+    });
+
+    // Send batch if reached limit (100 events)
+    if (this.batchEvents.length >= 100) {
+      this.flushBatch();
     }
   }
 
   /**
-   * Send events to backend
+   * Flush batched events to analytics backend
    */
-  private async sendAnalyticsEvents(events: AnalyticsEvent[]): Promise<void> {
+  async flushBatch(): Promise<void> {
+    if (this.batchEvents.length === 0) {
+      return;
+    }
+
     try {
-      await api.post('/analytics/events', {
-        events,
-        sessionId: this.sessionId,
-        timestamp: Date.now(),
+      const events = [...this.batchEvents];
+      this.batchEvents = [];
+
+      // Send to analytics backend
+      analyticsService.trackEvent('batch_analytics', {
+        count: events.length,
+        events: events.map((e) => ({
+          name: e.name,
+          timestamp: e.timestamp,
+        })),
       });
+
+      console.log(`📤 Flushed ${events.length} analytics events`);
     } catch (error) {
-      console.error('Error sending analytics events:', error);
-      throw error;
+      console.error('Error flushing analytics batch:', error);
     }
   }
 
   /**
-   * Save pending events to storage
+   * End current session
    */
-  private async savePendingEvents(events: AnalyticsEvent[]): Promise<void> {
-    try {
-      const stored = await AsyncStorage.getItem(this.STORAGE_KEY);
-      const pendingEvents = stored ? JSON.parse(stored) : [];
-      const combined = [...pendingEvents, ...events];
-      await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(combined));
-    } catch (error) {
-      console.error('Error saving pending analytics events:', error);
+  async endSession(): Promise<void> {
+    if (!this.currentSession) {
+      return;
     }
+
+    this.currentSession.endTime = Date.now();
+    this.currentSession.duration = this.currentSession.endTime - this.currentSession.startTime;
+
+    // Flush remaining events
+    await this.flushBatch();
+
+    // Track session end event
+    this.batchEvent('session_end', {
+      duration: this.currentSession.duration,
+      screenViews: this.currentSession.screenPath.length,
+      events: this.currentSession.events,
+    });
+
+    await this.flushBatch();
+
+    console.log(
+      `🏁 Session ended (${this.currentSession.duration}ms, ${this.currentSession.screenPath.length} screens, ${this.currentSession.events} events)`
+    );
+
+    this.currentSession = null;
   }
 
   /**
-   * Load pending events from storage and try to send
+   * Get engagement metrics
    */
-  private async loadPendingEvents(): Promise<void> {
+  async getEngagementMetrics(userId: string): Promise<EngagementMetrics> {
     try {
-      const stored = await AsyncStorage.getItem(this.STORAGE_KEY);
-      if (stored) {
-        const pendingEvents = JSON.parse(stored);
-        if (pendingEvents.length > 0) {
-          console.log(`📋 Found ${pendingEvents.length} pending analytics events`);
-          // Try to send them
-          try {
-            await this.sendAnalyticsEvents(pendingEvents);
-            await AsyncStorage.removeItem(this.STORAGE_KEY);
-          } catch (error) {
-            // Will retry next time
-            console.warn('Failed to send pending events, will retry later');
-          }
-        }
+      const data = await AsyncStorage.getItem(`${ANALYTICS_STORAGE_KEY}_${userId}`);
+      if (!data) {
+        return {
+          totalSessions: 0,
+          totalScreenViews: 0,
+          totalEvents: 0,
+          averageSessionDuration: 0,
+          lastActiveTime: 0,
+          daysSinceLastActive: 0,
+        };
       }
+
+      const parsed = JSON.parse(data);
+      const lastActive = parsed.lastActiveTime || 0;
+      const daysSinceActive = lastActive ? Math.floor((Date.now() - lastActive) / (1000 * 60 * 60 * 24)) : 0;
+
+      return {
+        totalSessions: parsed.totalSessions || 0,
+        totalScreenViews: parsed.totalScreenViews || 0,
+        totalEvents: parsed.totalEvents || 0,
+        averageSessionDuration: parsed.averageSessionDuration || 0,
+        lastActiveTime,
+        daysSinceLastActive: daysSinceActive,
+      };
     } catch (error) {
-      console.error('Error loading pending analytics events:', error);
+      console.error('Error getting engagement metrics:', error);
+      return {
+        totalSessions: 0,
+        totalScreenViews: 0,
+        totalEvents: 0,
+        averageSessionDuration: 0,
+        lastActiveTime: 0,
+        daysSinceLastActive: 0,
+      };
     }
   }
 
   /**
-   * Get session summary
+   * Get conversion metrics
    */
-  getSessionSummary(): {
-    sessionId: string;
-    duration: number;
-    eventCount: number;
-    conversions: number;
-  } {
-    if (!this.sessionData) {
-      return { sessionId: '', duration: 0, eventCount: 0, conversions: 0 };
+  async getConversionMetrics(): Promise<ConversionMetrics | null> {
+    try {
+      const data = await AsyncStorage.getItem(CONVERSION_STORAGE_KEY);
+      return data ? JSON.parse(data) : null;
+    } catch (error) {
+      console.error('Error getting conversion metrics:', error);
+      return null;
     }
-
-    const duration = Date.now() - this.sessionData.startTime;
-    const conversions = this.sessionData.events.filter(
-      (e) => e.type === 'conversion'
-    ).length;
-
-    return {
-      sessionId: this.sessionId,
-      duration,
-      eventCount: this.sessionData.events.length,
-      conversions,
-    };
   }
 
   /**
-   * Enable/disable analytics
+   * Save session to storage
    */
-  setEnabled(enabled: boolean): void {
-    this.isEnabled = enabled;
+  private saveSession(): void {
+    if (!this.currentSession) return;
+
+    AsyncStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(this.currentSession)).catch((error) => {
+      console.error('Error saving session:', error);
+    });
   }
 
   /**
-   * Cleanup on app close
+   * Save conversion metrics to storage
    */
-  async cleanup(): Promise<void> {
-    await this.flushEvents();
-    if (this.batchTimer) {
-      clearTimeout(this.batchTimer);
+  private saveConversionMetrics(): void {
+    if (!this.conversionMetrics) return;
+
+    AsyncStorage.setItem(CONVERSION_STORAGE_KEY, JSON.stringify(this.conversionMetrics)).catch((error) => {
+      console.error('Error saving conversion metrics:', error);
+    });
+  }
+
+  /**
+   * Get current session
+   */
+  getCurrentSession(): UserSession | null {
+    return this.currentSession;
+  }
+
+  /**
+   * Get session screen path
+   */
+  getSessionScreenPath(): string[] {
+    return [...this.sessionScreens];
+  }
+
+  /**
+   * Clear all analytics data (for testing)
+   */
+  async clearAll(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(SESSION_STORAGE_KEY);
+      await AsyncStorage.removeItem(CONVERSION_STORAGE_KEY);
+      this.batchEvents = [];
+      console.log('🧹 Analytics data cleared');
+    } catch (error) {
+      console.error('Error clearing analytics:', error);
     }
   }
 }
