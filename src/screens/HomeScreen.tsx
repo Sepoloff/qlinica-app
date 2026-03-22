@@ -12,9 +12,11 @@ import { Service, Booking } from '../services/apiService';
 import { convertMockBookings, convertMockServices } from '../utils/mockDataConverters';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { logger } from '../utils/logger';
+import { useSafeNavigation } from '../utils/navigationHelper';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const safeNav = useSafeNavigation();
   const { user, isLoading: authLoading } = useAuth();
   const { trackScreenView, trackEvent, trackError } = useAnalytics();
   
@@ -82,11 +84,11 @@ export default function HomeScreen() {
     if (!user) {
       trackEvent('booking_auth_required');
       Alert.alert('Autenticação', 'Por favor inicie sessão para agendar uma consulta');
-      navigation.navigate('loginStack' as never);
+      safeNav.navigate('loginStack');
       return;
     }
     trackEvent('booking_flow_started');
-    navigation.navigate('ServiceSelection' as never);
+    safeNav.navigate('ServiceSelection');
   };
 
   return (
