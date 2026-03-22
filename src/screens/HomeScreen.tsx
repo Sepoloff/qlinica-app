@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS, SERVICES } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
 import bookingService, { Booking, Service } from '../services/bookingService';
 import { convertMockBookings, convertMockServices } from '../utils/mockDataConverters';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -134,7 +135,13 @@ export default function HomeScreen() {
         </View>
 
         {loading && !bookings.length ? (
-          <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 20 }} />
+          <SkeletonLoader
+            width="100%"
+            height={90}
+            borderRadius={14}
+            count={3}
+            spacing={12}
+          />
         ) : bookings.filter(b => b.status === 'confirmed').length > 0 ? (
           bookings
             .filter(b => b.status === 'confirmed')
@@ -172,16 +179,24 @@ export default function HomeScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Os nossos serviços</Text>
         <View style={styles.servicesGrid}>
-          {(services.length > 0 ? services : convertMockServices()).map((service) => (
-            <TouchableOpacity 
-              key={service.id} 
-              style={styles.serviceCard}
-              onPress={handleBookingNavigation}
-            >
-              <Text style={styles.serviceIcon}>{service.icon || '✨'}</Text>
-              <Text style={styles.serviceName}>{service.name}</Text>
-            </TouchableOpacity>
-          ))}
+          {loading && !services.length ? (
+            <>
+              <SkeletonLoader width="31%" height={90} borderRadius={14} />
+              <SkeletonLoader width="31%" height={90} borderRadius={14} />
+              <SkeletonLoader width="31%" height={90} borderRadius={14} />
+            </>
+          ) : (
+            (services.length > 0 ? services : convertMockServices()).map((service) => (
+              <TouchableOpacity 
+                key={service.id} 
+                style={styles.serviceCard}
+                onPress={handleBookingNavigation}
+              >
+                <Text style={styles.serviceIcon}>{service.icon || '✨'}</Text>
+                <Text style={styles.serviceName}>{service.name}</Text>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
       </View>
     </ScrollView>

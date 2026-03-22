@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, RefreshControl } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS } from '../constants/Data';
@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useQuickToast } from '../hooks/useToast';
 import bookingService, { Booking } from '../services/bookingService';
 import { BookingCard } from '../components/BookingCard';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 
 export default function BookingsScreen() {
   const { user } = useAuth();
@@ -159,7 +160,13 @@ export default function BookingsScreen() {
       {/* Bookings List */}
       <View style={styles.bookingsList}>
         {loading ? (
-          <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 40 }} />
+          <SkeletonLoader
+            width="100%"
+            height={100}
+            borderRadius={14}
+            count={4}
+            spacing={12}
+          />
         ) : filtered.length > 0 ? (
           filtered.map((booking) => {
             const mockBooking = BOOKINGS.find(b => String(b.id) === booking.id);
