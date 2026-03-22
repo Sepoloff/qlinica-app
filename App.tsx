@@ -15,6 +15,7 @@ import BookingSummaryScreen from './src/screens/BookingSummaryScreen';
 import LoginScreen from './src/screens/AuthScreens/LoginScreen';
 import RegisterScreen from './src/screens/AuthScreens/RegisterScreen';
 import { TabBarIcon } from './src/components/TabBarIcon';
+import { ToastDisplay } from './src/components/ToastDisplay';
 import { BookingProvider } from './src/context/BookingContext';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
@@ -161,6 +162,7 @@ export default function App() {
           <NavigationContainer>
             <RootNavigator />
           </NavigationContainer>
+          <ToastDisplay />
         </ToastProvider>
       </BookingProvider>
     </AuthProvider>
