@@ -116,6 +116,11 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* VISUAL INDICATOR: PROFILE SCREEN */}
+      <View style={{ backgroundColor: '#1a3f5f', padding: 12, alignItems: 'center' }}>
+        <Text style={{ color: '#7fbfff', fontSize: 12, fontWeight: 'bold' }}>👤 PERFIL (Profile Screen)</Text>
+      </View>
+      
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>O meu perfil</Text>

@@ -114,6 +114,11 @@ export default function HomeScreen() {
         />
       }
     >
+      {/* VISUAL INDICATOR: HOME SCREEN */}
+      <View style={{ backgroundColor: '#1a5f1a', padding: 12, alignItems: 'center' }}>
+        <Text style={{ color: '#7fff7f', fontSize: 12, fontWeight: 'bold' }}>🏠 INÍCIO (Home Screen)</Text>
+      </View>
+      
       {/* Header */}
       <LinearGradient
         colors={[COLORS.primary, COLORS.primaryDark]}

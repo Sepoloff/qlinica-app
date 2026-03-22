@@ -1,27 +1,15 @@
 'use strict';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import { bookingsAPI, Booking, Service, Therapist } from '../services/apiService';
+import { logger } from '../utils/logger';
 
 export interface BookingData {
-  service?: {
-    id: number;
-    name: string;
-    icon: string;
-    desc: string;
-    duration: string;
-    price: string;
-  };
-  therapist?: {
-    id: number;
-    name: string;
-    specialty: string;
-    rating: number;
-    reviews: number;
-    available: boolean;
-    avatar: string;
-  };
-  date?: string; // Format: "DD/MM/YYYY"
+  service?: Service;
+  therapist?: Therapist;
+  date?: string; // Format: "YYYY-MM-DD"
   time?: string; // Format: "HH:MM"
+  notes?: string;
   isReschedule?: boolean;
   originalBookingId?: string;
 }
