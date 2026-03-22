@@ -24,6 +24,7 @@ import { BookingProvider } from './src/context/BookingContext';
 import { AuthProvider } from './src/context/AuthContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { NotificationProvider } from './src/context/NotificationContext';
+import { ThemeProvider } from './src/context/ThemeContext';
 import { useAuth } from './src/context/AuthContext';
 import { initializeNotifications } from './src/services/notificationService';
 import { offlineSyncService } from './src/services/offlineSyncService';
@@ -185,21 +186,23 @@ function RootNavigator() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <BookingProvider>
-          <ToastProvider>
-            <NotificationProvider>
-              <StatusBar style="light" />
-              <NetworkStatusBar />
-              <OfflineQueueStatus position="top" />
-              <NavigationContainer>
-                <RootNavigator />
-              </NavigationContainer>
-              <ToastDisplay />
-            </NotificationProvider>
-          </ToastProvider>
-        </BookingProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <BookingProvider>
+            <ToastProvider>
+              <NotificationProvider>
+                <StatusBar style="light" />
+                <NetworkStatusBar />
+                <OfflineQueueStatus position="top" />
+                <NavigationContainer>
+                  <RootNavigator />
+                </NavigationContainer>
+                <ToastDisplay />
+              </NotificationProvider>
+            </ToastProvider>
+          </BookingProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }
