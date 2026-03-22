@@ -88,6 +88,7 @@ export default function HomeScreen() {
       return;
     }
     trackEvent('booking_flow_started');
+    logger.debug(`Booking flow started for user: ${user.id}`, 'HomeScreen');
     safeNav.navigate('ServiceSelection');
   };
 
