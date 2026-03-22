@@ -3,6 +3,9 @@
  * Configure test environment
  */
 
+// Define global variables
+global.__DEV__ = false;
+
 // Mock logger
 jest.mock('./src/utils/logger', () => ({
   logger: {

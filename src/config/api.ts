@@ -42,7 +42,7 @@ api.interceptors.request.use(
       
       // Log API request
       const startTime = Date.now();
-      config.metadata = { startTime };
+      (config as any).metadata = { startTime };
       logger.debug(`${config.method?.toUpperCase()} ${config.url}`, 'API:Request');
     } catch (error) {
       logger.error('Error retrieving token', error as Error, 'API:Auth');
