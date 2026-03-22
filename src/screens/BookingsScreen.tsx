@@ -34,14 +34,15 @@ export default function BookingsScreen() {
     }
     try {
       if (user) {
-        const data = await bookingService.getUserBookings().catch(() => BOOKINGS as any);
-        setBookings(data || BOOKINGS);
+        // Load all bookings, not just upcoming
+        const data = await bookingService.getBookings();
+        setBookings(data || []);
       } else {
-        setBookings(BOOKINGS as any);
+        setBookings([]);
       }
     } catch (error) {
       console.error('Error loading bookings:', error);
-      setBookings(BOOKINGS as any);
+      setBookings([]);
     } finally {
       setLoading(false);
       if (fromRefresh) {
