@@ -3,6 +3,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, View, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants/Colors';
+import { triggerLightFeedback, triggerSuccessFeedback } from '../utils/hapticFeedback';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'outline';
 export type ButtonSize = 'small' | 'medium' | 'large';
@@ -18,6 +19,8 @@ interface ButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   fullWidth?: boolean;
+  enableHaptic?: boolean;
+  hapticType?: 'light' | 'success';
 }
 
 const variantStyles = {
@@ -86,13 +89,26 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
   fullWidth = false,
+  enableHaptic = true,
+  hapticType = 'light',
 }) => {
   const variantStyle = variantStyles[variant];
   const sizeStyle = sizeStyles[size];
 
+  const handlePress = async () => {
+    if (enableHaptic) {
+      if (hapticType === 'success') {
+        await triggerSuccessFeedback();
+      } else {
+        await triggerLightFeedback();
+      }
+    }
+    onPress();
+  };
+
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled || loading}
       activeOpacity={disabled ? 1 : 0.7}
       style={[

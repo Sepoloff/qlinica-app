@@ -1,21 +1,9 @@
-'use strict';
-
-import { useState, useEffect } from 'react';
-
 /**
- * Hook for debouncing values
- * 
- * Useful for search inputs and other values that trigger async operations
- * 
- * @example
- * const debouncedSearchTerm = useDebounce(searchTerm, 500);
- * 
- * useEffect(() => {
- *   if (debouncedSearchTerm) {
- *     searchApi(debouncedSearchTerm);
- *   }
- * }, [debouncedSearchTerm]);
+ * useDebounce Hook - Debounce values with configurable delay
  */
+
+import { useEffect, useState } from 'react';
+
 export const useDebounce = <T,>(value: T, delay: number = 500): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
@@ -24,9 +12,7 @@ export const useDebounce = <T,>(value: T, delay: number = 500): T => {
       setDebouncedValue(value);
     }, delay);
 
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [value, delay]);
 
   return debouncedValue;
