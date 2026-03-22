@@ -3,61 +3,117 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { THERAPISTS } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
 import { useBookingFlow } from '../context/BookingFlowContext';
-import { useQuickToast } from '../hooks/useToast';
+import { useToast } from '../context/ToastContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { RatingDisplay } from '../components/RatingDisplay';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import bookingService, { Therapist } from '../services/bookingService';
+import { logger } from '../utils/logger';
 
 export default function TherapistSelectionScreen() {
   const navigation = useNavigation();
   const { bookingData, setTherapist } = useBooking();
   const { bookingState, setBookingState } = useBookingFlow();
-  const toast = useQuickToast();
+  const { showToast } = useToast();
+  const { trackScreenView, trackEvent } = useAnalytics();
+  
   const [selectedTherapist, setSelectedTherapist] = React.useState<string | null>(null);
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadTherapists();
-  }, [bookingData.service, bookingState.serviceId]);
+  useFocusEffect(
+    React.useCallback(() => {
+      trackScreenView('therapist_selection', { 
+        serviceId: bookingData.service?.id || bookingState.serviceId,
+      });
+      loadTherapists();
+      return () => {};
+    }, [bookingData.service, bookingState.serviceId, trackScreenView])
+  );
 
   const loadTherapists = async () => {
     setLoading(true);
+    setError(null);
     try {
       const serviceId = bookingData.service?.id || bookingState.serviceId;
+      logger.debug(`Loading therapists for service ${serviceId}`, 'TherapistSelectionScreen');
+      
+      let data: Therapist[];
       if (serviceId) {
-        const data = await bookingService.getTherapistsByService(String(serviceId)).catch(() => THERAPISTS as any);
-        setTherapists(data || THERAPISTS);
+        data = await bookingService.getTherapistsByService(String(serviceId)).catch(() => THERAPISTS as any);
       } else {
-        const data = await bookingService.getTherapists().catch(() => THERAPISTS as any);
-        setTherapists(data || THERAPISTS);
+        data = await bookingService.getTherapists().catch(() => THERAPISTS as any);
       }
-    } catch (error) {
-      console.error('Error loading therapists:', error);
+      
+      setTherapists(data || THERAPISTS);
+      trackEvent('therapists_loaded', { count: data?.length || 0 });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar terapeutas';
+      logger.error('Error loading therapists', err as Error, 'TherapistSelectionScreen');
+      setError(errorMsg);
       setTherapists(THERAPISTS as any);
+      trackEvent('therapists_load_error', { error: errorMsg });
     } finally {
       setLoading(false);
     }
   };
 
   const handleTherapistSelect = (therapist: Therapist | typeof THERAPISTS[0]) => {
-    setSelectedTherapist(String(therapist.id));
-    setTherapist(therapist as any);
-    setBookingState({ therapistId: therapist.id });
+    try {
+      logger.debug(`Therapist selected: ${therapist.id} - ${therapist.name}`, 'TherapistSelectionScreen');
+      setSelectedTherapist(String(therapist.id));
+      setTherapist(therapist as any);
+      setBookingState({ therapistId: therapist.id });
+      
+      showToast({
+        type: 'success',
+        title: 'Terapeuta Selecionado',
+        message: `${therapist.name} selecionado com sucesso`,
+      });
+      
+      trackEvent('therapist_selected', { 
+        therapistId: therapist.id,
+        therapistName: therapist.name,
+        rating: (therapist as any).rating,
+      });
+    } catch (err) {
+      logger.error('Error selecting therapist', err as Error, 'TherapistSelectionScreen');
+      showToast({
+        type: 'error',
+        title: 'Erro',
+        message: 'Erro ao selecionar terapeuta',
+      });
+      trackEvent('therapist_selection_error', { error: (err as Error).message });
+    }
   };
 
   const handleContinue = () => {
-    if (selectedTherapist) {
-      toast.success('✅ Terapeuta selecionado');
+    if (!selectedTherapist) {
+      showToast({
+        type: 'warning',
+        title: 'Seleção Obrigatória',
+        message: 'Selecione um terapeuta para continuar',
+      });
+      trackEvent('therapist_continue_error', { reason: 'no_selection' });
+      return;
+    }
+
+    const therapist = therapists.find(t => String(t.id) === selectedTherapist);
+    if (therapist) {
+      showToast({
+        type: 'success',
+        title: 'Próximo Passo',
+        message: `${therapist.name} - selecione a data e hora`,
+      });
+      trackEvent('therapist_continue_success');
       navigation.navigate('CalendarSelection' as never);
-    } else {
-      toast.error('❌ Selecione um terapeuta');
     }
   };
 

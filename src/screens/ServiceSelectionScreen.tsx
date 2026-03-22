@@ -3,47 +3,94 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { SERVICES } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
 import { useBookingFlow } from '../context/BookingFlowContext';
-import { useQuickToast } from '../hooks/useToast';
+import { useToast } from '../context/ToastContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import bookingService, { Service } from '../services/bookingService';
 import { convertMockServices } from '../utils/mockDataConverters';
+import { logger } from '../utils/logger';
 
 export default function ServiceSelectionScreen() {
   const navigation = useNavigation();
   const { setService } = useBooking();
   const { setBookingState } = useBookingFlow();
-  const toast = useQuickToast();
+  const { showToast } = useToast();
+  const { trackScreenView, trackEvent } = useAnalytics();
+  
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | number | null>(null);
 
-  useEffect(() => {
-    loadServices();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      trackScreenView('service_selection');
+      loadServices();
+      return () => {};
+    }, [trackScreenView])
+  );
 
   const loadServices = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const data = await bookingService.getServices().catch(() => convertMockServices());
+      logger.debug('Loading services', 'ServiceSelectionScreen');
+      const data = await bookingService.getServices().catch(() => {
+        logger.warn('Fallback to mock services', undefined, 'ServiceSelectionScreen');
+        return convertMockServices();
+      });
       setServices(data || []);
-    } catch (error) {
-      console.error('Error loading services:', error);
+      trackEvent('services_loaded', { count: data?.length || 0 });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar serviços';
+      logger.error('Error loading services', err as Error, 'ServiceSelectionScreen');
+      setError(errorMsg);
       setServices(convertMockServices());
+      trackEvent('services_load_error', { error: errorMsg });
     } finally {
       setLoading(false);
     }
   };
 
   const handleServiceSelect = (service: Service | typeof SERVICES[0]) => {
-    setService(service as any);
-    setBookingState({ serviceId: service.id });
-    toast.success(`✅ ${service.name} selecionado`);
-    navigation.navigate('TherapistSelection' as never);
+    try {
+      logger.debug(`Service selected: ${service.id} - ${service.name}`, 'ServiceSelectionScreen');
+      
+      setSelectedServiceId(service.id);
+      setService(service as any);
+      setBookingState({ serviceId: service.id });
+      
+      showToast({
+        type: 'success',
+        title: 'Serviço Selecionado',
+        message: `${service.name} selecionado com sucesso`,
+      });
+
+      trackEvent('service_selected', { 
+        serviceId: service.id,
+        serviceName: service.name,
+        price: (service as any).price,
+      });
+
+      // Navigate with slight delay for smooth transition
+      setTimeout(() => {
+        navigation.navigate('TherapistSelection' as never);
+      }, 300);
+    } catch (err) {
+      logger.error('Error selecting service', err as Error, 'ServiceSelectionScreen');
+      showToast({
+        type: 'error',
+        title: 'Erro',
+        message: 'Erro ao selecionar serviço',
+      });
+      trackEvent('service_selection_error', { error: (err as Error).message });
+    }
   };
 
   return (

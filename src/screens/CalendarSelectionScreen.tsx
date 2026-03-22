@@ -10,17 +10,19 @@ import {
   StyleSheet, 
   Alert
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
 import { useBookingFlow } from '../context/BookingFlowContext';
 import { useAuth } from '../context/AuthContext';
-import { useQuickToast } from '../hooks/useToast';
+import { useToast } from '../context/ToastContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { TimeSlotPicker } from '../components/TimeSlotPicker';
 import { InfoBox } from '../components/InfoBox';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { Button } from '../components/Button';
+import { logger } from '../utils/logger';
 import bookingService from '../services/bookingService';
 import { 
   getNextBusinessDays, 
@@ -36,7 +38,8 @@ export default function CalendarSelectionScreen() {
   const { bookingData, setDateTime, resetBooking } = useBooking();
   const { setBookingState } = useBookingFlow();
   const { user } = useAuth();
-  const toast = useQuickToast();
+  const { showToast } = useToast();
+  const { trackScreenView, trackEvent } = useAnalytics();
   
   const isReschedule = (route.params as any)?.isReschedule || false;
   const rescheduleBookingId = (route.params as any)?.bookingId;
@@ -46,6 +49,17 @@ export default function CalendarSelectionScreen() {
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      trackScreenView('calendar_selection', { 
+        therapistId: bookingData.therapist?.id,
+        isReschedule,
+      });
+      return () => {};
+    }, [bookingData.therapist, isReschedule, trackScreenView])
+  );
 
   useEffect(() => {
     if (selectedDate && bookingData.therapist?.id) {
@@ -55,27 +69,36 @@ export default function CalendarSelectionScreen() {
 
   const loadAvailableTimes = async () => {
     setLoading(true);
+    setError(null);
     try {
       const formattedDate = formatDateISO(selectedDate!);
+      logger.debug(`Loading available slots for date ${formattedDate}`, 'CalendarSelectionScreen');
+      
       const slots = await bookingService.getAvailableSlots(
         String(bookingData.therapist?.id || ''),
         String(bookingData.service?.id || ''),
         formattedDate
-      ).catch(() => {
+      ).catch((err) => {
+        logger.warn('Fallback to default slots', err as Error, 'CalendarSelectionScreen');
         // Fallback to default times if API fails
         return [
           '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
           '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
         ];
       });
+      
       setAvailableTimes(slots || []);
-    } catch (error) {
-      console.error('Error loading available times:', error);
+      trackEvent('available_slots_loaded', { count: slots?.length || 0 });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar horários';
+      logger.error('Error loading available times', err as Error, 'CalendarSelectionScreen');
+      setError(errorMsg);
       // Use default times as fallback
       setAvailableTimes([
         '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
         '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
       ]);
+      trackEvent('available_slots_load_error', { error: errorMsg });
     } finally {
       setLoading(false);
     }
@@ -84,22 +107,41 @@ export default function CalendarSelectionScreen() {
   const dates = getNextBusinessDays(14);
 
   const handleConfirmBooking = async () => {
+    setError(null);
+
     if (!selectedDate || !selectedTime) {
-      Alert.alert('Erro', 'Por favor, selecione data e hora');
+      showToast({
+        type: 'error',
+        title: 'Seleção Obrigatória',
+        message: 'Por favor, selecione data e hora para continuar',
+      });
+      trackEvent('booking_confirm_error', { reason: 'no_date_time' });
       return;
     }
 
     if (!user) {
-      Alert.alert('Erro', 'Você precisa estar autenticado para fazer um agendamento');
+      showToast({
+        type: 'error',
+        title: 'Autenticação Necessária',
+        message: 'Você precisa estar autenticado para fazer um agendamento',
+      });
+      trackEvent('booking_confirm_error', { reason: 'not_authenticated' });
       navigation.goBack();
       return;
     }
 
     setSubmitting(true);
     try {
+      logger.debug(`Confirming booking for ${formatDateDDMMYYYY(selectedDate)} at ${selectedTime}`, 'CalendarSelectionScreen');
+      
       const dateStringISO = formatDateISO(selectedDate);
       const dateStringDisplay = formatDateDDMMYYYY(selectedDate);
       setBookingState({ date: dateStringISO, time: selectedTime });
+      
+      trackEvent('booking_datetime_set', { 
+        date: dateStringDisplay,
+        time: selectedTime,
+      });
 
       if (isReschedule && rescheduleBookingId) {
         // Reschedule existing booking
