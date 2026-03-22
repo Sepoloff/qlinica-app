@@ -52,19 +52,32 @@ export default function BookingsScreen() {
     loadBookings(true);
   };
 
-  const handleCancelBooking = async (bookingId: string) => {
-    setCancelling(bookingId);
-    try {
-      await bookingService.cancelBooking(bookingId);
-      toast.success('✅ Consulta cancelada com sucesso');
-      await loadBookings();
-    } catch (error: any) {
-      console.error('Error cancelling booking:', error);
-      const errorMsg = error.response?.data?.message || 'Falha ao cancelar consulta. Tente novamente.';
-      toast.error(`❌ ${errorMsg}`);
-    } finally {
-      setCancelling(null);
-    }
+  const handleCancelBooking = (bookingId: string) => {
+    Alert.alert(
+      'Cancelar consulta',
+      'Tem certeza que deseja cancelar esta consulta? Esta ação não pode ser revertida.',
+      [
+        { text: 'Manter', style: 'cancel' },
+        {
+          text: 'Cancelar Consulta',
+          style: 'destructive',
+          onPress: async () => {
+            setCancelling(bookingId);
+            try {
+              await bookingService.cancelBooking(bookingId);
+              toast.success('✅ Consulta cancelada com sucesso');
+              await loadBookings();
+            } catch (error: any) {
+              console.error('Error cancelling booking:', error);
+              const errorMsg = error.response?.data?.message || 'Falha ao cancelar consulta. Tente novamente.';
+              toast.error(`❌ ${errorMsg}`);
+            } finally {
+              setCancelling(null);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleRescheduleBooking = (booking: Booking) => {
