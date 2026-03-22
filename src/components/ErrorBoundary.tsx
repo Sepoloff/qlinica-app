@@ -1,33 +1,55 @@
 import React, { ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { COLORS } from '../constants/Colors';
+import { analyticsService } from '../services/analyticsService';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
   onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+  context?: string; // Optional context for error tracking
 }
 
 interface State {
   hasError: boolean;
   error: Error | null;
+  errorCount: number;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorCount: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Omit<State, 'errorCount'> {
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    const errorCount = this.state.errorCount + 1;
+    this.setState({ errorCount });
+
+    // Track error in analytics
+    analyticsService.trackError(error, {
+      errorBoundary: true,
+      context: this.props.context,
+      componentStack: errorInfo.componentStack,
+      errorCount,
+    });
+
+    // Call optional error handler
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
+
+    // Log details
+    console.error(`ErrorBoundary [${this.props.context || 'Unknown'}] caught an error:`, {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      count: errorCount,
+    });
   }
 
   resetError = () => {

@@ -5,6 +5,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { BOOKINGS, SERVICES } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
+import { useAnalytics } from '../hooks/useAnalytics';
 import bookingService, { Booking, Service } from '../services/bookingService';
 import { convertMockBookings, convertMockServices } from '../utils/mockDataConverters';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -12,6 +13,7 @@ import { SkeletonLoader } from '../components/SkeletonLoader';
 export default function HomeScreen() {
   const navigation = useNavigation();
   const { user, isLoading: authLoading } = useAuth();
+  const { trackScreenView, trackEvent, trackError } = useAnalytics();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,11 +22,12 @@ export default function HomeScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
+      trackScreenView('home', { userId: user?.id });
       loadData();
       return () => {
         // Cleanup if needed
       };
-    }, [user])
+    }, [user, trackScreenView])
   );
 
   const loadData = async (fromRefresh = false) => {
@@ -49,9 +52,19 @@ export default function HomeScreen() {
       } else {
         setBookings([]);
       }
+
+      trackEvent('home_data_loaded', { 
+        servicesCount: servicesData?.length || 0,
+        bookingsCount: bookings?.length || 0,
+      });
     } catch (err) {
       console.error('Error loading home data:', err);
-      setError('Failed to load data');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
+      setError(errorMessage);
+      trackError(err instanceof Error ? err : new Error(errorMessage), {
+        screen: 'home',
+        operation: 'loadData',
+      });
       // Fallback to mock data
       setServices(convertMockServices());
       setBookings(user ? convertMockBookings(user.id) : []);
@@ -70,10 +83,12 @@ export default function HomeScreen() {
 
   const handleBookingNavigation = () => {
     if (!user) {
+      trackEvent('booking_auth_required');
       Alert.alert('Autenticação', 'Por favor inicie sessão para agendar uma consulta');
       navigation.navigate('loginStack' as never);
       return;
     }
+    trackEvent('booking_flow_started');
     navigation.navigate('ServiceSelection' as never);
   };
 

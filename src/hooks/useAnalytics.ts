@@ -1,59 +1,39 @@
 import { useCallback } from 'react';
-
-interface AnalyticsEvent {
-  name: string;
-  properties?: Record<string, any>;
-  timestamp: number;
-}
+import { analyticsService } from '../services/analyticsService';
 
 /**
- * Simple analytics tracking hook
- * In production, this would integrate with services like Mixpanel, Segment, etc.
+ * Analytics tracking hook
+ * Wraps analyticsService for use in components
+ * Integrates with Sentry, custom logging, and external analytics
  */
 export const useAnalytics = () => {
   const trackEvent = useCallback((name: string, properties?: Record<string, any>) => {
-    const event: AnalyticsEvent = {
-      name,
-      properties,
-      timestamp: Date.now(),
-    };
-
-    // Log to console in development
-    if (__DEV__) {
-      console.log('📊 Analytics Event:', event);
-    }
-
-    // TODO: Send to analytics service
-    // Example: await analyticsService.track(event);
-
-    return event;
+    analyticsService.trackEvent(name, properties);
   }, []);
 
-  const trackScreenView = useCallback((screenName: string) => {
-    trackEvent('screen_view', { screen_name: screenName });
-  }, [trackEvent]);
+  const trackScreenView = useCallback((screenName: string, properties?: Record<string, any>) => {
+    analyticsService.trackPageView(screenName, properties);
+  }, []);
 
-  const trackBookingStart = useCallback(() => {
-    trackEvent('booking_started');
-  }, [trackEvent]);
-
-  const trackBookingComplete = useCallback((bookingId: string, amount: number) => {
-    trackEvent('booking_completed', { booking_id: bookingId, amount });
-  }, [trackEvent]);
+  const trackBookingEvent = useCallback((
+    action: 'started' | 'service_selected' | 'therapist_selected' | 'date_selected' | 'completed' | 'cancelled',
+    bookingData?: Record<string, any>
+  ) => {
+    analyticsService.trackBookingEvent(action, bookingData);
+  }, []);
 
   const trackAuthEvent = useCallback((action: 'login' | 'register' | 'logout') => {
-    trackEvent(`auth_${action}`);
-  }, [trackEvent]);
+    analyticsService.trackAuthEvent(action);
+  }, []);
 
-  const trackError = useCallback((error: string, context?: Record<string, any>) => {
-    trackEvent('error_occurred', { error, ...context });
-  }, [trackEvent]);
+  const trackError = useCallback((error: Error | string, context?: Record<string, any>) => {
+    analyticsService.trackError(error, context);
+  }, []);
 
   return {
     trackEvent,
     trackScreenView,
-    trackBookingStart,
-    trackBookingComplete,
+    trackBookingEvent,
     trackAuthEvent,
     trackError,
   };
