@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
 import { COLORS } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
+import { useQuickToast } from '../hooks/useToast';
+import { validatePhone } from '../utils/validation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+  const toast = useQuickToast();
   const [notifSms, setNotifSms] = useState(true);
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifPush, setNotifPush] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [tempPhone, setTempPhone] = useState(user?.phone || '');
+  const [savingPhone, setSavingPhone] = useState(false);
 
   useEffect(() => {
     loadPreferences();
-  }, []);
+    if (user?.phone) {
+      setTempPhone(user.phone);
+    }
+  }, [user]);
 
   const loadPreferences = async () => {
     try {
@@ -47,6 +56,30 @@ export default function ProfileScreen() {
     } else {
       setNotifPush(value);
       savePreferences(notifSms, notifEmail, value);
+    }
+  };
+
+  const handleSavePhone = async () => {
+    if (!tempPhone) {
+      toast.error('Telefone não pode estar vazio');
+      return;
+    }
+
+    if (!validatePhone(tempPhone)) {
+      toast.error('Número inválido (ex: +351 912345678)');
+      return;
+    }
+
+    setSavingPhone(true);
+    try {
+      await updateUser({ phone: tempPhone });
+      toast.success('✅ Telefone atualizado');
+      setEditingPhone(false);
+    } catch (error: any) {
+      toast.error('Erro ao atualizar');
+      setTempPhone(user?.phone || '');
+    } finally {
+      setSavingPhone(false);
     }
   };
 
@@ -93,22 +126,33 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Dados Pessoais</Text>
         <View style={styles.card}>
-          {[
-            { label: 'Nome', value: user?.name || 'Maria Costa' },
-            { label: 'Contacto', value: user?.phone || '+351 912 345 678' },
-            { label: 'Email', value: user?.email || 'maria.costa@email.pt' },
-          ].map((item, i) => (
-            <View
-              key={i}
-              style={[
-                styles.infoItem,
-                i < 2 && styles.infoItemBorder,
-              ]}
-            >
-              <Text style={styles.infoLabel}>{item.label}</Text>
-              <Text style={styles.infoValue}>{item.value}</Text>
+          <View style={[styles.infoItem, styles.infoItemBorder]}>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Nome</Text>
+              <Text style={styles.infoValue}>{user?.name || 'Maria Costa'}</Text>
             </View>
-          ))}
+          </View>
+          <View style={[styles.infoItem, styles.infoItemBorder]}>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Contacto</Text>
+              <Text style={styles.infoValue}>{user?.phone || '+351 912 345 678'}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => {
+                setTempPhone(user?.phone || '');
+                setEditingPhone(true);
+              }}
+            >
+              <Text style={styles.editButtonText}>✏️</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.infoItem}>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoValue}>{user?.email || 'maria.costa@email.pt'}</Text>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -177,6 +221,54 @@ export default function ProfileScreen() {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Edit Phone Modal */}
+      <Modal
+        visible={editingPhone}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditingPhone(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Editar Telefone</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="+351 912 345 678"
+              placeholderTextColor={COLORS.grey}
+              value={tempPhone}
+              onChangeText={setTempPhone}
+              keyboardType="phone-pad"
+              editable={!savingPhone}
+            />
+            <View style={styles.modalHelp}>
+              <Text style={styles.modalHelpText}>
+                Formato: +351 9XXXXXXXX ou 9XXXXXXXX
+              </Text>
+            </View>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButtonSecondary}
+                onPress={() => setEditingPhone(false)}
+                disabled={savingPhone}
+              >
+                <Text style={styles.modalButtonSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButtonPrimary, savingPhone && styles.modalButtonDisabled]}
+                onPress={handleSavePhone}
+                disabled={savingPhone}
+              >
+                {savingPhone ? (
+                  <ActivityIndicator color={COLORS.primaryDark} />
+                ) : (
+                  <Text style={styles.modalButtonPrimaryText}>Guardar</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -256,6 +348,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
   },
+  infoContent: {
+    flex: 1,
+  },
   infoItemBorder: {
     borderBottomWidth: 1,
     borderBottomColor: `${COLORS.gold}08`,
@@ -270,6 +365,13 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: '500',
     fontFamily: 'DMSans',
+  },
+  editButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+  editButtonText: {
+    fontSize: 16,
   },
   notifItem: {
     flexDirection: 'row',
@@ -323,5 +425,79 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.danger,
     fontFamily: 'DMSans',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: COLORS.primaryLight,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 32,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.white,
+    fontFamily: 'DMSans',
+    marginBottom: 16,
+  },
+  modalInput: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    color: COLORS.white,
+    borderWidth: 2,
+    borderColor: `${COLORS.gold}20`,
+    fontFamily: 'DMSans',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  modalHelp: {
+    marginBottom: 16,
+  },
+  modalHelpText: {
+    fontSize: 12,
+    color: COLORS.grey,
+    fontFamily: 'DMSans',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalButtonSecondary: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: `${COLORS.gold}30`,
+  },
+  modalButtonSecondaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.gold,
+    fontFamily: 'DMSans',
+  },
+  modalButtonPrimary: {
+    flex: 1,
+    backgroundColor: COLORS.gold,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalButtonPrimaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
+    fontFamily: 'DMSans',
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
   },
 });
