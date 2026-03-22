@@ -4,7 +4,6 @@
  */
 
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Configure how the app handles notifications when it's in the foreground
@@ -41,11 +40,6 @@ export interface PushTokenData {
  * Call this once during app startup
  */
 export async function initializeNotifications() {
-  if (!Device.isDevice) {
-    console.log('Notifications require a physical device. Skipping setup.');
-    return;
-  }
-
   try {
     // Request notification permissions if not already granted
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -79,11 +73,10 @@ export async function initializeNotifications() {
  */
 async function storePushToken(token: string): Promise<void> {
   try {
-    const deviceName = Device.deviceName || 'unknown';
     const tokenData: PushTokenData = {
       token,
-      device: Device.modelName || 'unknown',
-      deviceName,
+      device: 'iOS-Device',
+      deviceName: 'iOS Device',
       lastUpdated: Date.now(),
     };
 
