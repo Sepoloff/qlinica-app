@@ -16,6 +16,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
 import { useAuth } from '../context/AuthContext';
+import { useQuickToast } from '../hooks/useToast';
+import { ProgressIndicator } from '../components/ProgressIndicator';
+import { TimeSlotPicker } from '../components/TimeSlotPicker';
+import { InfoBox } from '../components/InfoBox';
 import bookingService from '../services/bookingService';
 
 export default function CalendarSelectionScreen() {
@@ -23,6 +27,7 @@ export default function CalendarSelectionScreen() {
   const route = useRoute();
   const { bookingData, setDateTime, resetBooking } = useBooking();
   const { user } = useAuth();
+  const toast = useQuickToast();
   
   const isReschedule = (route.params as any)?.isReschedule || false;
   const rescheduleBookingId = (route.params as any)?.bookingId;

@@ -7,11 +7,15 @@ import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { THERAPISTS } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
+import { useQuickToast } from '../hooks/useToast';
+import { ProgressIndicator } from '../components/ProgressIndicator';
+import { RatingDisplay } from '../components/RatingDisplay';
 import bookingService, { Therapist } from '../services/bookingService';
 
 export default function TherapistSelectionScreen() {
   const navigation = useNavigation();
   const { bookingData, setTherapist } = useBooking();
+  const toast = useQuickToast();
   const [selectedTherapist, setSelectedTherapist] = React.useState<string | null>(null);
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +49,10 @@ export default function TherapistSelectionScreen() {
 
   const handleContinue = () => {
     if (selectedTherapist) {
+      toast.success('✅ Terapeuta selecionado');
       navigation.navigate('CalendarSelection' as never);
+    } else {
+      toast.error('❌ Selecione um terapeuta');
     }
   };
 

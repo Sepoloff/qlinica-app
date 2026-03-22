@@ -7,12 +7,15 @@ import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { SERVICES } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
+import { useQuickToast } from '../hooks/useToast';
+import { ProgressIndicator } from '../components/ProgressIndicator';
 import bookingService, { Service } from '../services/bookingService';
 import { convertMockServices } from '../utils/mockDataConverters';
 
 export default function ServiceSelectionScreen() {
   const navigation = useNavigation();
   const { setService } = useBooking();
+  const toast = useQuickToast();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,6 +38,7 @@ export default function ServiceSelectionScreen() {
 
   const handleServiceSelect = (service: Service | typeof SERVICES[0]) => {
     setService(service as any);
+    toast.success(`✅ ${service.name} selecionado`);
     navigation.navigate('TherapistSelection' as never);
   };
 
