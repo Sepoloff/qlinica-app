@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, ActivityIndicator, TextInput, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, Alert, ActivityIndicator, TextInput, Modal, SafeAreaView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
 import { useQuickToast } from '../hooks/useToast';
-import { validatePhone } from '../utils/validation';
+import { validatePhone, validateEmail } from '../utils/validation';
+import { FormInput } from '../components/FormInput';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {

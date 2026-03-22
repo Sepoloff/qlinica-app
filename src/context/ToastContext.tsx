@@ -17,6 +17,10 @@ export interface ToastContextType {
   showToast: (message: string, type?: ToastType, duration?: number) => void;
   removeToast: (id: string) => void;
   clearAll: () => void;
+  success: (message: string, duration?: number) => void;
+  error: (message: string, duration?: number) => void;
+  info: (message: string, duration?: number) => void;
+  warning: (message: string, duration?: number) => void;
 }
 
 export const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -55,8 +59,46 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setToasts([]);
   }, []);
 
+  const success = useCallback(
+    (message: string, duration: number = 3000) => {
+      showToast(message, 'success', duration);
+    },
+    [showToast]
+  );
+
+  const error = useCallback(
+    (message: string, duration: number = 4000) => {
+      showToast(message, 'error', duration);
+    },
+    [showToast]
+  );
+
+  const info = useCallback(
+    (message: string, duration: number = 3000) => {
+      showToast(message, 'info', duration);
+    },
+    [showToast]
+  );
+
+  const warning = useCallback(
+    (message: string, duration: number = 3500) => {
+      showToast(message, 'warning', duration);
+    },
+    [showToast]
+  );
+
   return (
-    <ToastContext.Provider value={{ toasts, show, showToast, removeToast, clearAll }}>
+    <ToastContext.Provider value={{ 
+      toasts, 
+      show, 
+      showToast, 
+      removeToast, 
+      clearAll,
+      success,
+      error,
+      info,
+      warning
+    }}>
       {children}
     </ToastContext.Provider>
   );

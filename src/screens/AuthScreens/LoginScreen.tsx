@@ -17,15 +17,17 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
+import { useQuickToast } from '../../hooks/useToast';
 import { validateEmail } from '../../utils/validation';
+import { FormInput } from '../../components/FormInput';
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const { login, isLoading, error, clearError } = useAuth();
+  const toast = useQuickToast();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
@@ -59,9 +61,10 @@ export default function LoginScreen() {
 
     try {
       await login(email, password);
+      toast.success('✅ Login realizado com sucesso');
       // Navigation will be handled by auth context changes
     } catch (err: any) {
-      Alert.alert('Erro de Autenticação', err.message || 'Falha ao fazer login');
+      toast.error(`❌ ${err.message || 'Falha ao fazer login'}`);
     }
   };
 
@@ -96,44 +99,32 @@ export default function LoginScreen() {
           )}
 
           {/* Email Input */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[styles.input, emailError ? styles.inputError : null]}
-              placeholder="seu@email.com"
-              placeholderTextColor={COLORS.grey}
-              value={email}
-              onChangeText={setEmail}
-              editable={!isLoading}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {emailError && <Text style={styles.fieldError}>{emailError}</Text>}
-          </View>
+          <FormInput
+            label="Email"
+            placeholder="seu@email.com"
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              setEmailError('');
+            }}
+            error={emailError}
+            keyboardType="email-address"
+            editable={!isLoading}
+          />
 
           {/* Password Input */}
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Palavra-passe</Text>
-            <View style={[styles.passwordContainer, passwordError ? styles.inputError : null]}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Sua palavra-passe"
-                placeholderTextColor={COLORS.grey}
-                value={password}
-                onChangeText={setPassword}
-                editable={!isLoading}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.togglePasswordButton}
-              >
-                <Text style={styles.togglePasswordText}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
-              </TouchableOpacity>
-            </View>
-            {passwordError && <Text style={styles.fieldError}>{passwordError}</Text>}
-          </View>
+          <FormInput
+            label="Palavra-passe"
+            placeholder="Sua palavra-passe"
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              setPasswordError('');
+            }}
+            error={passwordError}
+            secureTextEntry={true}
+            editable={!isLoading}
+          />
 
           {/* Login Button */}
           <TouchableOpacity

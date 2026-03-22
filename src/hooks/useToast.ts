@@ -1,22 +1,21 @@
 import { useContext } from 'react';
-import { ToastContext, Toast, ToastContextType } from '../context/ToastContext';
+import { ToastContext, ToastContextType } from '../context/ToastContext';
 
-export const useToast = (): ToastContextType => {
+/**
+ * Hook to use toast notifications
+ * Usage: const toast = useQuickToast();
+ *        toast.success('Success message');
+ *        toast.error('Error message');
+ *        toast.info('Info');
+ *        toast.warning('Warning');
+ */
+export const useQuickToast = (): ToastContextType => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within ToastProvider');
+    throw new Error('useQuickToast must be used within ToastProvider');
   }
   return context;
 };
 
-// Convenience hook for quick toast notifications
-export const useQuickToast = () => {
-  const { show } = useToast();
-
-  return {
-    success: (message: string) => show({ message, type: 'success', duration: 3000 }),
-    error: (message: string) => show({ message, type: 'error', duration: 4000 }),
-    info: (message: string) => show({ message, type: 'info', duration: 3000 }),
-    warning: (message: string) => show({ message, type: 'warning', duration: 3000 }),
-  };
-};
+// Alias for compatibility
+export const useToast = useQuickToast;
