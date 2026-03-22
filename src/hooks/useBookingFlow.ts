@@ -111,8 +111,8 @@ export const useBookingFlow = (isReschedule: boolean = false): UseBookingFlowRet
         result = await mutate(() =>
           bookingService.rescheduleBooking(
             bookingData.originalBookingId!,
-            bookingData.date,
-            bookingData.time
+            bookingData.date || '',
+            bookingData.time || ''
           )
         );
       } else {
@@ -121,8 +121,8 @@ export const useBookingFlow = (isReschedule: boolean = false): UseBookingFlowRet
           bookingService.createBooking({
             serviceId: bookingData.service!.id.toString(),
             therapistId: bookingData.therapist!.id.toString(),
-            date: bookingData.date,
-            time: bookingData.time,
+            date: bookingData.date || '',
+            time: bookingData.time || '',
           })
         );
       }

@@ -156,7 +156,7 @@ export default function CalendarSelectionScreen() {
           notes: '',
         });
 
-        setDateTime(selectedDate, selectedTime);
+        setDateTime(formatDateForAPI(selectedDate), selectedTime);
         resetBooking();
         
         Alert.alert(

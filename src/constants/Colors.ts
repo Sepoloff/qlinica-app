@@ -2,6 +2,7 @@ export const COLORS = {
   primary: '#2C3E50',
   primaryLight: '#34495E',
   primaryDark: '#1a252f',
+  dark: '#1a1a1a',
   gold: '#D4AF8F',
   goldLight: '#e0c4a8',
   goldDark: '#b8956f',

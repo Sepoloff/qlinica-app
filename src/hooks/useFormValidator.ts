@@ -41,10 +41,15 @@ export const useFormValidator = (
     (fieldName: string, value: any) => {
       if (validateOnChange) {
         const error = validateField(fieldName, value);
-        setErrors(prev => ({
-          ...prev,
-          [fieldName]: error || undefined,
-        }));
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          if (error) {
+            newErrors[fieldName] = error;
+          } else {
+            delete newErrors[fieldName];
+          }
+          return newErrors;
+        });
       }
     },
     [validateOnChange, validateField]
@@ -55,20 +60,30 @@ export const useFormValidator = (
       handleBlur(fieldName);
       if (validateOnBlur) {
         const error = validateField(fieldName, value);
-        setErrors(prev => ({
-          ...prev,
-          [fieldName]: error || undefined,
-        }));
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          if (error) {
+            newErrors[fieldName] = error;
+          } else {
+            delete newErrors[fieldName];
+          }
+          return newErrors;
+        });
       }
     },
     [validateOnBlur, validateField, handleBlur]
   );
 
   const setFieldError = useCallback((fieldName: string, error: string | null) => {
-    setErrors(prev => ({
-      ...prev,
-      [fieldName]: error || undefined,
-    }));
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      if (error) {
+        newErrors[fieldName] = error;
+      } else {
+        delete newErrors[fieldName];
+      }
+      return newErrors;
+    });
   }, []);
 
   const clearErrors = useCallback(() => {

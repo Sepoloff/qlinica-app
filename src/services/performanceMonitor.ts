@@ -153,7 +153,7 @@ class PerformanceMonitor {
 
     return {
       totalMeasurements,
-      averageScreenTime: Math.round(averageScreenTime * 100) / 100,
+      averageScreenTime: Math.round(avgScreenTime * 100) / 100,
       slowestScreen,
     };
   }
