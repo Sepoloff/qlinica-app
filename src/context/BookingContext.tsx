@@ -20,22 +20,28 @@ export interface BookingData {
     available: boolean;
     avatar: string;
   };
-  date?: Date;
-  time?: string;
+  date?: string; // Format: "DD/MM/YYYY"
+  time?: string; // Format: "HH:MM"
+  isReschedule?: boolean;
+  originalBookingId?: string;
 }
 
 interface BookingContextType {
   bookingData: BookingData;
   setService: (service: BookingData['service']) => void;
   setTherapist: (therapist: BookingData['therapist']) => void;
-  setDateTime: (date: Date, time: string) => void;
+  setDateTime: (date: string, time: string) => void;
+  setRescheduleMode: (bookingId: string) => void;
   resetBooking: () => void;
+  isComplete: () => boolean;
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
 
+const initialState: BookingData = {};
+
 export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [bookingData, setBookingData] = useState<BookingData>({});
+  const [bookingData, setBookingData] = useState<BookingData>(initialState);
 
   const setService = (service: BookingData['service']) => {
     setBookingData(prev => ({ ...prev, service }));
@@ -45,22 +51,44 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     setBookingData(prev => ({ ...prev, therapist }));
   };
 
-  const setDateTime = (date: Date, time: string) => {
+  const setDateTime = (date: string, time: string) => {
     setBookingData(prev => ({ ...prev, date, time }));
   };
 
+  const setRescheduleMode = (bookingId: string) => {
+    setBookingData(prev => ({ 
+      ...prev, 
+      isReschedule: true,
+      originalBookingId: bookingId
+    }));
+  };
+
   const resetBooking = () => {
-    setBookingData({});
+    setBookingData(initialState);
+  };
+
+  const isComplete = (): boolean => {
+    return !!(bookingData.service && bookingData.therapist && bookingData.date && bookingData.time);
+  };
+
+  const value: BookingContextType = {
+    bookingData,
+    setService,
+    setTherapist,
+    setDateTime,
+    setRescheduleMode,
+    resetBooking,
+    isComplete,
   };
 
   return (
-    <BookingContext.Provider value={{ bookingData, setService, setTherapist, setDateTime, resetBooking }}>
+    <BookingContext.Provider value={value}>
       {children}
     </BookingContext.Provider>
   );
 };
 
-export const useBooking = () => {
+export const useBooking = (): BookingContextType => {
   const context = useContext(BookingContext);
   if (!context) {
     throw new Error('useBooking must be used within BookingProvider');
