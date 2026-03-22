@@ -1,8 +1,8 @@
 'use strict';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../config/api';
+import { authStorage, userStorage } from '../utils/storage';
 
 export interface User {
   id: string;
@@ -44,11 +44,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const bootstrapAsync = async () => {
     try {
       setIsLoading(true);
-      const token = await AsyncStorage.getItem('authToken');
-      const userProfile = await AsyncStorage.getItem('userProfile');
+      const token = await authStorage.getToken();
+      const userProfile = await userStorage.getProfile();
 
       if (token && userProfile) {
-        setUser(JSON.parse(userProfile));
+        setUser(userProfile);
       }
     } catch (error) {
       console.error('Failed to restore token:', error);
@@ -70,8 +70,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       // Save token and user data
-      await AsyncStorage.setItem('authToken', token);
-      await AsyncStorage.setItem('userProfile', JSON.stringify(userData));
+      await authStorage.setToken(token);
+      await userStorage.setProfile(userData);
 
       setUser(userData);
     } catch (err: any) {
@@ -108,8 +108,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       // Save token and user data
-      await AsyncStorage.setItem('authToken', token);
-      await AsyncStorage.setItem('userProfile', JSON.stringify(userData));
+      await authStorage.setToken(token);
+      await userStorage.setProfile(userData);
 
       setUser(userData);
     } catch (err: any) {
@@ -131,8 +131,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.error('Logout API error:', err);
     } finally {
       // Always clear local data
-      await AsyncStorage.removeItem('authToken');
-      await AsyncStorage.removeItem('userProfile');
+      await authStorage.removeToken();
+      await userStorage.removeProfile();
       setUser(null);
       setIsLoading(false);
     }
@@ -144,7 +144,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const updatedUser = { ...user, ...userData };
       await api.put('/auth/user', updatedUser);
-      await AsyncStorage.setItem('userProfile', JSON.stringify(updatedUser));
+      await userStorage.setProfile(updatedUser);
       setUser(updatedUser);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 'Failed to update user';

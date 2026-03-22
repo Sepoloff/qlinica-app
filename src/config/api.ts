@@ -1,5 +1,5 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authStorage } from '../utils/storage';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
@@ -15,7 +15,7 @@ export const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('authToken');
+      const token = await authStorage.getToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -34,8 +34,7 @@ api.interceptors.response.use(
     // Handle 401 - Unauthorized
     if (error.response?.status === 401) {
       try {
-        await AsyncStorage.removeItem('authToken');
-        await AsyncStorage.removeItem('userProfile');
+        await authStorage.removeToken();
         // Trigger logout event or navigation
         console.log('Token expired - user logged out');
       } catch (storageError) {
