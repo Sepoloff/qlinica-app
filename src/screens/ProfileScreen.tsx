@@ -8,6 +8,7 @@ import { validatePhone } from '../utils/validation';
 import { FormInput } from '../components/FormInput';
 import { Button } from '../components/Button';
 import { AlertModal } from '../components/AlertModal';
+import { logger } from '../utils/logger';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
@@ -38,15 +39,16 @@ export default function ProfileScreen() {
         setNotifPush(parsed.push ?? false);
       }
     } catch (error) {
-      console.error('Error loading preferences:', error);
+      logger.error('Error loading preferences', error as Error, 'ProfileScreen');
     }
   };
 
   const savePreferences = async (sms: boolean, email: boolean, push: boolean) => {
     try {
       await AsyncStorage.setItem('notificationPrefs', JSON.stringify({ sms, email, push }));
+      logger.debug('Preferences saved', 'ProfileScreen');
     } catch (error) {
-      console.error('Error saving preferences:', error);
+      logger.error('Error saving preferences', error as Error, 'ProfileScreen');
     }
   };
 
@@ -82,7 +84,9 @@ export default function ProfileScreen() {
       await updateUser({ phone: phoneToValidate });
       toast.success('✅ Telefone atualizado com sucesso');
       setEditingPhone(false);
+      logger.debug('Phone updated successfully', 'ProfileScreen');
     } catch (error: any) {
+      logger.error('Error updating phone', error, 'ProfileScreen');
       toast.error('Erro ao atualizar');
       setTempPhone(user?.phone || '');
     } finally {
@@ -103,7 +107,9 @@ export default function ProfileScreen() {
             try {
               await logout();
               toast.success('✅ Sessão terminada com sucesso');
+              logger.debug('User logged out successfully', 'ProfileScreen');
             } catch (error) {
+              logger.error('Error logging out', error as Error, 'ProfileScreen');
               toast.error('❌ Falha ao terminar sessão');
               setLoggingOut(false);
             }

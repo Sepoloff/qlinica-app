@@ -6,18 +6,29 @@ import { BOOKINGS } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
 import { useQuickToast } from '../hooks/useToast';
 import { useNotificationManager } from '../hooks/useNotificationManager';
-import bookingService, { Booking } from '../services/bookingService';
+import { useBookingAPI } from '../hooks/useBookingAPI';
+import { Booking } from '../services/apiService';
 import { BookingCard } from '../components/BookingCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { logger } from '../utils/logger';
 
 export default function BookingsScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
   const toast = useQuickToast();
   const { notifyCancellation, notifyReschedule } = useNotificationManager();
+  
+  // Use API hook
+  const { 
+    bookings, 
+    isLoading: loading, 
+    error: apiError, 
+    fetchBookings, 
+    cancelBooking: cancelBookingAPI,
+    rescheduleBooking: rescheduleBookingAPI 
+  } = useBookingAPI();
+  
   const [activeTab, setActiveTab] = useState(0);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
   const tabs = ['Próximas', 'Passadas'];
@@ -28,40 +39,21 @@ export default function BookingsScreen() {
     }, [user])
   );
 
-  const loadBookings = async (fromRefresh = false) => {
-    if (!fromRefresh) {
-      setLoading(true);
-    }
+  const loadBookings = async () => {
     try {
       if (user) {
-        // Load all bookings with proper error handling
-        try {
-          const data = await bookingService.getBookings();
-          setBookings(data || []);
-        } catch (error) {
-          console.warn('Failed to fetch bookings from API, using mock data');
-          // Try loading from mock data as fallback
-          const mockBookings = BOOKINGS.filter(b => String(b.userId) === user.id || !b.userId);
-          setBookings(mockBookings as Booking[]);
-        }
-      } else {
-        setBookings([]);
+        await fetchBookings();
+        logger.debug('Bookings loaded successfully', 'BookingsScreen');
       }
     } catch (error) {
-      console.error('Unexpected error loading bookings:', error);
+      logger.error('Error loading bookings', error as Error, 'BookingsScreen');
       toast.error('Erro ao carregar agendamentos');
-      setBookings([]);
-    } finally {
-      setLoading(false);
-      if (fromRefresh) {
-        setRefreshing(false);
-      }
     }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadBookings(true);
+    loadBookings().finally(() => setRefreshing(false));
   };
 
   const handleCancelBooking = async (bookingId: string) => {
@@ -78,34 +70,33 @@ export default function BookingsScreen() {
             text: 'Cancelar Consulta',
             style: 'destructive',
             onPress: async () => {
-            setCancelling(bookingId);
-            try {
-              await bookingService.cancelBooking(bookingId);
-              
-              // Send cancellation notification
-              if (booking) {
-                try {
-                  const dateTime = new Date(`${booking.date}T${booking.time}`);
-                  await notifyCancellation(
-                    booking.therapistId || 'Terapeuta',
-                    booking.serviceId || 'Serviço',
-                    dateTime
-                  );
-                } catch (notificationError) {
-                  console.warn('Cancellation notification failed (non-critical):', notificationError);
+              setCancelling(bookingId);
+              try {
+                await cancelBookingAPI(bookingId);
+                
+                // Send cancellation notification
+                if (booking) {
+                  try {
+                    const dateTime = new Date(`${booking.date}T${booking.time}`);
+                    await notifyCancellation(
+                      booking.therapistId || 'Terapeuta',
+                      booking.serviceId || 'Serviço',
+                      dateTime
+                    );
+                  } catch (notificationError) {
+                    logger.warn('Cancellation notification failed (non-critical)', notificationError as Error, 'BookingsScreen');
+                  }
                 }
+                
+                toast.success('✅ Consulta cancelada com sucesso');
+              } catch (error: any) {
+                logger.error('Error cancelling booking', error, 'BookingsScreen');
+                const errorMsg = error.message || 'Falha ao cancelar consulta. Tente novamente.';
+                toast.error(`❌ ${errorMsg}`);
+              } finally {
+                setCancelling(null);
+                resolve();
               }
-              
-              toast.success('✅ Consulta cancelada com sucesso');
-              await loadBookings();
-            } catch (error: any) {
-              console.error('Error cancelling booking:', error);
-              const errorMsg = error.response?.data?.message || 'Falha ao cancelar consulta. Tente novamente.';
-              toast.error(`❌ ${errorMsg}`);
-            } finally {
-              setCancelling(null);
-              resolve();
-            }
             },
           },
         ]

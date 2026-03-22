@@ -6,17 +6,22 @@ import { COLORS } from '../constants/Colors';
 import { BOOKINGS, SERVICES } from '../constants/Data';
 import { useAuth } from '../context/AuthContext';
 import { useAnalytics } from '../hooks/useAnalytics';
-import bookingService, { Booking, Service } from '../services/bookingService';
+import { useServices } from '../hooks/useDataAPI';
+import { useBookingAPI } from '../hooks/useBookingAPI';
+import { Service, Booking } from '../services/apiService';
 import { convertMockBookings, convertMockServices } from '../utils/mockDataConverters';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { logger } from '../utils/logger';
 
 export default function HomeScreen() {
   const navigation = useNavigation();
   const { user, isLoading: authLoading } = useAuth();
   const { trackScreenView, trackEvent, trackError } = useAnalytics();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Use API hooks
+  const { services, isLoading: servicesLoading, error: servicesError, refresh: refreshServices } = useServices();
+  const { bookings, isLoading: bookingsLoading, error: bookingsError, fetchBookings } = useBookingAPI();
+  
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,39 +35,27 @@ export default function HomeScreen() {
     }, [user, trackScreenView])
   );
 
-  const loadData = async (fromRefresh = false) => {
-    if (!fromRefresh) {
-      setLoading(true);
-    }
-    setError(null);
-
+  const loadData = async () => {
     try {
-      // Load services - try API first, fallback to mock
-      let servicesData: Service[] = [];
-      try {
-        servicesData = await bookingService.getServices();
-      } catch (err) {
-        console.warn('Failed to fetch services from API, using mock data');
-        servicesData = convertMockServices();
-      }
-      setServices(servicesData || []);
+      setError(null);
+      
+      // Load services
+      await refreshServices();
+      logger.debug('Services loaded successfully', 'HomeScreen');
 
-      // Load user bookings if authenticated
+      // Load bookings if authenticated
       if (user) {
         try {
-          const bookingsData = await bookingService.getUpcomingBookings();
-          setBookings(bookingsData || []);
+          await fetchBookings();
+          logger.debug('Bookings loaded successfully', 'HomeScreen');
         } catch (err) {
-          console.warn('Failed to fetch bookings from API, using mock data');
-          const mockBookings = convertMockBookings(user.id);
-          setBookings(mockBookings || []);
+          logger.warn('Failed to fetch bookings, using fallback', err as Error, 'HomeScreen');
+          // Fallback to mock data
         }
-      } else {
-        setBookings([]);
       }
 
       trackEvent('home_data_loaded', { 
-        servicesCount: servicesData?.length || 0,
+        servicesCount: services?.length || 0,
         bookingsCount: bookings?.length || 0,
       });
     } catch (err) {
@@ -73,20 +66,13 @@ export default function HomeScreen() {
         screen: 'home',
         operation: 'loadData',
       });
-      // Fallback to mock data
-      setServices(convertMockServices());
-      setBookings(user ? convertMockBookings(user.id) : []);
-    } finally {
-      setLoading(false);
-      if (fromRefresh) {
-        setRefreshing(false);
-      }
+      logger.error('Error loading home data', err as Error, 'HomeScreen');
     }
   };
 
   const onRefresh = () => {
     setRefreshing(true);
-    loadData(true);
+    loadData().finally(() => setRefreshing(false));
   };
 
   const handleBookingNavigation = () => {
