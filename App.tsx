@@ -10,9 +10,11 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import ServiceSelectionScreen from './src/screens/ServiceSelectionScreen';
 import TherapistSelectionScreen from './src/screens/TherapistSelectionScreen';
 import CalendarSelectionScreen from './src/screens/CalendarSelectionScreen';
+import BookingSummaryScreen from './src/screens/BookingSummaryScreen';
 import { TabBarIcon } from './src/components/TabBarIcon';
 import { BookingProvider } from './src/context/BookingContext';
 import { AuthProvider } from './src/context/AuthContext';
+import { ToastProvider } from './src/context/ToastContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -100,6 +102,13 @@ export default function App() {
               <Stack.Screen
                 name="CalendarSelection"
                 component={CalendarSelectionScreen}
+                options={{
+                  presentation: 'card',
+                }}
+              />
+              <Stack.Screen
+                name="BookingSummary"
+                component={BookingSummaryScreen}
                 options={{
                   presentation: 'card',
                 }}
