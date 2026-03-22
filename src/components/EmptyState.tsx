@@ -1,32 +1,54 @@
+'use strict';
+
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { COLORS } from '../constants/Colors';
+import { Button } from './Button';
 
 interface EmptyStateProps {
   icon?: string;
   title: string;
-  subtitle?: string;
+  message: string;
   actionLabel?: string;
   onAction?: () => void;
+  containerStyle?: ViewStyle;
 }
 
+/**
+ * Empty State Component
+ * 
+ * Displayed when there's no data to show
+ * 
+ * @example
+ * <EmptyState
+ *   icon="📋"
+ *   title="Sem marcações"
+ *   message="Você não tem nenhuma marcação agendada"
+ *   actionLabel="Agendar Agora"
+ *   onAction={() => {}}
+ * />
+ */
 export const EmptyState: React.FC<EmptyStateProps> = ({
   icon = '📭',
   title,
-  subtitle,
+  message,
   actionLabel,
   onAction,
+  containerStyle,
 }) => {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       <Text style={styles.icon}>{icon}</Text>
       <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-
+      <Text style={styles.message}>{message}</Text>
       {actionLabel && onAction && (
-        <TouchableOpacity style={styles.button} onPress={onAction}>
-          <Text style={styles.buttonText}>{actionLabel}</Text>
-        </TouchableOpacity>
+        <Button
+          title={actionLabel}
+          onPress={onAction}
+          variant="primary"
+          size="medium"
+          style={styles.button}
+        />
       )}
     </View>
   );
@@ -34,41 +56,34 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 20,
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+    minHeight: 300,
   },
   icon: {
-    fontSize: 56,
+    fontSize: 64,
     marginBottom: 16,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: COLORS.white,
-    fontFamily: 'DMSans',
-    textAlign: 'center',
+    fontFamily: 'Cormorant',
     marginBottom: 8,
+    textAlign: 'center',
   },
-  subtitle: {
-    fontSize: 13,
+  message: {
+    fontSize: 14,
     color: COLORS.grey,
     fontFamily: 'DMSans',
     textAlign: 'center',
-    marginBottom: 16,
-    lineHeight: 18,
+    lineHeight: 20,
+    marginBottom: 24,
   },
   button: {
-    backgroundColor: COLORS.gold,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginTop: 8,
-  },
-  buttonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.primaryDark,
-    fontFamily: 'DMSans',
+    marginTop: 16,
   },
 });

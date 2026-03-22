@@ -1,61 +1,83 @@
+'use strict';
+
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { COLORS } from '../constants/Colors';
 
-export type CardVariant = 'elevated' | 'outlined' | 'filled';
-
 interface CardProps {
   children: React.ReactNode;
-  variant?: CardVariant;
   style?: ViewStyle;
+  shadow?: boolean;
+  bordered?: boolean;
+  highlighted?: boolean;
+  disabled?: boolean;
   onPress?: () => void;
 }
 
+/**
+ * Reusable Card Component
+ * 
+ * Used for displaying grouped content with consistent styling
+ * 
+ * @example
+ * <Card shadow>
+ *   <Text>Card content</Text>
+ * </Card>
+ */
 export const Card: React.FC<CardProps> = ({
   children,
-  variant = 'elevated',
   style,
+  shadow = false,
+  bordered = false,
+  highlighted = false,
+  disabled = false,
   onPress,
 }) => {
-  const Wrapper = onPress ? require('react-native').TouchableOpacity : View;
+  const cardStyle = {
+    backgroundColor: highlighted ? `${COLORS.gold}10` : COLORS.primaryLight,
+    borderColor: highlighted ? COLORS.gold : `${COLORS.gold}20`,
+    borderWidth: bordered ? 1.5 : 0,
+    opacity: disabled ? 0.6 : 1,
+  };
 
-  return (
-    <Wrapper
+  const content = (
+    <View
       style={[
-        styles.container,
-        variant === 'outlined' && styles.outlined,
-        variant === 'filled' && styles.filled,
-        variant === 'elevated' && styles.elevated,
+        styles.card,
+        cardStyle,
+        shadow && styles.shadow,
         style,
       ]}
-      onPress={onPress}
-      activeOpacity={0.7}
     >
       {children}
-    </Wrapper>
+    </View>
   );
+
+  if (onPress) {
+    return (
+      <View style={styles.touchableWrapper}>
+        {content}
+      </View>
+    );
+  }
+
+  return content;
 };
 
 const styles = StyleSheet.create({
-  container: {
+  card: {
     borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  elevated: {
+    padding: 16,
     backgroundColor: COLORS.primaryLight,
+  },
+  shadow: {
     shadowColor: COLORS.gold,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 6,
   },
-  outlined: {
-    backgroundColor: COLORS.primaryLight,
-    borderWidth: 1,
-    borderColor: `${COLORS.gold}25`,
-  },
-  filled: {
-    backgroundColor: `${COLORS.primaryDark}80`,
+  touchableWrapper: {
+    flex: 1,
   },
 });
