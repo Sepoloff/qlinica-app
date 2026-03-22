@@ -45,9 +45,7 @@ export default function HomeScreen() {
 
       // Load user bookings if authenticated
       if (user) {
-        const bookingsData = await bookingService.getUserBookings().catch(() => {
-          return convertMockBookings(user.id);
-        });
+        const bookingsData = await bookingService.getUpcomingBookings();
         setBookings(bookingsData || []);
       } else {
         setBookings([]);
