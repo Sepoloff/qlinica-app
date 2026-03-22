@@ -15,8 +15,9 @@ import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
 import { useToast } from '../context/ToastContext';
 import { useNotificationManager } from '../hooks/useNotificationManager';
+import { useBookingAPI } from '../hooks/useBookingAPI';
 import { Button } from '../components/Button';
-import bookingService from '../services/bookingService';
+import { logger } from '../utils/logger';
 
 export interface BookingSummaryParams {
   service: {
@@ -42,6 +43,7 @@ export default function BookingSummaryScreen() {
   const { bookingData, resetBooking } = useBooking();
   const { showToast } = useToast();
   const { notifyBookingConfirmation, scheduleAppointmentReminder } = useNotificationManager();
+  const { createBooking } = useBookingAPI();
   const [isConfirming, setIsConfirming] = useState(false);
   
   // Extract params from route or context
@@ -69,14 +71,15 @@ export default function BookingSummaryScreen() {
     setIsConfirming(true);
     try {
       // Create booking via API
-      const bookingData = {
+      const bookingPayload = {
         serviceId: service.id.toString(),
         therapistId: therapist.id.toString(),
         date: date,
         time: time,
       };
 
-      await bookingService.createBooking(bookingData);
+      const booking = await createBooking(bookingPayload);
+      logger.debug(`Booking created: ${booking.id}`, 'BookingSummaryScreen');
 
       // Parse date and time to create appointment datetime
       // Assuming date is in format "DD/MM/YYYY" and time is "HH:MM"
@@ -94,7 +97,7 @@ export default function BookingSummaryScreen() {
       try {
         await notifyBookingConfirmation(therapist.name, service.name, appointmentDate);
       } catch (notificationError) {
-        console.warn('Notification send failed (non-critical):', notificationError);
+        logger.warn('Notification send failed (non-critical)', notificationError as Error, 'BookingSummaryScreen');
       }
 
       // Schedule appointment reminder
