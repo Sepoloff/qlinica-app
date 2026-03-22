@@ -8,9 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
-  ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -18,8 +15,8 @@ import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useQuickToast } from '../../hooks/useToast';
-import { validateEmail } from '../../utils/validation';
 import { FormInput } from '../../components/FormInput';
+import { Button } from '../../components/Button';
 import { useFormValidation, emailRule, passwordRule } from '../../hooks/useFormValidation';
 
 export default function LoginScreen() {
@@ -116,17 +113,15 @@ export default function LoginScreen() {
           />
 
           {/* Login Button */}
-          <TouchableOpacity
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+          <Button
+            label={isLoading ? 'Iniciando...' : 'Iniciar Sessão'}
             onPress={handleLogin}
             disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color={COLORS.primaryDark} />
-            ) : (
-              <Text style={styles.loginButtonText}>Iniciar Sessão</Text>
-            )}
-          </TouchableOpacity>
+            loading={isLoading}
+            variant="primary"
+            size="lg"
+            style={styles.loginButton}
+          />
 
           {/* Forgot Password */}
           <TouchableOpacity style={styles.forgotPasswordButton}>
@@ -250,26 +245,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   loginButton: {
-    backgroundColor: COLORS.gold,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
     marginTop: 24,
-    shadowColor: COLORS.gold,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  loginButtonDisabled: {
-    opacity: 0.6,
-  },
-  loginButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.primaryDark,
-    fontFamily: 'DMSans',
-    letterSpacing: 0.5,
   },
   forgotPasswordButton: {
     alignItems: 'center',

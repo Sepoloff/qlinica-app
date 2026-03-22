@@ -8,8 +8,6 @@ import {
   ScrollView, 
   TouchableOpacity, 
   StyleSheet, 
-  
-  ActivityIndicator,
   Alert
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -20,6 +18,8 @@ import { useQuickToast } from '../hooks/useToast';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { TimeSlotPicker } from '../components/TimeSlotPicker';
 import { InfoBox } from '../components/InfoBox';
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { Button } from '../components/Button';
 import bookingService from '../services/bookingService';
 
 export default function CalendarSelectionScreen() {
@@ -268,7 +268,13 @@ export default function CalendarSelectionScreen() {
           </View>
 
           {loading ? (
-            <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 20 }} />
+            <SkeletonLoader
+              width="100%"
+              height={50}
+              borderRadius={12}
+              count={4}
+              spacing={12}
+            />
           ) : (
             <View style={styles.timesGrid}>
               {availableTimes.length > 0 ? (
@@ -301,20 +307,14 @@ export default function CalendarSelectionScreen() {
 
       {/* Continue Button */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[
-            styles.continueButton, 
-            (!selectedDate || !selectedTime || submitting) && styles.continueButtonDisabled
-          ]}
+        <Button
+          label={submitting ? 'Confirmando...' : 'Confirmar Agendamento'}
           onPress={handleConfirmBooking}
           disabled={!selectedDate || !selectedTime || submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color={COLORS.primaryDark} />
-          ) : (
-            <Text style={styles.continueButtonText}>Confirmar Agendamento</Text>
-          )}
-        </TouchableOpacity>
+          loading={submitting}
+          variant="primary"
+          size="lg"
+        />
       </View>
 
       {/* Bottom Spacing */}
@@ -479,27 +479,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
-  continueButton: {
-    backgroundColor: COLORS.gold,
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-    shadowColor: COLORS.gold,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  continueButtonDisabled: {
-    opacity: 0.5,
-  },
-  continueButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: COLORS.primaryDark,
-    fontFamily: 'DMSans',
-    letterSpacing: 0.5,
-  },
+
   noTimesText: {
     fontSize: 14,
     color: COLORS.grey,

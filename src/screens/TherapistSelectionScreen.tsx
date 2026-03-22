@@ -2,7 +2,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { THERAPISTS } from '../constants/Data';
@@ -10,6 +10,7 @@ import { useBooking } from '../context/BookingContext';
 import { useQuickToast } from '../hooks/useToast';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { RatingDisplay } from '../components/RatingDisplay';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import bookingService, { Therapist } from '../services/bookingService';
 
 export default function TherapistSelectionScreen() {
@@ -83,7 +84,13 @@ export default function TherapistSelectionScreen() {
       {/* Therapists List */}
       <View style={styles.therapistsContainer}>
         {loading ? (
-          <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 40 }} />
+          <SkeletonLoader
+            width="100%"
+            height={110}
+            borderRadius={14}
+            count={4}
+            spacing={12}
+          />
         ) : (therapists.length > 0 ? therapists : THERAPISTS).map((therapist) => (
           <TouchableOpacity
             key={therapist.id}

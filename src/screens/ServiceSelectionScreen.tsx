@@ -2,13 +2,14 @@
 import { LinearGradient } from 'expo-linear-gradient';
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { SERVICES } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
 import { useQuickToast } from '../hooks/useToast';
 import { ProgressIndicator } from '../components/ProgressIndicator';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import bookingService, { Service } from '../services/bookingService';
 import { convertMockServices } from '../utils/mockDataConverters';
 
@@ -67,7 +68,13 @@ export default function ServiceSelectionScreen() {
       {/* Services Grid */}
       <View style={styles.servicesContainer}>
         {loading ? (
-          <ActivityIndicator size="large" color={COLORS.gold} style={{ marginVertical: 40 }} />
+          <SkeletonLoader
+            width="100%"
+            height={180}
+            borderRadius={16}
+            count={3}
+            spacing={16}
+          />
         ) : (services.length > 0 ? services : convertMockServices()).map((service) => (
           <TouchableOpacity 
             key={service.id}
