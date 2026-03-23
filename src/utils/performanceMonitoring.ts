@@ -48,7 +48,7 @@ class PerformanceMonitor {
   /**
    * Record a performance metric
    */
-  private recordMetric(
+  recordMetric(
     name: string,
     duration: number,
     metadata?: Record<string, any>
