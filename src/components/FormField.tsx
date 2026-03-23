@@ -37,6 +37,9 @@ interface FormFieldProps {
   isValid?: boolean;
   showValidation?: boolean;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  // Accessibility props
+  accessibilityLabel?: string;
+  testID?: string;
 }
 
 const FormField: React.FC<FormFieldProps> = ({
@@ -62,6 +65,8 @@ const FormField: React.FC<FormFieldProps> = ({
   isValid = false,
   showValidation = false,
   autoCapitalize = 'none',
+  accessibilityLabel,
+  testID,
 }) => {
   const { colors, isDark } = useTheme();
   const [isFocused, setIsFocused] = React.useState(false);
@@ -82,6 +87,9 @@ const FormField: React.FC<FormFieldProps> = ({
     setIsFocused(false);
     onBlur?.();
   };
+
+  // Build accessibility label
+  const a11yLabel = accessibilityLabel || `${label || 'Campo'}${required ? ', obrigatório' : ''}`;
 
   return (
     <View style={styles.container}>
@@ -136,6 +144,9 @@ const FormField: React.FC<FormFieldProps> = ({
           onFocus={handleFocus}
           onBlur={handleBlur}
           autoCapitalize={autoCapitalize}
+          accessibilityLabel={a11yLabel}
+          accessibilityHint={error ? `Erro: ${error}` : helper || helperText}
+          testID={testID}
         />
       </View>
 

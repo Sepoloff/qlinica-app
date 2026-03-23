@@ -23,6 +23,11 @@ interface ButtonProps {
   enableHaptic?: boolean;
   hapticType?: 'light' | 'success';
   label?: string;
+  // Accessibility props
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: 'button' | 'menuitem' | 'link';
+  testID?: string;
 }
 
 const variantStyles = {
@@ -95,6 +100,10 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false,
   enableHaptic = true,
   hapticType = 'light',
+  accessibilityLabel,
+  accessibilityHint,
+  accessibilityRole = 'button',
+  testID,
 }) => {
   const buttonText = children || label || title || '';
   const variantStyle = variantStyles[variant];
@@ -111,11 +120,20 @@ export const Button: React.FC<ButtonProps> = ({
     onPress();
   };
 
+  // Build accessibility label
+  const a11yLabel = accessibilityLabel || String(buttonText);
+  const a11yHint = loading ? 'em progresso' : accessibilityHint;
+
   return (
     <TouchableOpacity
       onPress={handlePress}
       disabled={disabled || loading}
       activeOpacity={disabled ? 1 : 0.7}
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={a11yHint}
+      accessibilityRole={accessibilityRole}
+      accessibilityState={{ disabled: disabled || loading }}
+      testID={testID}
       style={[
         styles.button,
         {
@@ -129,6 +147,7 @@ export const Button: React.FC<ButtonProps> = ({
         },
         style,
       ]}
+      minHeight={48}
     >
       <View style={styles.content}>
         {loading && <ActivityIndicator color={variantStyle.textColor} size="small" style={{ marginRight: 8 }} />}
