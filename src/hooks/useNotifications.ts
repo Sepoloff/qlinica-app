@@ -82,11 +82,8 @@ export function useTestNotifications() {
      */
     sendTestNotification: async () => {
       try {
-        await notificationService.sendLocalNotification({
-          title: '🧪 Notificação de Teste',
-          body: 'Esta é uma notificação de teste do Qlinica',
-          data: { type: 'test' },
-        });
+        // Send a booking confirmation as test
+        await notificationService.sendBookingConfirmationNotification('Test Therapist', 'Test Service', new Date());
         console.log('✅ Notificação de teste enviada');
       } catch (error) {
         console.error('❌ Erro ao enviar notificação de teste:', error);
@@ -94,18 +91,14 @@ export function useTestNotifications() {
     },
 
     /**
-     * Agendar notificação para 5 segundos
+     * Agendar notificação para depois
      */
     scheduleTestNotification: async () => {
       try {
-        await notificationService.scheduleNotification(
-          {
-            title: '⏰ Notificação Agendada',
-            body: 'Esta notificação foi agendada para 5 segundos',
-            data: { type: 'scheduled_test' },
-          },
-          5
-        );
+        // Schedule a reminder notification
+        const futureDate = new Date();
+        futureDate.setSeconds(futureDate.getSeconds() + 5);
+        await notificationService.sendBookingReminderNotification('Test Therapist', 'Test Service', futureDate);
         console.log('✅ Notificação agendada para 5s');
       } catch (error) {
         console.error('❌ Erro ao agendar notificação:', error);

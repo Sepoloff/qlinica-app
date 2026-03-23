@@ -11,7 +11,7 @@ import { analyticsService } from './analyticsService';
 
 export interface OfflineBookingQueue {
   id: string;
-  operation: 'create' | 'update' | 'cancel';
+  operation: 'create' | 'update' | 'cancel' | 'reschedule';
   bookingId?: string;
   data: {
     serviceId?: string;
@@ -143,7 +143,7 @@ class OfflineSyncService {
    * Retorna ID da operação para tracking
    */
   async queueBookingOperation(
-    operation: 'create' | 'update' | 'cancel',
+    operation: 'create' | 'update' | 'cancel' | 'reschedule',
     data: OfflineBookingQueue['data'],
     bookingId?: string
   ): Promise<string> {

@@ -20,7 +20,7 @@ import { logger } from '../utils/logger';
 export default function TherapistSelectionScreen() {
   const navigation = useNavigation();
   const { bookingData, setTherapist } = useBooking();
-  const { updateTherapist } = useBookingState();
+  const bookingState = useBookingState();
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
   
@@ -46,12 +46,8 @@ export default function TherapistSelectionScreen() {
       const serviceId = bookingData.service?.id || bookingState.serviceId;
       logger.debug(`Loading therapists for service ${serviceId}`);
       
-      let data: Therapist[];
-      if (serviceId) {
-        data = await bookingService.getTherapistsByService(String(serviceId)).catch(() => THERAPISTS as any);
-      } else {
-        data = await bookingService.getTherapists().catch(() => THERAPISTS as any);
-      }
+      // Get all therapists (filtering by service happens in component)
+      const data = await bookingService.getTherapists().catch(() => THERAPISTS as any);
       
       setTherapists(data || THERAPISTS);
       trackEvent('therapists_loaded', { count: data?.length || 0 });
@@ -200,7 +196,7 @@ export default function TherapistSelectionScreen() {
               
               <View style={styles.ratingContainer}>
                 <Text style={styles.rating}>⭐ {therapist.rating}</Text>
-                <Text style={styles.reviews}>({therapist.reviews} avaliações)</Text>
+                <Text style={styles.reviews}>({therapist.reviews_count} avaliações)</Text>
               </View>
             </View>
 

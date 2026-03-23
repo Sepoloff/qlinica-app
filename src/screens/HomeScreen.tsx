@@ -216,7 +216,7 @@ export default function HomeScreen() {
                 style={styles.serviceCard}
                 onPress={handleBookingNavigation}
               >
-                <Text style={styles.serviceIcon}>{service.icon || '✨'}</Text>
+                <Text style={styles.serviceIcon}>✨</Text>
                 <Text style={styles.serviceName}>{service.name}</Text>
               </TouchableOpacity>
             ))

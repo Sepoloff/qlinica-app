@@ -6,6 +6,7 @@
 
 import { useCallback, useState } from 'react';
 import { useOfflineQueue } from './useOfflineQueue';
+import { useNetworkStatus } from '../utils/networkStatus';
 import { getErrorInfo } from '../utils/errorMessages';
 import { logger } from '../utils/logger';
 
@@ -18,7 +19,8 @@ export interface APICallResult<T> {
 }
 
 export const useAPIWithErrorHandling = () => {
-  const { isOnline, queueRequest } = useOfflineQueue();
+  const { addToQueue } = useOfflineQueue();
+  const { isOnline } = useNetworkStatus();
   const [isLoading, setIsLoading] = useState(false);
 
   /**
@@ -78,7 +80,7 @@ export const useAPIWithErrorHandling = () => {
         setIsLoading(false);
       }
     },
-    [isOnline, queueRequest]
+    [isOnline, addToQueue]
   );
 
   /**

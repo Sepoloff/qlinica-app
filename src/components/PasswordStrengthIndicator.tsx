@@ -6,6 +6,7 @@ import { getPasswordStrength } from '../utils/validation';
 interface PasswordStrengthIndicatorProps {
   password: string;
   showLabel?: boolean;
+  style?: any;
 }
 
 /**
@@ -15,6 +16,7 @@ interface PasswordStrengthIndicatorProps {
 export const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({
   password,
   showLabel = true,
+  style,
 }) => {
   if (!password) {
     return null;
@@ -50,7 +52,7 @@ export const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps>
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       <View style={styles.barContainer}>
         <View
           style={[

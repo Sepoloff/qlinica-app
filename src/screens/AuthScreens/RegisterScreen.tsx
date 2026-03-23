@@ -283,7 +283,7 @@ export default function RegisterScreen() {
           {/* Terms & Conditions */}
           <View style={styles.termsContainer}>
             <Checkbox
-              value={agreedToTerms}
+              checked={agreedToTerms}
               onValueChange={setAgreedToTerms}
               disabled={isLoading}
             />

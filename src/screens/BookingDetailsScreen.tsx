@@ -12,7 +12,7 @@ import { bookingService, Booking, Service, Therapist } from '../services/booking
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { SkeletonLoader } from '../components/SkeletonLoader';
-import { formatDateISO, formatTime } from '../utils/dateHelpers';
+import { formatDateISO, formatTime, formatDateDDMMYYYY } from '../utils/dateHelpers';
 import { AlertModal } from '../components/AlertModal';
 
 export default function BookingDetailsScreen() {
@@ -40,16 +40,18 @@ export default function BookingDetailsScreen() {
 
     try {
       // Load booking
-      const bookingData = await bookingService.getBooking((route.params as any)?.bookingId);
+      const bookingData = await bookingService.getBookingById((route.params as any)?.bookingId);
+      if (!bookingData) throw new Error('Agendamento não encontrado');
       setBooking(bookingData);
 
       // Load service details
-      const serviceData = await bookingService.getService(bookingData.serviceId);
-      setService(serviceData);
+      const services = await bookingService.getServices();
+      const serviceData = services.find(s => String(s.id) === String(bookingData.serviceId));
+      if (serviceData) setService(serviceData);
 
       // Load therapist details
-      const therapistData = await bookingService.getTherapist(bookingData.therapistId);
-      setTherapist(therapistData);
+      const therapistData = await bookingService.getTherapistById(bookingData.therapistId);
+      if (therapistData) setTherapist(therapistData);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Falha ao carregar detalhes';
       setError(errorMessage);
@@ -185,7 +187,7 @@ export default function BookingDetailsScreen() {
                 <Text style={styles.therapistSpecialty}>{therapist.specialty}</Text>
                 <View style={styles.ratingContainer}>
                   <Text style={styles.ratingText}>⭐ {therapist.rating.toFixed(1)}</Text>
-                  <Text style={styles.reviewsText}>({therapist.reviewCount} avaliações)</Text>
+                  <Text style={styles.reviewsText}>({therapist.reviews_count} avaliações)</Text>
                 </View>
               </View>
             </View>
@@ -203,7 +205,7 @@ export default function BookingDetailsScreen() {
           <View style={styles.dateTimeSection}>
             <View style={styles.dateTimeItem}>
               <Text style={styles.dateTimeLabel}>📅 Data</Text>
-              <Text style={styles.dateTimeValue}>{formatDate(booking.date)}</Text>
+              <Text style={styles.dateTimeValue}>{formatDateDDMMYYYY(booking.date)}</Text>
             </View>
             <View style={styles.dateTimeItem}>
               <Text style={styles.dateTimeLabel}>🕐 Hora</Text>

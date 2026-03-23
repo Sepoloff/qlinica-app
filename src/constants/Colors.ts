@@ -3,6 +3,7 @@ export const COLORS = {
   primaryLight: '#34495E',
   primaryDark: '#1a252f',
   dark: '#1a1a1a',
+  darkGrey: '#333333',
   gold: '#D4AF8F',
   goldLight: '#e0c4a8',
   goldDark: '#b8956f',
@@ -20,5 +21,12 @@ export const COLORS = {
   textDark: '#2C3E50',
   textLight: '#8895a0',
   textError: '#E74C3C',
+  textSecondary: '#8895a0',
   error: '#E74C3C',
+  // Additional colors
+  background: '#1a252f',
+  surface: '#2C3E50',
+  surfaceLight: '#34495E',
+  border: '#34495E',
+  accent: '#D4AF8F',
 };

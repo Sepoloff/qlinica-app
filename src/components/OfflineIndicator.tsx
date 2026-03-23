@@ -19,9 +19,10 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
   showQueueInfo = true,
 }) => {
   const { isOnline } = useNetworkStatus();
-  const { stats, isProcessing, clearQueue } = useOfflineQueue();
+  const { queueSize, clearQueue } = useOfflineQueue();
   const [isExpanded, setIsExpanded] = useState(false);
   const slideAnim = React.useRef(new Animated.Value(0)).current;
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Animate in/out when offline status changes
   useEffect(() => {
@@ -32,7 +33,7 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
     }).start();
   }, [isOnline, slideAnim]);
 
-  if (isOnline && stats.total === 0) {
+  if (isOnline && queueSize === 0) {
     return null;
   }
 
@@ -41,7 +42,7 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
     outputRange: [position === 'top' ? -100 : 100, 0],
   });
 
-  const hasQueuedRequests = stats.total > 0;
+  const hasQueuedRequests = queueSize > 0;
   const backgroundColor = isOnline ? COLORS.warning : COLORS.error;
 
   return (
@@ -67,7 +68,7 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
             </Text>
             {hasQueuedRequests && showQueueInfo && (
               <Text style={styles.subText}>
-                {stats.total} {stats.total === 1 ? 'ação' : 'ações'} aguardando
+                {queueSize} {queueSize === 1 ? 'ação' : 'ações'} aguardando
               </Text>
             )}
           </View>
@@ -85,40 +86,7 @@ export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
 
       {isExpanded && hasQueuedRequests && showQueueInfo && (
         <View style={[styles.details, { backgroundColor }]}>
-          <DetailRow label="Total na fila:" value={String(stats.total)} />
-
-          {Object.entries(stats.byMethod).length > 0 && (
-            <>
-              <Text style={styles.detailLabel}>Por tipo:</Text>
-              {Object.entries(stats.byMethod).map(([method, count]) => (
-                <DetailRow
-                  key={method}
-                  label={`  ${method}:`}
-                  value={String(count)}
-                />
-              ))}
-            </>
-          )}
-
-          {Object.entries(stats.byPriority).length > 0 && (
-            <>
-              <Text style={styles.detailLabel}>Por prioridade:</Text>
-              {Object.entries(stats.byPriority).map(([priority, count]) => (
-                <DetailRow
-                  key={priority}
-                  label={`  ${priority}:`}
-                  value={String(count)}
-                />
-              ))}
-            </>
-          )}
-
-          {stats.oldestTimestamp && (
-            <DetailRow
-              label="Mais antiga:"
-              value={new Date(stats.oldestTimestamp).toLocaleTimeString()}
-            />
-          )}
+          <DetailRow label="Total na fila:" value={String(queueSize)} />
 
           {isOnline && (
             <TouchableOpacity

@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { servicesAPI, Service, Therapist, therapistsAPI } from '../services/apiService';
+import { bookingService } from '../services/bookingService';
 import { logger } from '../utils/logger';
 
 interface UseServicesDataState {
@@ -88,13 +89,8 @@ export const useTherapistsData = (serviceId?: string) => {
   const loadTherapists = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
-      let therapists: Therapist[];
-
-      if (serviceId) {
-        therapists = await therapistsAPI.getByService(serviceId);
-      } else {
-        therapists = await therapistsAPI.getAll();
-      }
+      // Get all therapists (API filtering by service comes from booking context)
+      const therapists = await therapistsAPI.getAll();
 
       setState((prev) => ({
         ...prev,
@@ -169,17 +165,28 @@ export const useBookingAvailability = (therapistId: string, serviceId: string, d
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
       // Try to load from API, fallback to mock if fails
-      const slots = await bookingsAPI.getAvailableSlots(therapistId, serviceId, date).catch(() => {
+      // Note: bookingService.getAvailableSlots takes therapistId and date
+      const slotsResponse = await bookingService.getAvailableSlots(therapistId, date).catch(() => {
         // Return default slots if API fails
         return [
-          '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-          '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+          { date, time: '09:00', available: true, duration: 60 },
+          { date, time: '09:30', available: true, duration: 60 },
+          { date, time: '10:00', available: true, duration: 60 },
+          { date, time: '10:30', available: true, duration: 60 },
+          { date, time: '11:00', available: true, duration: 60 },
+          { date, time: '11:30', available: true, duration: 60 },
+          { date, time: '14:00', available: true, duration: 60 },
+          { date, time: '14:30', available: true, duration: 60 },
+          { date, time: '15:00', available: true, duration: 60 },
+          { date, time: '15:30', available: true, duration: 60 },
+          { date, time: '16:00', available: true, duration: 60 },
+          { date, time: '16:30', available: true, duration: 60 },
         ];
       });
 
       setState((prev) => ({
         ...prev,
-        slots: slots || [],
+        slots: slotsResponse || [],
         isLoading: false,
       }));
 

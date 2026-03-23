@@ -98,7 +98,7 @@ export default function BookingsScreen() {
                       dateTime
                     );
                   } catch (notificationError) {
-                    logger.warn('Cancellation notification failed (non-critical)', notificationError as Error, 'BookingsScreen');
+                    logger.warn('Cancellation notification failed (non-critical)', notificationError as Error);
                   }
                 }
                 

@@ -112,7 +112,7 @@ export const useRealTimeValidation = (
       // Set new debounce timer for validation
       debounceTimers.current[fieldName] = setTimeout(async () => {
         const validatorFn = validator || validators[fieldName];
-        if (validatorFn) {
+        if (validatorFn && typeof validatorFn === 'function') {
           await validateField(fieldName);
         }
       }, debounceMs);

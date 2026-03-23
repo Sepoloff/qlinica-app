@@ -172,6 +172,20 @@ class BookingService {
   }
 
   /**
+   * Reschedule a booking to a new date/time
+   */
+  async rescheduleBooking(id: string, date: string, time: string): Promise<Booking> {
+    try {
+      logger.debug(`Rescheduling booking ${id}`, { date, time });
+      const response = await api.post(`/bookings/${id}/reschedule`, { date, time });
+      return response.data;
+    } catch (error) {
+      logger.error(`Error rescheduling booking ${id}`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Fetch available time slots for a therapist on a given date
    */
   async getAvailableSlots(therapistId: number | string, date: string): Promise<AvailableSlot[]> {

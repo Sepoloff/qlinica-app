@@ -30,7 +30,8 @@ import {
   formatDateDDMMYYYY, 
   formatDateISO, 
   getShortDayName,
-  getRelativeTimeString
+  getRelativeTimeString,
+  getDayName
 } from '../utils/dateHelpers';
 
 export default function CalendarSelectionScreen() {
@@ -77,7 +78,6 @@ export default function CalendarSelectionScreen() {
       
       const slots = await bookingService.getAvailableSlots(
         String(bookingData.therapist?.id || ''),
-        String(bookingData.service?.id || ''),
         formattedDate
       ).catch((err) => {
         logger.warn('Fallback to default slots', err as Error);
@@ -88,7 +88,11 @@ export default function CalendarSelectionScreen() {
         ];
       });
       
-      setAvailableTimes(slots || []);
+      // Convert slots to time strings if they're objects
+      const timesArray = Array.isArray(slots) 
+        ? slots.map(s => typeof s === 'string' ? s : s.time)
+        : [];
+      setAvailableTimes(timesArray);
       trackEvent('available_slots_loaded', { count: slots?.length || 0 });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar horários';
@@ -150,11 +154,11 @@ export default function CalendarSelectionScreen() {
 
     setSubmitting(true);
     try {
-      logger.debug(`Confirming booking for ${formatDateDDMMYYYY(selectedDate)} at ${selectedTime}`);
+      logger.debug(`Confirming booking for ${formatDateDDMMYYYY(selectedDate!)} at ${selectedTime}`);
       
-      const dateStringISO = formatDateISO(selectedDate);
-      const dateStringDisplay = formatDateDDMMYYYY(selectedDate);
-      updateDateTime(dateStringISO, selectedTime);
+      const dateStringISO = formatDateISO(selectedDate!);
+      const dateStringDisplay = formatDateDDMMYYYY(selectedDate!);
+      updateDateTime(dateStringISO, selectedTime!);
       
       trackEvent('booking_datetime_set', { 
         date: dateStringDisplay,
@@ -164,9 +168,9 @@ export default function CalendarSelectionScreen() {
       if (isReschedule && rescheduleBookingId) {
         // Reschedule existing booking
         await bookingService.rescheduleBooking(
-          rescheduleBookingId,
+          rescheduleBookingId!,
           dateStringISO,
-          selectedTime
+          selectedTime!
         );
 
         Alert.alert(
@@ -258,7 +262,7 @@ export default function CalendarSelectionScreen() {
           <View style={styles.summaryItem}>
             <Text style={styles.summaryLabel}>Serviço</Text>
             <Text style={styles.summaryValue}>
-              {bookingData.service.icon} {bookingData.service.name}
+              {bookingData.service.name}
             </Text>
           </View>
           <View style={styles.summaryDivider} />
@@ -298,7 +302,7 @@ export default function CalendarSelectionScreen() {
                   styles.dateTextSelected,
                 ]}
               >
-                {formatDate(date)}
+                {formatDateDDMMYYYY(date)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -311,7 +315,7 @@ export default function CalendarSelectionScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Selecione a Hora</Text>
             <Text style={styles.selectedDate}>
-              {getDayName(selectedDate)}, {formatDate(selectedDate)}
+              {getDayName(selectedDate)}, {formatDateDDMMYYYY(selectedDate)}
             </Text>
           </View>
 

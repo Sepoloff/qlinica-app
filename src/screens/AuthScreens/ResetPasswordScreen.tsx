@@ -139,7 +139,6 @@ export default function ResetPasswordScreen() {
                   }}
                   keyboardType="numeric"
                   editable={!isLoading}
-                  icon="key"
                 />
               </View>
 
@@ -181,7 +180,6 @@ export default function ResetPasswordScreen() {
                   }}
                   secureTextEntry={!showPassword}
                   editable={!isLoading}
-                  icon="lock"
                   rightIcon={
                     <TouchableOpacity
                       onPress={() => setShowPassword(!showPassword)}
@@ -215,7 +213,6 @@ export default function ResetPasswordScreen() {
                   }}
                   secureTextEntry={!showConfirmPassword}
                   editable={!isLoading}
-                  icon="lock"
                   rightIcon={
                     <TouchableOpacity
                       onPress={() => setShowConfirmPassword(!showConfirmPassword)}
