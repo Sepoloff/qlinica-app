@@ -382,3 +382,17 @@ export function onNotificationReceived(
 
   return () => subscription.remove();
 }
+
+/**
+ * Export notification service as singleton
+ */
+export const notificationService = {
+  sendBookingConfirmationNotification,
+  sendBookingReminderNotification,
+  sendCancellationNotification,
+  sendRescheduleNotification,
+  sendPaymentNotification,
+  sendReviewRequestNotification,
+  onNotificationResponse,
+  onNotificationReceived,
+};

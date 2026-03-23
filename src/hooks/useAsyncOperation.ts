@@ -3,7 +3,7 @@
  * Manages async operations with loading, error, and data states
  */
 
-import { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { logger } from '../utils/logger';
 
 interface AsyncState<T> {

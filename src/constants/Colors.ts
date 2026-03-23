@@ -10,6 +10,7 @@ export const COLORS = {
   offWhite: '#F5F5F5',
   grey: '#8895a0',
   greyLight: '#c5ccd3',
+  lightGray: '#d0d0d0',
   success: '#4CAF50',
   danger: '#E74C3C',
   info: '#3498DB',

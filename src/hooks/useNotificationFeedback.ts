@@ -55,7 +55,7 @@ export const useNotificationFeedback = () => {
           logger.warn(logMessage);
           break;
         case 'error':
-          logger.error(logMessage, new Error(message), 'Notification');
+          logger.error(logMessage, new Error(message));
           break;
         case 'info':
         default:
