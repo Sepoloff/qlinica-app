@@ -4,6 +4,9 @@ import React, { createContext, useContext, useState, ReactNode, useCallback } fr
 import { bookingsAPI, Booking, Service, Therapist } from '../services/apiService';
 import { logger } from '../utils/logger';
 
+// Re-export Booking type for use in other modules
+export type { Booking };
+
 export interface BookingData {
   service?: Service;
   therapist?: Therapist;

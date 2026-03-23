@@ -62,14 +62,15 @@ class BookingNotificationService {
       const HOURS_24 = 86400;
 
       if (secondsUntil > HOURS_24) {
-        const reminderTime = secondsUntil - HOURS_24; // 24 horas antes
-
         const therapistName = booking.therapist?.name || 'seu terapeuta';
+        const serviceName = booking.service?.name || 'sessão';
 
+        // Schedule reminder for 24 hours before
         await notificationService.sendBookingReminderNotification(
           therapistName,
-          booking.date,
-          booking.time
+          serviceName,
+          bookingDate,
+          24 * 60 // 24 hours in minutes
         );
 
         console.log(
@@ -94,11 +95,13 @@ class BookingNotificationService {
 
       if (secondsUntil > HOURS_1) {
         const therapistName = booking.therapist?.name || 'seu terapeuta';
+        const serviceName = booking.service?.name || 'sessão';
 
         await notificationService.sendBookingReminderNotification(
           therapistName,
-          booking.date,
-          booking.time
+          serviceName,
+          bookingDate,
+          60 // 1 hour in minutes
         );
 
         console.log(
@@ -119,8 +122,14 @@ class BookingNotificationService {
   ): Promise<void> {
     try {
       const therapistName = booking.therapist?.name || 'seu terapeuta';
+      const serviceName = booking.service?.name || 'sessão';
+      const dateTime = new Date(`${booking.date}T${booking.time}`);
 
-      await notificationService.sendCancellationNotification(therapistName, booking.date, booking.time);
+      await notificationService.sendCancellationNotification(
+        therapistName,
+        serviceName,
+        dateTime
+      );
 
       console.log(`❌ Notificação: Reserva cancelada (${booking.id})`);
     } catch (error) {
@@ -154,10 +163,7 @@ class BookingNotificationService {
    */
   static async notifyOfflineSyncFailed(operationId: string): Promise<void> {
     try {
-      // Use payment notification as fallback since we don't have generic sendLocalNotification
-      console.warn(
-        `⚠️ Notificação: Falha de sync (${operationId})`
-      );
+      console.warn(`⚠️ Notificação: Falha de sync (${operationId})`);
     } catch (error) {
       console.error('❌ Erro ao notificar falha de sync:', error);
     }

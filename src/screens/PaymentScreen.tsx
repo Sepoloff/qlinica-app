@@ -25,7 +25,7 @@ import { logger } from '../utils/logger';
 import { useAnalytics } from '../hooks/useAnalytics';
 
 interface PaymentScreenProps {
-  bookingId: string;
+  bookingId?: string;
   amount: number;
   description: string;
   onSuccess: (result: PaymentResult) => void;
@@ -160,9 +160,12 @@ export default function PaymentScreen({
 
       if (onSuccess) {
         onSuccess({
+          success: true,
           transactionId: `TXN_${Date.now()}`,
           amount: total,
-          bookingId: bookingId || undefined,
+          currency: 'EUR',
+          timestamp: Date.now(),
+          bookingId,
           method: showNewCardForm ? 'card' : selectedMethod,
           status: 'success',
         });
