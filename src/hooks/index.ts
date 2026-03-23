@@ -21,3 +21,4 @@ export {
   clearAllPendingRequests,
   getPendingRequestsInfo
 } from './useDeduplicatedRequest';
+export { useRequestWithRetry, useMultiRequestWithRetry } from './useRequestWithRetry';
