@@ -192,18 +192,18 @@ export default function CalendarSelectionScreen() {
           return;
         }
 
-        const dateStringISO = formatDateISO(selectedDate);
-        const dateStringDisplay = formatDateDDMMYYYY(selectedDate);
+        const dateStringISO = formatDateISO(selectedDate!);
+        const dateStringDisplay = formatDateDDMMYYYY(selectedDate!);
 
         const booking = await bookingService.createBooking({
-          serviceId: String(bookingData.service.id),
-          therapistId: String(bookingData.therapist.id),
+          serviceId: String(bookingData.service!.id),
+          therapistId: String(bookingData.therapist!.id),
           date: dateStringISO,
-          time: selectedTime,
+          time: selectedTime!,
           notes: '',
         });
 
-        setDateTime(dateStringISO, selectedTime);
+        setDateTime(dateStringISO, selectedTime!);
         resetBooking();
         
         Alert.alert(
