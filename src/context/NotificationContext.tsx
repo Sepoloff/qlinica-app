@@ -1,164 +1,103 @@
-/**
- * NotificationContext
- * Manages notification settings and preferences for the user
- */
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
-import React, { createContext, useCallback, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications';
-
-export interface NotificationSettings {
-  enabled: boolean;
-  bookingConfirmation: boolean;
-  appointmentReminders: boolean;
-  reminderTime: number; // minutes before appointment
-  cancellationNotices: boolean;
-  rescheduling: boolean;
-  paymentNotifications: boolean;
-  reviewRequests: boolean;
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  timestamp: Date;
+  isRead: boolean;
+  action?: {
+    label: string;
+    onPress: () => void;
+  };
 }
-
-export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
-  enabled: true,
-  bookingConfirmation: true,
-  appointmentReminders: true,
-  reminderTime: 60, // 1 hour before
-  cancellationNotices: true,
-  rescheduling: true,
-  paymentNotifications: true,
-  reviewRequests: true,
-};
 
 interface NotificationContextType {
-  settings: NotificationSettings;
-  isLoading: boolean;
-  error: string | null;
-  updateSettings: (newSettings: Partial<NotificationSettings>) => Promise<void>;
-  resetSettings: () => Promise<void>;
-  loadSettings: () => Promise<void>;
+  notifications: Notification[];
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => string;
+  markAsRead: (id: string) => void;
+  dismissNotification: (id: string) => void;
+  clearAll: () => void;
+  clearByType: (type: Notification['type']) => void;
 }
 
-export const NotificationContext = createContext<NotificationContextType | undefined>(
-  undefined
-);
+const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-interface NotificationProviderProps {
-  children: React.ReactNode;
-}
+export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-export const NotificationProvider: React.FC<NotificationProviderProps> = ({
-  children,
-}) => {
-  const [settings, setSettings] = useState<NotificationSettings>(
-    DEFAULT_NOTIFICATION_SETTINGS
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => {
+    const id = `notification_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newNotification: Notification = {
+      ...notification,
+      id,
+      timestamp: new Date(),
+      isRead: false,
+    };
 
-  /**
-   * Load notification settings from AsyncStorage
-   */
-  const loadSettings = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+    setNotifications(prev => [newNotification, ...prev]);
 
-      const savedSettings = await AsyncStorage.getItem('@qlinica_notification_settings');
-
-      if (savedSettings) {
-        const parsed = JSON.parse(savedSettings);
-        setSettings({
-          ...DEFAULT_NOTIFICATION_SETTINGS,
-          ...parsed,
-        });
-      } else {
-        setSettings(DEFAULT_NOTIFICATION_SETTINGS);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load settings';
-      setError(errorMessage);
-      console.error('Error loading notification settings:', err);
-    } finally {
-      setIsLoading(false);
+    // Auto-dismiss after 5 seconds for certain types
+    if (['success', 'info'].includes(notification.type)) {
+      setTimeout(() => {
+        dismissNotification(id);
+      }, 5000);
     }
+
+    return id;
   }, []);
 
-  /**
-   * Update notification settings
-   */
-  const updateSettings = useCallback(
-    async (newSettings: Partial<NotificationSettings>) => {
-      try {
-        setError(null);
-        const updatedSettings = { ...settings, ...newSettings };
-        setSettings(updatedSettings);
-
-        // Save to AsyncStorage
-        await AsyncStorage.setItem(
-          '@qlinica_notification_settings',
-          JSON.stringify(updatedSettings)
-        );
-
-        // If enabling/disabling all notifications, update Expo settings
-        if (newSettings.enabled !== undefined) {
-          if (!newSettings.enabled) {
-            await Notifications.dismissAllNotificationsAsync();
-          }
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to update settings';
-        setError(errorMessage);
-        console.error('Error updating notification settings:', err);
-        throw err;
-      }
-    },
-    [settings]
-  );
-
-  /**
-   * Reset settings to defaults
-   */
-  const resetSettings = useCallback(async () => {
-    try {
-      setError(null);
-      setSettings(DEFAULT_NOTIFICATION_SETTINGS);
-      await AsyncStorage.removeItem('@qlinica_notification_settings');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to reset settings';
-      setError(errorMessage);
-      console.error('Error resetting notification settings:', err);
-      throw err;
-    }
+  const markAsRead = useCallback((id: string) => {
+    setNotifications(prev =>
+      prev.map(notif =>
+        notif.id === id ? { ...notif, isRead: true } : notif
+      )
+    );
   }, []);
 
-  // Load settings on mount
-  useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+  const dismissNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  }, []);
 
-  const value: NotificationContextType = {
-    settings,
-    isLoading,
-    error,
-    updateSettings,
-    resetSettings,
-    loadSettings,
-  };
+  const clearAll = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+  const clearByType = useCallback((type: Notification['type']) => {
+    setNotifications(prev => prev.filter(notif => notif.type !== type));
+  }, []);
 
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        addNotification,
+        markAsRead,
+        dismissNotification,
+        clearAll,
+        clearByType,
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );
 };
 
-/**
- * Hook to use notification context
- */
-export function useNotifications(): NotificationContextType {
-  const context = React.useContext(NotificationContext);
+export const useNotifications = () => {
+  const context = useContext(NotificationContext);
   if (!context) {
     throw new Error('useNotifications must be used within NotificationProvider');
   }
   return context;
-}
+};
+
+export const useAddNotification = () => {
+  const { addNotification } = useNotifications();
+  return addNotification;
+};
+
+export const useNotificationActions = () => {
+  const { markAsRead, dismissNotification, clearAll, clearByType } = useNotifications();
+  return { markAsRead, dismissNotification, clearAll, clearByType };
+};
