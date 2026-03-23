@@ -185,7 +185,7 @@ export default function BookingDetailsScreen() {
                 <Text style={styles.therapistSpecialty}>{therapist.specialty}</Text>
                 <View style={styles.ratingContainer}>
                   <Text style={styles.ratingText}>⭐ {therapist.rating.toFixed(1)}</Text>
-                  <Text style={styles.reviewsText}>({therapist.reviews} avaliações)</Text>
+                  <Text style={styles.reviewsText}>({therapist.reviewCount} avaliações)</Text>
                 </View>
               </View>
             </View>

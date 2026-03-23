@@ -102,18 +102,12 @@ export default function BookingsScreen() {
                   }
                 }
                 
-                showToast({
-                  type: 'success',
-                  title: 'Sucesso',
-                  message: 'Consulta cancelada com sucesso'
-                });
+                showToast('Consulta cancelada com sucesso', 'success');
                 trackEvent('booking_cancelled', { bookingId });
               } catch (error: any) {
                 logger.error('Error cancelling booking', error);
                 const errorMsg = error.message || 'Falha ao cancelar consulta. Tente novamente.';
-                showToast({
-                  type: 'error',
-                  title: 'Erro',
+                showToast(errorMsg, 'error');
                   message: errorMsg
                 });
                 trackEvent('booking_cancel_error', { error: errorMsg });

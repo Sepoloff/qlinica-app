@@ -14,7 +14,10 @@ export interface Toast {
 export interface ToastContextType {
   toasts: Toast[];
   show: (toast: Omit<Toast, 'id'>) => void;
-  showToast: (message: string, type?: ToastType, duration?: number) => void;
+  showToast: {
+    (message: string, type?: ToastType, duration?: number): void;
+    (config: { message?: string; type?: ToastType; title?: string; duration?: number }): void;
+  } & ((messageOrConfig: string | { message?: string; type?: ToastType; title?: string; duration?: number }, type?: ToastType, duration?: number) => void);
   removeToast: (id: string) => void;
   clearAll: () => void;
   success: (message: string, duration?: number) => void;
@@ -49,8 +52,15 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
 
   const showToast = useCallback(
-    (message: string, type: ToastType = 'info', duration: number = 3000) => {
-      show({ message, type, duration });
+    (messageOrConfig: string | { message?: string; type?: ToastType; title?: string; duration?: number }, type?: ToastType, duration?: number) => {
+      if (typeof messageOrConfig === 'string') {
+        // String format: showToast('message', 'type', duration)
+        show({ message: messageOrConfig, type: type || 'info', duration: duration || 3000 });
+      } else {
+        // Object format (for backward compatibility): showToast({ message, type, title, duration })
+        const { message: msg, type: toastType = 'info', duration: dur = 3000 } = messageOrConfig;
+        show({ message: msg || '', type: toastType, duration: dur });
+      }
     },
     [show]
   );
