@@ -171,6 +171,7 @@ class OfflineSyncService {
       create: '📝 Criando reserva',
       update: '🔄 Atualizando reserva',
       cancel: '❌ Cancelando reserva',
+      reschedule: '📅 Remarcando reserva',
     }[operation];
 
     console.log(

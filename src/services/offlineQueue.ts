@@ -168,8 +168,7 @@ class OfflineQueueService {
               failed++;
               logger.error(
                 `Request failed after max retries: ${request.method} ${request.endpoint}`,
-                new Error('Max retries exceeded'),
-                'OfflineQueue'
+                new Error('Max retries exceeded')
               );
             }
           }

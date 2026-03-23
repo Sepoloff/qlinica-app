@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { servicesAPI, Service, Therapist, therapistsAPI } from '../services/apiService';
+import { bookingsAPI, servicesAPI, Service, Therapist, therapistsAPI } from '../services/apiService';
 import { bookingService } from '../services/bookingService';
 import { logger } from '../utils/logger';
 
@@ -28,10 +28,10 @@ export const useServicesData = () => {
   }, []);
 
   const loadServices = useCallback(async () => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
       const services = await servicesAPI.getAll();
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         services: services || [],
         isLoading: false,
@@ -39,7 +39,7 @@ export const useServicesData = () => {
       logger.debug(`Loaded ${services?.length || 0} services`);
     } catch (err: any) {
       const errorMsg = err.message || 'Falha ao carregar serviços';
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         error: errorMsg,
         isLoading: false,
@@ -87,12 +87,12 @@ export const useTherapistsData = (serviceId?: string) => {
   }, [serviceId]);
 
   const loadTherapists = useCallback(async () => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
       // Get all therapists (API filtering by service comes from booking context)
       const therapists = await therapistsAPI.getAll();
 
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         therapists: therapists || [],
         isLoading: false,
@@ -102,7 +102,7 @@ export const useTherapistsData = (serviceId?: string) => {
         `Loaded ${therapists?.length || 0} therapists${serviceId ? ` for service ${serviceId}` : ''}`);
     } catch (err: any) {
       const errorMsg = err.message || 'Falha ao carregar terapeutas';
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         error: errorMsg,
         isLoading: false,
@@ -140,7 +140,12 @@ export const useTherapistsData = (serviceId?: string) => {
 };
 
 interface UseBookingAvailabilityState {
-  slots: string[];
+  slots: Array<{
+    date: string;
+    time: string;
+    available?: boolean;
+    duration?: number;
+  }>;
   isLoading: boolean;
   error: string | null;
 }
@@ -162,7 +167,7 @@ export const useBookingAvailability = (therapistId: string, serviceId: string, d
   }, [therapistId, serviceId, date]);
 
   const loadAvailableSlots = useCallback(async () => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    setState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
       // Try to load from API, fallback to mock if fails
       // Note: bookingService.getAvailableSlots takes therapistId and date
@@ -184,16 +189,16 @@ export const useBookingAvailability = (therapistId: string, serviceId: string, d
         ];
       });
 
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         slots: slotsResponse || [],
         isLoading: false,
       }));
 
-      logger.debug(`Loaded ${slots?.length || 0} available slots for ${date}`);
+      logger.debug(`Loaded ${slotsResponse?.length || 0} available slots for ${date}`);
     } catch (err: any) {
       const errorMsg = err.message || 'Falha ao carregar horários';
-      setState((prev) => ({
+      setState(prev => ({
         ...prev,
         error: errorMsg,
         isLoading: false,
@@ -212,5 +217,4 @@ export const useBookingAvailability = (therapistId: string, serviceId: string, d
   };
 };
 
-// Import for default slots
-import { bookingsAPI } from '../services/apiService';
+

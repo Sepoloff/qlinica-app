@@ -263,9 +263,9 @@ export const asyncTestHelpers = {
     promise: Promise<T>,
     timeoutMs: number
   ): Promise<T> {
-    return Promise.race([
+    return Promise.race<T>([
       promise,
-      this.createTimeoutPromise(timeoutMs),
+      this.createTimeoutPromise<T>(timeoutMs),
     ]);
   },
 };

@@ -72,7 +72,6 @@ class PerformanceMonitor {
     if (duration > slowThreshold) {
       logger.warn(
         `Slow operation: ${label} took ${duration}ms (threshold: ${slowThreshold}ms)`,
-        'Performance:Slow',
         metadata
       );
     }
@@ -190,7 +189,7 @@ class PerformanceMonitor {
    */
   logSummary(): void {
     const summary = this.getSummary();
-    logger.info(`Performance Summary:`, 'Performance', summary);
+    logger.info(`Performance Summary:`, summary);
 
     Object.entries(summary).forEach(([label, stats]) => {
       const message = `${label}: avg ${stats.avgDuration.toFixed(2)}ms (${stats.count} samples, ${stats.slowCount} slow)`;

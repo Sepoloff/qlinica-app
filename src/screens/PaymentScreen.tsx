@@ -24,7 +24,7 @@ import { validateCreditCard, validateCardNumber, validateCardExpiry, validateCar
 import { logger } from '../utils/logger';
 import { useAnalytics } from '../hooks/useAnalytics';
 
-interface PaymentScreenProps {
+export interface PaymentScreenProps {
   bookingId?: string;
   amount: number;
   description: string;
@@ -166,7 +166,7 @@ export default function PaymentScreen({
           currency: 'EUR',
           timestamp: Date.now(),
           bookingId,
-          method: showNewCardForm ? 'card' : selectedMethod,
+          method: showNewCardForm ? 'card' : (selectedMethod || undefined),
           status: 'success',
         });
       }
@@ -315,7 +315,7 @@ export default function PaymentScreen({
             />
 
             <Button
-              title="Cancelar"
+              label="Cancelar"
               variant="secondary"
               onPress={() => {
                 setShowNewCardForm(false);
@@ -328,7 +328,7 @@ export default function PaymentScreen({
           </View>
         ) : (
           <Button
-            title="+ Adicionar Novo Cartão"
+            label="+ Adicionar Novo Cartão"
             variant="secondary"
             onPress={() => setShowNewCardForm(true)}
           />
@@ -345,7 +345,7 @@ export default function PaymentScreen({
 
       {/* Payment Button */}
       <Button
-        title={isLoading ? 'A processar...' : `Pagar ${formattedTotal}`}
+        label={isLoading ? 'A processar...' : `Pagar ${formattedTotal}`}
         onPress={handlePayment}
         disabled={isLoading || (!selectedMethod && !showNewCardForm)}
       />

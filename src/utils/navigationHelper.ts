@@ -16,7 +16,7 @@ export interface NavigationRoute {
  * Prevents crashes from invalid route names
  */
 export const safeNavigate = (
-  navigation: NavigationProp<any>,
+  navigation: any,
   routeName: string,
   params?: Record<string, any>
 ): boolean => {
@@ -38,7 +38,7 @@ export const safeNavigate = (
 /**
  * Go back safely - doesn't crash if can't go back
  */
-export const safeGoBack = (navigation: NavigationProp<any>): boolean => {
+export const safeGoBack = (navigation: any): boolean => {
   try {
     if (!navigation) return false;
     
@@ -58,7 +58,7 @@ export const safeGoBack = (navigation: NavigationProp<any>): boolean => {
  * Replace current route (don't add to history)
  */
 export const safeReplace = (
-  navigation: NavigationProp<any>,
+  navigation: any,
   routeName: string,
   params?: Record<string, any>
 ): boolean => {
@@ -78,7 +78,7 @@ export const safeReplace = (
  * Useful when user logs in/out
  */
 export const safeReset = (
-  navigation: NavigationProp<any>,
+  navigation: any,
   routeName: string,
   params?: Record<string, any>
 ): boolean => {

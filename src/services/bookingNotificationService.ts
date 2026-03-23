@@ -143,11 +143,12 @@ class BookingNotificationService {
   static async notifyForReview(booking: Booking): Promise<void> {
     try {
       const therapistName = booking.therapist?.name || 'seu terapeuta';
-      const dateTime = new Date(`${booking.date}T${booking.time}`);
+      const serviceName = booking.service?.name || 'sessão';
 
       await notificationService.sendReviewRequestNotification(
         therapistName,
-        dateTime
+        serviceName,
+        booking.id
       );
 
       console.log(

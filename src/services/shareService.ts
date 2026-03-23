@@ -13,7 +13,7 @@ class ShareService {
   /**
    * Format booking details for sharing
    */
-  formatBookingForShare(booking: Booking & { serviceName?: string; therapistName?: string }): string {
+  formatBookingForShare(booking: (Booking & { serviceName?: string; therapistName?: string }) | any): string {
     const date = new Date(booking.date);
     const formattedDate = date.toLocaleDateString('pt-PT', {
       weekday: 'long',
@@ -29,8 +29,8 @@ class ShareService {
       `Hora: ${booking.time}`,
       `Serviço: ${booking.serviceName || 'Consulta'}`,
       `Terapeuta: ${booking.therapistName || 'A definir'}`,
-      `Duração: ${booking.duration} minutos`,
-      `Preço: €${booking.price?.toFixed(2) || '0.00'}`,
+      `Duração: ${(booking.duration || 'N/A')} minutos`,
+      `Preço: €${booking.price ? booking.price.toFixed(2) : '0.00'}`,
       `Status: ${this.getStatusLabel(booking.status)}`,
       '',
       'Agende sua consulta também em:',
@@ -44,7 +44,7 @@ class ShareService {
    * Share booking via native share dialog
    */
   async shareBooking(
-    booking: Booking & { serviceName?: string; therapistName?: string }
+    booking: (Booking & { serviceName?: string; therapistName?: string }) | any
   ): Promise<boolean> {
     try {
       const message = this.formatBookingForShare(booking);
@@ -66,7 +66,7 @@ class ShareService {
    * Share booking via WhatsApp
    */
   async shareViaWhatsApp(
-    booking: Booking & { serviceName?: string; therapistName?: string },
+    booking: (Booking & { serviceName?: string; therapistName?: string }) | any,
     phoneNumber?: string
   ): Promise<boolean> {
     try {

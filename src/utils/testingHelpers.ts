@@ -3,7 +3,7 @@
  * Utilities for testing and development
  */
 
-import { Booking, BookingStatus } from '../services/bookingService';
+import { Booking } from '../services/bookingService';
 
 /**
  * Mock user data for testing
@@ -113,9 +113,9 @@ export const mockBookings = {
     therapistName: 'Dr. João Silva',
     date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
     time: '10:00',
-    duration: '60 min',
+    duration: 60,
     price: 60.0,
-    status: 'confirmed' as BookingStatus,
+    status: 'confirmed' as const,
     notes: 'Sessão de relaxamento completo',
     createdAt: new Date().toISOString(),
   } as Booking,
@@ -127,9 +127,9 @@ export const mockBookings = {
     therapistName: 'Dr. Maria Santos',
     date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     time: '14:00',
-    duration: '45 min',
+    duration: 45,
     price: 75.0,
-    status: 'completed' as BookingStatus,
+    status: 'completed' as const,
     notes: 'Fisioterapia de recuperação',
     createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
   } as Booking,
@@ -239,7 +239,6 @@ export const mockApiResponses = {
   },
 
   bookingSuccess: {
-    id: generateTestData.bookingId(),
     ...mockBookings.upcoming,
   },
 

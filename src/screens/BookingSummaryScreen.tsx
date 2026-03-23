@@ -22,27 +22,33 @@ import { Button } from '../components/Button';
 import { logger } from '../utils/logger';
 import { validateCompleteBooking } from '../utils/bookingValidator';
 
+interface Service {
+  id: number;
+  name: string;
+  icon: string;
+  price: string;
+  duration: string;
+}
+
+interface Therapist {
+  id: number;
+  name: string;
+  specialty: string;
+  rating: number;
+}
+
 export interface BookingSummaryParams {
-  service: {
-    id: number;
-    name: string;
-    icon: string;
-    price: string;
-    duration: string;
-  };
-  therapist: {
-    id: number;
-    name: string;
-    specialty: string;
-    rating: number;
-  };
+  service: Service;
+  therapist: Therapist;
   date: string;
   time: string;
 }
 
+type NavigationProp = any;
+
 export default function BookingSummaryScreen() {
-  const navigation = useNavigation();
-  const route = useRoute();
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<any>();
   const { bookingData, resetBooking } = useBooking();
   const { showToast } = useToast();
   const { notifyBookingConfirmation, scheduleAppointmentReminder } = useNotificationManager();
@@ -52,7 +58,8 @@ export default function BookingSummaryScreen() {
   const [confirmationError, setConfirmationError] = useState<string | null>(null);
   
   // Extract params from route or context
-  const { service, therapist, date, time } = (route.params || bookingData) as Partial<BookingSummaryParams>;
+  const params = (route.params || bookingData) as Partial<BookingSummaryParams> | undefined;
+  const { service, therapist, date, time } = params || {};
 
   if (!service || !therapist || !date || !time) {
     return (
@@ -184,9 +191,9 @@ export default function BookingSummaryScreen() {
 
       // Navigate back to main tabs, then to Bookings
       setTimeout(() => {
-        navigation.navigate('MainTabs' as never, {
+        navigation.navigate('MainTabs', {
           screen: 'Bookings',
-        });
+        } as any);
       }, 1000);
     } catch (error: any) {
       logger.error('Error confirming booking', error);
