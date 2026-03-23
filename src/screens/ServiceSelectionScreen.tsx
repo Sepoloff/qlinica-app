@@ -61,18 +61,23 @@ export default function ServiceSelectionScreen() {
 
   const handleServiceSelect = (service: Service | typeof SERVICES[0]) => {
     try {
+      // Validate service data
+      if (!service?.id || !service?.name) {
+        throw new Error('Dados de serviço inválidos');
+      }
+
       logger.debug(`Service selected: ${service.id} - ${service.name}`);
       
       setSelectedServiceId(service.id);
       setService(service as any);
-      updateService(String(service.id), service.name, (service as any).price);
+      updateService(String(service.id), service.name, (service as any).price || 0);
       
       showToast(`${service.name} selecionado com sucesso`, 'success');
 
       trackEvent('service_selected', { 
         serviceId: service.id,
         serviceName: service.name,
-        price: (service as any).price,
+        price: (service as any).price || 0,
       });
 
       // Navigate with slight delay for smooth transition
@@ -80,13 +85,14 @@ export default function ServiceSelectionScreen() {
         navigation.navigate('TherapistSelection' as never);
       }, 300);
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao selecionar serviço';
       logger.error('Error selecting service', err);
       showToast({
         type: 'error',
         title: 'Erro',
-        message: 'Erro ao selecionar serviço',
+        message: errorMessage,
       });
-      trackEvent('service_selection_error', { error: (err as Error).message });
+      trackEvent('service_selection_error', { error: errorMessage });
     }
   };
 

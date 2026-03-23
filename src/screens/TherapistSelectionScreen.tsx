@@ -68,6 +68,20 @@ export default function TherapistSelectionScreen() {
 
   const handleTherapistSelect = (therapist: Therapist | typeof THERAPISTS[0]) => {
     try {
+      // Validate therapist data and availability
+      if (!therapist?.id || !therapist?.name) {
+        throw new Error('Dados de terapeuta inválidos');
+      }
+
+      if (!(therapist as any).available) {
+        showToast({
+          type: 'warning',
+          title: 'Indisponível',
+          message: `${therapist.name} não está disponível neste momento`,
+        });
+        return;
+      }
+
       logger.debug(`Therapist selected: ${therapist.id} - ${therapist.name}`);
       setSelectedTherapist(String(therapist.id));
       setTherapist(therapist as any);
@@ -79,11 +93,17 @@ export default function TherapistSelectionScreen() {
         therapistId: therapist.id,
         therapistName: therapist.name,
         rating: (therapist as any).rating,
+        available: (therapist as any).available,
       });
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao selecionar terapeuta';
       logger.error('Error selecting therapist', err);
-      showToast('Erro ao selecionar terapeuta', 'error');
-      trackEvent('therapist_selection_error', { error: (err as Error).message });
+      showToast({
+        type: 'error',
+        title: 'Erro',
+        message: errorMessage,
+      });
+      trackEvent('therapist_selection_error', { error: errorMessage });
     }
   };
 
