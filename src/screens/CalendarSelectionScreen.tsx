@@ -107,12 +107,37 @@ export default function CalendarSelectionScreen() {
 
   const dates = getNextBusinessDays(14);
 
+  const validateDateTimeSelection = (): { valid: boolean; error?: string } => {
+    if (!selectedDate) {
+      return { valid: false, error: 'Por favor, selecione uma data' };
+    }
+    if (!selectedTime) {
+      return { valid: false, error: 'Por favor, selecione um horário' };
+    }
+
+    // Validate date is not in the past
+    const now = new Date();
+    if (selectedDate < now) {
+      return { valid: false, error: 'A data não pode estar no passado' };
+    }
+
+    // Validate time format
+    const timeRegex = /^(\d{2}):(\d{2})$/;
+    if (!timeRegex.test(selectedTime)) {
+      return { valid: false, error: 'Formato de hora inválido' };
+    }
+
+    return { valid: true };
+  };
+
   const handleConfirmBooking = async () => {
     setError(null);
 
-    if (!selectedDate || !selectedTime) {
-      showToast('Por favor, selecione data e hora para continuar', 'error');
-      trackEvent('booking_confirm_error', { reason: 'no_date_time' });
+    // Validate selection
+    const validation = validateDateTimeSelection();
+    if (!validation.valid) {
+      showToast(validation.error || 'Por favor, selecione data e hora para continuar', 'error');
+      trackEvent('booking_confirm_error', { reason: validation.error });
       return;
     }
 
@@ -163,20 +188,23 @@ export default function CalendarSelectionScreen() {
           return;
         }
 
+        const dateStringISO = formatDateISO(selectedDate);
+        const dateStringDisplay = formatDateDDMMYYYY(selectedDate);
+
         const booking = await bookingService.createBooking({
           serviceId: String(bookingData.service.id),
           therapistId: String(bookingData.therapist.id),
-          date: dateString,
+          date: dateStringISO,
           time: selectedTime,
           notes: '',
         });
 
-        setDateTime(dateString, selectedTime);
+        setDateTime(dateStringISO, selectedTime);
         resetBooking();
         
         Alert.alert(
           'Sucesso!',
-          `Sua consulta foi agendada com sucesso!\n\n${bookingData.service.name}\nCom ${bookingData.therapist.name}\n${formatDate(selectedDate)} às ${selectedTime}`,
+          `Sua consulta foi agendada com sucesso!\n\n${bookingData.service.name}\nCom ${bookingData.therapist.name}\n${dateStringDisplay} às ${selectedTime}`,
           [
             {
               text: 'Ir para Marcações',
