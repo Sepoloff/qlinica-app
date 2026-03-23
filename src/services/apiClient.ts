@@ -5,7 +5,8 @@
  */
 
 import { api } from '../config/api';
-import { parseError, logError, AppError } from '../utils/errorHandler';
+import { handleError, AppError } from '../utils/errorHandler';
+import { logger } from '../utils/logger';
 
 interface RequestConfig {
   method?: 'get' | 'post' | 'put' | 'delete' | 'patch';
@@ -38,8 +39,8 @@ export async function apiGet<T = any>(
       data: response.data,
     };
   } catch (error) {
-    const appError = parseError(error);
-    logError(appError, { context, method: 'GET', url });
+    const appError = handleError(error, context);
+    logger.error('GET request failed', { method: 'GET', url, ...appError.context });
     return {
       success: false,
       error: appError,
@@ -62,8 +63,8 @@ export async function apiPost<T = any>(
       data: response.data,
     };
   } catch (error) {
-    const appError = parseError(error);
-    logError(appError, { context, method: 'POST', url, data });
+    const appError = handleError(error, context);
+    logger.error('POST request failed', { method: 'POST', url, ...appError.context });
     return {
       success: false,
       error: appError,
@@ -86,8 +87,8 @@ export async function apiPut<T = any>(
       data: response.data,
     };
   } catch (error) {
-    const appError = parseError(error);
-    logError(appError, { context, method: 'PUT', url, data });
+    const appError = handleError(error, context);
+    logger.error('PUT request failed', { method: 'PUT', url, ...appError.context });
     return {
       success: false,
       error: appError,
@@ -109,8 +110,8 @@ export async function apiDelete<T = any>(
       data: response.data,
     };
   } catch (error) {
-    const appError = parseError(error);
-    logError(appError, { context, method: 'DELETE', url });
+    const appError = handleError(error, context);
+    logger.error('DELETE request failed', { method: 'DELETE', url, ...appError.context });
     return {
       success: false,
       error: appError,
@@ -133,8 +134,8 @@ export async function apiPatch<T = any>(
       data: response.data,
     };
   } catch (error) {
-    const appError = parseError(error);
-    logError(appError, { context, method: 'PATCH', url, data });
+    const appError = handleError(error, context);
+    logger.error('PATCH request failed', { method: 'PATCH', url, ...appError.context });
     return {
       success: false,
       error: appError,
@@ -175,11 +176,11 @@ export async function apiRequest<T = any>(config: RequestConfig): Promise<ApiRes
       data: response.data,
     };
   } catch (error) {
-    const appError = parseError(error);
-    logError(appError, {
-      context: config.context,
+    const appError = handleError(error, config.context);
+    logger.error('API request failed', {
       method: config.method,
       url: config.url,
+      ...appError.context,
     });
     return {
       success: false,
@@ -204,8 +205,8 @@ export async function apiWithErrorCallback<T = any>(
       data: response,
     };
   } catch (error) {
-    const appError = parseError(error);
-    logError(appError, { context });
+    const appError = handleError(error, context);
+    logger.error('API call failed', { context, ...appError.context });
 
     if (onError) {
       onError(appError);

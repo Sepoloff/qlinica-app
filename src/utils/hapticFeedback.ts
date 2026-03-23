@@ -2,11 +2,19 @@
  * Haptic Feedback - Vibration feedback for user interactions
  */
 
-import * as Haptics from 'expo-haptics';
+let Haptics: any = null;
+
+try {
+  Haptics = require('expo-haptics');
+} catch (e) {
+  console.warn('expo-haptics not installed');
+}
 
 export const triggerLightFeedback = async () => {
   try {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Haptics?.impactAsync) {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   } catch (error) {
     console.warn('Haptic feedback not available:', error);
   }
@@ -14,7 +22,9 @@ export const triggerLightFeedback = async () => {
 
 export const triggerMediumFeedback = async () => {
   try {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (Haptics?.impactAsync) {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
   } catch (error) {
     console.warn('Haptic feedback not available:', error);
   }
@@ -22,7 +32,9 @@ export const triggerMediumFeedback = async () => {
 
 export const triggerHeavyFeedback = async () => {
   try {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    if (Haptics?.impactAsync) {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    }
   } catch (error) {
     console.warn('Haptic feedback not available:', error);
   }
@@ -30,7 +42,9 @@ export const triggerHeavyFeedback = async () => {
 
 export const triggerSuccessFeedback = async () => {
   try {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (Haptics?.notificationAsync) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
   } catch (error) {
     console.warn('Haptic feedback not available:', error);
   }
@@ -38,7 +52,9 @@ export const triggerSuccessFeedback = async () => {
 
 export const triggerErrorFeedback = async () => {
   try {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    if (Haptics?.notificationAsync) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   } catch (error) {
     console.warn('Haptic feedback not available:', error);
   }
@@ -46,7 +62,9 @@ export const triggerErrorFeedback = async () => {
 
 export const triggerWarningFeedback = async () => {
   try {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    if (Haptics?.notificationAsync) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
   } catch (error) {
     console.warn('Haptic feedback not available:', error);
   }
@@ -54,7 +72,9 @@ export const triggerWarningFeedback = async () => {
 
 export const triggerSelectionFeedback = async () => {
   try {
-    await Haptics.selectionAsync();
+    if (Haptics?.selectionAsync) {
+      await Haptics.selectionAsync();
+    }
   } catch (error) {
     console.warn('Haptic feedback not available:', error);
   }

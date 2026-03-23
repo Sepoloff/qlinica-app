@@ -20,7 +20,7 @@ import { logger } from '../utils/logger';
 export default function TherapistSelectionScreen() {
   const navigation = useNavigation();
   const { bookingData, setTherapist } = useBooking();
-  const bookingState = useBookingState();
+  const bookingStateHelper = useBookingState();
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
   
@@ -32,18 +32,18 @@ export default function TherapistSelectionScreen() {
   useFocusEffect(
     React.useCallback(() => {
       trackScreenView('therapist_selection', { 
-        serviceId: bookingData.service?.id || bookingState.serviceId,
+        serviceId: bookingData.service?.id,
       });
       loadTherapists();
       return () => {};
-    }, [bookingData.service, bookingState.serviceId, trackScreenView])
+    }, [bookingData.service, trackScreenView])
   );
 
   const loadTherapists = async () => {
     setLoading(true);
     setError(null);
     try {
-      const serviceId = bookingData.service?.id || bookingState.serviceId;
+      const serviceId = bookingData.service?.id;
       logger.debug(`Loading therapists for service ${serviceId}`);
       
       // Get all therapists (filtering by service happens in component)
@@ -81,7 +81,7 @@ export default function TherapistSelectionScreen() {
       logger.debug(`Therapist selected: ${therapist.id} - ${therapist.name}`);
       setSelectedTherapist(String(therapist.id));
       setTherapist(therapist as any);
-      updateTherapist(String(therapist.id), therapist.name);
+      bookingStateHelper.updateTherapist(String(therapist.id), therapist.name);
       
       showToast(`${therapist.name} selecionado com sucesso`, 'success');
       

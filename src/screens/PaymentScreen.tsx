@@ -162,7 +162,7 @@ export default function PaymentScreen({
         onSuccess({
           transactionId: `TXN_${Date.now()}`,
           amount: total,
-          bookingId,
+          bookingId: bookingId || undefined,
           method: showNewCardForm ? 'card' : selectedMethod,
           status: 'success',
         });

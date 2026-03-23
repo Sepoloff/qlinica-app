@@ -46,7 +46,7 @@ export const useFormWithErrorHandling = <T extends Record<string, string>>(
     return initial;
   });
 
-  const validationState = useRef<Record<keyof T, string | null>>({});
+  const validationState = useRef<Partial<Record<keyof T, string | null>>>({});
 
   /**
    * Update field value and validate
@@ -116,7 +116,7 @@ export const useFormWithErrorHandling = <T extends Record<string, string>>(
     // Show toast if requested and there are errors
     if (hasErrors && showValidationToasts) {
       const firstError = (Object.values(newFields) as FormFieldState[]).find((f) => f.error);
-      if (firstError) {
+      if (firstError && firstError.error) {
         notifyValidationError(firstError.error);
       }
     }
@@ -137,7 +137,7 @@ export const useFormWithErrorHandling = <T extends Record<string, string>>(
       };
     });
     setFields(initial);
-    validationState.current = {} as Record<keyof T, string | null>;
+    validationState.current = {};
   }, [initialValues]);
 
   /**
@@ -146,7 +146,7 @@ export const useFormWithErrorHandling = <T extends Record<string, string>>(
   const getValues = useCallback((): T => {
     const values = {} as T;
     (Object.keys(fields) as Array<keyof T>).forEach((key) => {
-      values[key] = fields[key].value;
+      values[key] = fields[key].value as any;
     });
     return values;
   }, [fields]);

@@ -3,7 +3,14 @@
  * Handles geolocation requests for clinic location and user location
  */
 
-import * as Location from 'expo-location';
+let Location: any = null;
+
+try {
+  Location = require('expo-location');
+} catch (e) {
+  console.warn('expo-location not installed');
+}
+
 import { logger } from '../utils/logger';
 
 export interface LocationCoords {

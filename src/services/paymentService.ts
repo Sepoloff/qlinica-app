@@ -27,6 +27,9 @@ export interface PaymentResult {
   amount: number;
   currency: string;
   timestamp: number;
+  bookingId?: string;
+  method?: string;
+  status?: string;
 }
 
 export interface StripeConfig {
