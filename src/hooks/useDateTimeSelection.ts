@@ -1,7 +1,6 @@
 'use strict';
 
 import { useState, useCallback } from 'react';
-import * as DatePicker from 'expo-date-picker';
 
 export interface AvailableSlot {
   time: string;

@@ -74,7 +74,7 @@ export const useOfflineQueue = () => {
               const response = await api(config);
               return response.status >= 200 && response.status < 300;
             } catch (error) {
-              logger.warn(
+              logger.error(
                 `Failed to process queued request: ${request.method} ${request.endpoint}`,
                 error as Error,
                 'useOfflineQueue'

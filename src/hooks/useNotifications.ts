@@ -5,7 +5,7 @@
 
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
-import { initializeNotifications } from '../services/notificationService';
+import { initializeNotifications, notificationService } from '../services/notificationService';
 
 /**
  * Configurar notificações ao inicializar a app
@@ -68,32 +68,8 @@ export function useNotifications() {
 }
 
 /**
- * Inicializar e solicitar permissões de notificações
+ * (initializeNotifications is imported from notificationService)
  */
-async function initializeNotifications(): Promise<void> {
-  try {
-    // Solicitar permissões
-    const { status } = await Notifications.requestPermissionsAsync();
-
-    if (status !== 'granted') {
-      console.warn('⚠️ Permissão de notificações não concedida');
-      return;
-    }
-
-    console.log('✅ Notificações ativadas com sucesso');
-
-    // Obter token para push notifications (futuro FCM)
-    try {
-      const { data: token } = await Notifications.getExpoPushTokenAsync();
-      console.log('📲 Expo Push Token:', token);
-      // TODO: Enviar token para backend
-    } catch (error) {
-      console.warn('⚠️ Erro ao obter Expo Push Token:', error);
-    }
-  } catch (error) {
-    console.error('❌ Erro ao inicializar notificações:', error);
-  }
-}
 
 /**
  * Hook para testar notificações locais

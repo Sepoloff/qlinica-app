@@ -28,7 +28,7 @@ export const useOfflineSync = (): UsOfflineSyncReturn => {
 
   // Subscribe to queue changes
   useEffect(() => {
-    const unsubscribe = offlineSyncService.subscribe((newQueue) => {
+    const unsubscribe = offlineSyncService.subscribeToQueueChanges((newQueue: OfflineBookingQueue[]) => {
       setQueue(newQueue);
     });
 

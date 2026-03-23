@@ -61,6 +61,17 @@ class AdvancedAnalyticsService {
   /**
    * Initialize a new session
    */
+  async initialize(userId?: string): Promise<void> {
+    if (!userId) {
+      console.warn('Cannot initialize analytics without userId');
+      return;
+    }
+    return this.initializeSession(userId);
+  }
+
+  /**
+   * Initialize a new session
+   */
   initializeSession(userId: string): void {
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -88,7 +99,7 @@ class AdvancedAnalyticsService {
   /**
    * Track screen view
    */
-  trackScreenView(screenName: string): void {
+  trackScreenView(screenName: string, metadata?: Record<string, any>): void {
     if (!this.currentSession) {
       console.warn('Session not initialized');
       return;
@@ -101,9 +112,80 @@ class AdvancedAnalyticsService {
       screenName,
       sessionId: this.currentSession.id,
       screenNumber: this.currentSession.screenPath.length,
+      ...metadata,
     });
 
     console.log(`📱 Screen view: ${screenName}`);
+  }
+
+  /**
+   * Track user action
+   */
+  trackUserAction(action: string, category?: string, metadata?: Record<string, any>): void {
+    this.trackEvent('user_action', {
+      action,
+      category,
+      ...metadata,
+    });
+  }
+
+  /**
+   * Track API call
+   */
+  trackAPICall(
+    method: string,
+    endpoint: string,
+    statusCode?: number,
+    duration?: number,
+    metadata?: Record<string, any>
+  ): void {
+    this.trackEvent('api_call', {
+      method,
+      endpoint,
+      statusCode,
+      duration,
+      ...metadata,
+    });
+  }
+
+  /**
+   * Track error
+   */
+  trackError(error: Error, context?: Record<string, any>): void {
+    this.trackErrorWithContext(error, { ...context });
+  }
+
+  /**
+   * Track conversion
+   */
+  trackConversion(
+    conversionType: 'booking' | 'signup' | 'payment' | 'review',
+    conversionValue?: number,
+    metadata?: Record<string, any>
+  ): void {
+    this.trackEvent('conversion', {
+      conversionType,
+      conversionValue,
+      ...metadata,
+    });
+  }
+
+  /**
+   * Track custom event
+   */
+  trackCustomEvent(name: string, metadata?: Record<string, any>): void {
+    this.trackEvent(name, metadata);
+  }
+
+  /**
+   * Track performance metric
+   */
+  trackPerformanceMetric(metric: string, value: number, unit?: string): void {
+    this.trackEvent('performance_metric', {
+      metric,
+      value,
+      unit,
+    });
   }
 
   /**

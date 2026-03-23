@@ -1,164 +1,128 @@
-'use strict';
+/**
+ * useFormValidation
+ * Handles form field validation with real-time error messages
+ */
 
 import { useState, useCallback } from 'react';
+import { logger } from '../utils/logger';
 
 export interface ValidationRule {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
   pattern?: RegExp;
-  custom?: (value: string) => boolean;
-  message?: string;
+  custom?: (value: any) => boolean | string;
 }
 
-export interface ValidationRules {
-  [key: string]: ValidationRule | ValidationRule[];
-}
-
-interface FieldErrors {
+export interface FormErrors {
   [key: string]: string | null;
 }
 
-interface FormValidationState {
-  errors: FieldErrors;
-  hasErrors: boolean;
-  touched: { [key: string]: boolean };
+interface ValidationSchema {
+  [key: string]: ValidationRule;
 }
 
-export const useFormValidation = (rules: ValidationRules) => {
-  const [state, setState] = useState<FormValidationState>({
-    errors: {},
-    hasErrors: false,
-    touched: {},
-  });
+export const useFormValidation = (schema: ValidationSchema) => {
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
   const validateField = useCallback(
-    (fieldName: string, value: string): string | null => {
-      const fieldRules = rules[fieldName];
-      if (!fieldRules) return null;
+    (fieldName: string, value: any): string | null => {
+      const rule = schema[fieldName];
+      
+      if (!rule) return null;
 
-      const rulesToCheck = Array.isArray(fieldRules) ? fieldRules : [fieldRules];
+      // Required validation
+      if (rule.required && (!value || (typeof value === 'string' && !value.trim()))) {
+        return `${fieldName} é obrigatório`;
+      }
 
-      for (const rule of rulesToCheck) {
-        // Check required
-        if (rule.required && (!value || value.trim() === '')) {
-          return rule.message || `${fieldName} é obrigatório`;
-        }
+      // Min length validation
+      if (rule.minLength && value?.length < rule.minLength) {
+        return `${fieldName} deve ter pelo menos ${rule.minLength} caracteres`;
+      }
 
-        if (value) {
-          // Check minLength
-          if (rule.minLength && value.length < rule.minLength) {
-            return rule.message || `Mínimo ${rule.minLength} caracteres`;
-          }
+      // Max length validation
+      if (rule.maxLength && value?.length > rule.maxLength) {
+        return `${fieldName} não pode exceder ${rule.maxLength} caracteres`;
+      }
 
-          // Check maxLength
-          if (rule.maxLength && value.length > rule.maxLength) {
-            return rule.message || `Máximo ${rule.maxLength} caracteres`;
-          }
+      // Pattern validation
+      if (rule.pattern && !rule.pattern.test(value)) {
+        return `${fieldName} está em formato inválido`;
+      }
 
-          // Check pattern
-          if (rule.pattern && !rule.pattern.test(value)) {
-            return rule.message || `${fieldName} é inválido`;
-          }
-
-          // Check custom validation
-          if (rule.custom && !rule.custom(value)) {
-            return rule.message || `${fieldName} é inválido`;
-          }
+      // Custom validation
+      if (rule.custom) {
+        const customResult = rule.custom(value);
+        if (customResult !== true) {
+          return typeof customResult === 'string' ? customResult : `${fieldName} está inválido`;
         }
       }
 
       return null;
     },
-    [rules]
-  );
-
-  const handleFieldChange = useCallback(
-    (fieldName: string, value: string) => {
-      setState((prevState) => ({
-        ...prevState,
-        errors: {
-          ...prevState.errors,
-          [fieldName]: null, // Clear error on change
-        },
-      }));
-    },
-    []
-  );
-
-  const handleFieldBlur = useCallback(
-    (fieldName: string, value: string) => {
-      const error = validateField(fieldName, value);
-      setState((prevState) => ({
-        ...prevState,
-        errors: {
-          ...prevState.errors,
-          [fieldName]: error,
-        },
-        touched: {
-          ...prevState.touched,
-          [fieldName]: true,
-        },
-      }));
-    },
-    [validateField]
+    [schema]
   );
 
   const validateForm = useCallback(
-    (formData: { [key: string]: string }): boolean => {
-      const newErrors: FieldErrors = {};
+    (values: { [key: string]: any }): FormErrors => {
+      const newErrors: FormErrors = {};
 
-      Object.keys(rules).forEach((fieldName) => {
-        const error = validateField(fieldName, formData[fieldName] || '');
+      Object.keys(schema).forEach((fieldName) => {
+        const error = validateField(fieldName, values[fieldName]);
         if (error) {
           newErrors[fieldName] = error;
         }
       });
 
-      const hasErrors = Object.values(newErrors).some((error) => error !== null);
-
-      setState({
-        errors: newErrors,
-        hasErrors,
-        touched: Object.keys(rules).reduce(
-          (acc, key) => ({ ...acc, [key]: true }),
-          {}
-        ),
-      });
-
-      return !hasErrors;
+      setErrors(newErrors);
+      logger.debug('Form validation', { fieldCount: Object.keys(schema).length, errors: newErrors });
+      return newErrors;
     },
-    [rules, validateField]
+    [schema, validateField]
   );
 
-  const clearErrors = useCallback(() => {
-    setState({
-      errors: {},
-      hasErrors: false,
-      touched: {},
-    });
-  }, []);
+  const handleBlur = useCallback(
+    (fieldName: string) => {
+      setTouched((prev) => ({ ...prev, [fieldName]: true }));
+    },
+    []
+  );
 
-  const setFieldError = useCallback((fieldName: string, error: string | null) => {
-    setState((prevState) => ({
-      ...prevState,
-      errors: {
-        ...prevState.errors,
-        [fieldName]: error,
-      },
-      hasErrors: error !== null || Object.values(prevState.errors).some((e) => e !== null),
-    }));
-  }, []);
+  const handleChange = useCallback(
+    (fieldName: string, value: any) => {
+      if (touched[fieldName]) {
+        const error = validateField(fieldName, value);
+        setErrors((prev) => ({ ...prev, [fieldName]: error }));
+      }
+    },
+    [touched, validateField]
+  );
+
+  const getFieldError = (fieldName: string): string | null => {
+    return touched[fieldName] ? errors[fieldName] : null;
+  };
+
+  const getFieldAttrs = (fieldName: string) => ({
+    onBlur: () => handleBlur(fieldName),
+    onChange: (value: any) => handleChange(fieldName, value),
+    error: getFieldError(fieldName),
+    touched: touched[fieldName],
+  });
 
   return {
-    errors: state.errors,
-    touched: state.touched,
-    hasErrors: state.hasErrors,
+    errors,
+    touched,
     validateField,
-    handleFieldChange,
-    handleFieldBlur,
     validateForm,
-    clearErrors,
-    setFieldError,
+    handleBlur,
+    handleChange,
+    getFieldError,
+    getFieldAttrs,
+    reset: () => {
+      setErrors({});
+      setTouched({});
+    },
   };
 };

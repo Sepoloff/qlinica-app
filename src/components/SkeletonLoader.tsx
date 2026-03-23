@@ -16,11 +16,11 @@ interface SkeletonLoaderProps {
 }
 
 interface SkeletonLoaderComponent extends React.FC<SkeletonLoaderProps> {
-  Line?: React.FC<SkeletonLoaderProps>;
-  Circle?: React.FC<SkeletonLoaderProps>;
-  Card?: React.FC<SkeletonLoaderProps & { lines?: number }>;
-  BookingItem?: React.FC<{ count?: number }>;
-  List?: React.FC<{ count?: number; variant?: 'text' | 'card' | 'booking' }>;
+  Line: React.FC<SkeletonLoaderProps>;
+  Circle: React.FC<SkeletonLoaderProps>;
+  Card: React.FC<SkeletonLoaderProps & { lines?: number }>;
+  BookingItem: React.FC<{ count?: number }>;
+  List: React.FC<SkeletonGroup>;
 }
 
 interface SkeletonGroup {
@@ -176,7 +176,7 @@ SkeletonLoader.Card = (props: SkeletonLoaderProps & { lines?: number }) => {
 SkeletonLoader.BookingItem = (props: { count?: number }) => (
   <View>
     {Array.from({ length: props.count || 1 }).map((_, i) => (
-      <View key={i} style={styles.bookingItem}>
+      <View key={i} style={mergedStyles.bookingItem}>
         <SkeletonLoader.Circle style={{ marginRight: 12 }} />
         <View style={{ flex: 1 }}>
           <SkeletonLoader height={14} width="70%" style={{ marginBottom: 8 }} />
@@ -205,7 +205,7 @@ SkeletonLoader.List = (props: SkeletonGroup) => {
             <SkeletonLoader height={120} borderRadius={12} />
           )}
           {variant === 'booking' && (
-            <View style={styles.bookingItemRow}>
+            <View style={mergedStyles.bookingItemRow}>
               <SkeletonLoader.Circle />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <SkeletonLoader height={14} width="70%" style={{ marginBottom: 6 }} />
@@ -237,6 +237,7 @@ const styles_extended = StyleSheet.create({
   },
 });
 
-Object.assign(styles, styles_extended);
+// Merge styles into the main styles object
+const mergedStyles = { ...styles, ...styles_extended };
 
 export default SkeletonLoader;

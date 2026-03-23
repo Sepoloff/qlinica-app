@@ -1,396 +1,306 @@
-# Qlinica App - Guia de Desenvolvimento
+# 🏥 Qlinica App - Development Guide
 
-## 📋 Visão Geral
+## Quick Start
 
-Aplicação React Native para agendamento de consultas clínicas com:
-- ✅ Autenticação JWT com AuthContext
-- ✅ Integração API com retry logic e fallback
-- ✅ Fluxo de booking multi-step
-- ✅ Offline support com sincronização
-- ✅ Notificações e lembretes
-- ✅ Validação robusta de inputs
-- ✅ Error boundaries e tratamento centralizado de erros
+```bash
+# Install dependencies
+npm install
 
-## 🏗️ Arquitetura
+# Start Metro bundler
+npx expo start
+
+# Options:
+# Press 'i' for iOS Simulator
+# Press 'a' for Android Emulator
+# Press 'w' for Web
+```
+
+## Project Structure
 
 ```
 src/
-├── screens/          # Écrans principais
-│   ├── AuthScreens/  # Login, Register, ResetPassword
-│   └── BookingScreens/ # Fluxo de agendamento
-├── context/          # Estado global (Auth, Booking, Toast)
-├── services/         # Lógica de negócio (API, Auth, Booking)
-├── hooks/            # Custom hooks reutilizáveis
-├── components/       # Componentes UI reutilizáveis
-├── utils/            # Utilitários (validation, storage, etc)
-├── constants/        # Cores, dados mock, mensagens
-└── config/           # Configurações (API, Firebase)
+├── screens/               # All app screens (TabNavigator + Flow screens)
+│   ├── HomeScreen.tsx     # Dashboard with upcoming bookings
+│   ├── BookingsScreen.tsx # User's bookings list
+│   ├── ProfileScreen.tsx  # User profile & settings
+│   └── AuthScreens/       # Login, Register, Password Reset
+├── components/            # Reusable UI components
+│   ├── Button.tsx         # Custom styled button
+│   ├── FormInput.tsx      # Form field with validation
+│   └── ...
+├── context/              # React Context for state management
+│   ├── AuthContext.tsx    # User authentication
+│   ├── BookingContext.tsx # Booking workflow state
+│   └── ...
+├── hooks/                # Custom React hooks
+│   ├── useFormValidation.ts    # Form field validation
+│   ├── useAsyncOperation.ts    # Async operations with states
+│   ├── useAnalytics.ts         # Event tracking
+│   └── ...
+├── services/             # Business logic & API calls
+│   ├── bookingService.ts # Booking CRUD operations
+│   ├── authService.ts    # Authentication calls
+│   └── ...
+├── config/               # Configuration files
+│   ├── api.ts            # Axios instance with interceptors
+│   └── Colors.ts         # Design tokens
+├── utils/                # Utility functions
+│   ├── logger.ts         # Centralized logging
+│   ├── storage.ts        # AsyncStorage helpers
+│   └── ...
+└── constants/            # Constants
+    ├── Colors.ts         # Brand colors
+    ├── Data.ts           # Mock data
+    └── Screens.ts        # Screen names
+
 ```
 
-## 🔐 Autenticação
+## Key Technologies
 
-### AuthContext (`src/context/AuthContext.tsx`)
-```typescript
-const { user, isAuthenticated, login, register, logout, updateUser, error } = useAuth();
+- **React Native 0.72.10** - UI Framework
+- **Expo SDK 54** - Build & deployment
+- **React Navigation** - Navigation (Tab + Stack)
+- **Axios** - HTTP client with retry logic
+- **React Context** - State management
+- **TypeScript** - Type safety
 
-// Login
-await login('user@example.com', 'password123');
+## Development Workflow
 
-// Register
-await register('user@example.com', 'Password123', 'João Silva');
+### 1. Create a New Screen
 
-// Logout
-await logout();
-```
+```tsx
+// src/screens/MyNewScreen.tsx
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useAnalytics } from '../hooks/useAnalytics';
 
-**Validação:**
-- Email: RFC 5322 compliant
-- Password: Min 8 chars, 1 uppercase, 1 number
-- Name: Min 2 chars, sem números
+export default function MyNewScreen() {
+  const { trackScreenView } = useAnalytics();
 
-### Token Storage
-- Guardado em AsyncStorage
-- Incluído automaticamente em todos os requests via interceptor
-- Auto-refresh em caso de expiração
+  useFocusEffect(
+    React.useCallback(() => {
+      trackScreenView('my_new_screen');
+    }, [trackScreenView])
+  );
 
-## 🛒 Fluxo de Booking
+  return (
+    <View style={styles.container}>
+      <Text>My New Screen</Text>
+    </View>
+  );
+}
 
-### Passos:
-1. **ServiceSelectionScreen** - Escolher serviço
-2. **TherapistSelectionScreen** - Escolher terapeuta
-3. **CalendarSelectionScreen** - Data e hora
-4. **BookingSummaryScreen** - Confirmar agendamento
-
-### Estado Global
-```typescript
-const { bookingData, setService, setTherapist, setDateTime, resetBooking } = useBooking();
-
-// Ou via BookingFlowContext
-const { bookingState, setBookingState, submitBooking } = useBookingFlow();
-```
-
-### Criar Booking
-```typescript
-const booking = await bookingService.createBooking({
-  serviceId: 1,
-  therapistId: 2,
-  date: '22/03/2026',
-  time: '14:30',
-  notes: 'Observações opcionais'
+const styles = StyleSheet.create({
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
 ```
 
-## 📱 API & Integração
-
-### Base URL
-```
-http://localhost:3000/api (development)
-```
-
-### Endpoints Utilizados
-
-**Auth:**
-- `POST /auth/login` - Login
-- `POST /auth/register` - Registro
-- `POST /auth/logout` - Logout
-- `PUT /auth/user` - Atualizar perfil
-
-**Bookings:**
-- `GET /bookings` - Listar agendamentos
-- `GET /bookings/:id` - Detalhes de agendamento
-- `POST /bookings` - Criar agendamento
-- `PUT /bookings/:id` - Atualizar agendamento
-- `DELETE /bookings/:id` - Cancelar agendamento
-
-**Services:**
-- `GET /services` - Listar serviços
-- `GET /therapists` - Listar terapeutas
-- `GET /therapists/:id/slots` - Horários disponíveis
-
-### Retry Logic
-
-Implementado em `src/config/api.ts`:
-- Max 3 tentativas
-- Exponential backoff com jitter
-- 500ms inicial, máx 8s
-- Falha em 401 (não tenta novamente)
-
-```
-Attempt 1: 500ms + random(0-500)
-Attempt 2: 1000ms + random(0-500)
-Attempt 3: 2000ms + random(0-500)
-```
-
-### Fallback de Dados Mock
-
-Todos os serviços têm fallback:
-```typescript
-const services = await bookingService.getServices()
-  .catch(() => convertMockServices());
-```
-
-## ✅ Validação
-
-### Hooks Utilitários
+### 2. Add a New Hook
 
 ```typescript
-const { errors, validateField, validateForm, clearErrors } = useFormValidation();
+// src/hooks/useMyHook.ts
+import { useState, useCallback } from 'react';
+import { logger } from '../utils/logger';
 
-// Validar campo individual
-const error = validateField('email', 'user@example.com');
+export const useMyHook = () => {
+  const [state, setState] = useState(null);
 
-// Validar formulário inteiro
-const result = validateForm('register', { 
-  email, password, name 
+  const doSomething = useCallback(() => {
+    logger.info('Doing something...');
+    // Implementation
+  }, []);
+
+  return { state, doSomething };
+};
+```
+
+### 3. API Integration
+
+```typescript
+// In your component
+import { useAsyncOperation } from '../hooks/useAsyncOperation';
+import { api } from '../config/api';
+
+const { data, loading, error, execute } = useAsyncOperation(
+  () => api.get('/api/endpoint'),
+  {
+    onSuccess: (data) => console.log('Success:', data),
+    onError: (error) => console.error('Error:', error),
+  }
+);
+
+// Call when needed
+execute();
+```
+
+## Styling Guide
+
+### Colors
+- **Primary (Navy):** `#2C3E50`
+- **Secondary (Gold):** `#D4AF8F`
+- **Dark:** `#1a252f`
+- **Light:** `#ffffff`
+
+### Fonts
+- **Headings:** Cormorant Garamond
+- **Body:** DM Sans
+
+### Spacing Scale
+```
+xs: 4px
+sm: 8px
+md: 16px
+lg: 24px
+xl: 32px
+```
+
+## Common Tasks
+
+### Show Toast Notification
+```typescript
+import { useToast } from '../context/ToastContext';
+
+const { showToast } = useToast();
+
+showToast({
+  type: 'success', // 'success' | 'error' | 'info'
+  title: 'Sucesso!',
+  message: 'Operação completada',
 });
 ```
 
-### Validadores (`src/utils/validation.ts`)
-- `validateEmail()` - RFC 5322
-- `validatePassword()` - Min 8 chars, uppercase, number
-- `validatePhone()` - Números portugueses
-- `validateName()` - Min 2 chars
-- `validateDate()` - Não passado
-
-## 📲 Notificações
-
-### Toast Notifications
+### Track Analytics Event
 ```typescript
-const toast = useQuickToast();
+import { useAnalytics } from '../hooks/useAnalytics';
 
-toast.success('Sucesso!');
-toast.error('Erro!');
-toast.info('Informação');
-toast.warning('Aviso');
+const { trackEvent } = useAnalytics();
+
+trackEvent('booking_created', {
+  serviceId: '123',
+  therapistId: '456',
+});
 ```
 
-Duração padrão:
-- Success: 3s
-- Error: 4s
-- Info: 3s
-- Warning: 3.5s
-
-### Sistema de Notificações
+### Form Validation
 ```typescript
-const { 
-  notifyBookingConfirmation, 
-  scheduleAppointmentReminder 
-} = useNotificationManager();
+import { useFormValidation } from '../hooks/useFormValidation';
 
-await notifyBookingConfirmation(
-  'Dr. João', 
-  'Fisioterapia', 
-  new Date('2026-03-22T14:30:00')
+const { errors, validateField, handleChange, handleBlur } = useFormValidation({
+  email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
+  password: { required: true, minLength: 8 },
+});
+```
+
+### Async Operations
+```typescript
+import { useAsyncOperation } from '../hooks/useAsyncOperation';
+
+const { data, loading, error, execute, retry } = useAsyncOperation(
+  () => fetchData(),
+  { timeout: 5000 }
 );
 ```
 
-## 🔄 Offline Support
+## Testing Credentials
 
-### Fila de Sincronização
+```
+Email: maria@qlinica.pt
+Password: demo123456
+```
+
+## Backend API
+
+**Base URL:** `http://localhost:3000/api`
+
+### Key Endpoints
+- `POST /auth/login` - Login
+- `GET /services` - List services
+- `GET /therapists` - List therapists
+- `POST /bookings` - Create booking
+- `GET /bookings` - User's bookings
+- `GET /bookings/:id` - Booking details
+
+## Debugging
+
+### Enable Debug Logging
 ```typescript
-const { queueCount, isSyncing, sync } = useOfflineSync();
+import { logger } from './utils/logger';
 
-// Sincronizar manualmente
-await sync();
+logger.setLevel('DEBUG');
 ```
 
-Operações offline:
-- Agendamentos criados offline
-- Edições guardadas localmente
-- Sincronização automática quando online
+### Metro Bundler
+- iOS Simulator: Press `i` in Metro terminal
+- Android: Press `a` in Metro terminal
+- Web: Press `w` in Metro terminal
+- Reload: Press `r`
+- Debug: Press `j`
 
-## 📊 Analytics
+## Common Issues
 
-### Eventos Rastreados
-```typescript
-const { trackScreenView, trackEvent, trackError } = useAnalytics();
-
-trackScreenView('home');
-trackEvent('booking_created', { serviceId: 1, therapistId: 2 });
-trackError(error, { context: 'booking' });
-```
-
-## 🎨 Componentes Principais
-
-### FormInput
-```typescript
-<FormInput
-  label="Email"
-  placeholder="user@example.com"
-  value={email}
-  onChangeText={setEmail}
-  keyboardType="email-address"
-  error={errors.email}
-/>
-```
-
-### LoadingSpinner
-```typescript
-<LoadingSpinner 
-  fullScreen
-  message="Carregando..."
-  showProgress
-  progress={45}
-/>
-```
-
-### Button
-```typescript
-<Button
-  label="Confirmar"
-  onPress={handleConfirm}
-  loading={isLoading}
-  disabled={!isValid}
-  variant="primary" // ou "secondary", "danger"
-/>
-```
-
-### Card
-```typescript
-<Card style={{ marginBottom: 12 }}>
-  <Text>Conteúdo do card</Text>
-</Card>
-```
-
-## 🧪 Testing
-
-### Estrutura
-```
-src/__tests__/
-├── services/
-├── utils/
-└── hooks/
-```
-
-### Executar Testes
+### "Port 8081 is already in use"
 ```bash
-npm run test
+# Kill the process on that port
+lsof -ti:8081 | xargs kill -9
+
+# Or use a different port
+npx expo start --port 8082
 ```
 
-## 📱 Build & Deploy
-
-### Android
+### "Module not found" errors
 ```bash
-eas build --platform android
+# Clear cache and reinstall
+rm -rf node_modules
+npm install
 ```
 
-### iOS
+### iOS build fails
+```bash
+# Clean derived data
+rm -rf ~/Library/Developer/Xcode/DerivedData/*
+
+# Reinstall pods
+cd ios
+pod install --repo-update
+cd ..
+```
+
+## Performance Tips
+
+1. **Use `React.memo` for components** that don't need frequent re-renders
+2. **Memoize callbacks** with `useCallback` and computed values with `useMemo`
+3. **Use FlatList** for long lists (auto-virtualization)
+4. **Optimize images** - use WebP format when possible
+5. **Avoid unnecessary state updates** - lift state up only when needed
+
+## Deployment
+
+### iOS App Store
 ```bash
 eas build --platform ios
+eas submit --platform ios
 ```
 
-### EAS Submit
+### Android Play Store
 ```bash
-eas submit --platform android --latest
+eas build --platform android
+eas submit --platform android
 ```
 
-## 🐛 Debugging
+## Additional Resources
 
-### Logs
-```typescript
-import { logger } from '@/utils/logger';
+- [React Native Docs](https://reactnative.dev)
+- [Expo Docs](https://docs.expo.dev)
+- [React Navigation](https://reactnavigation.org)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs)
 
-logger.debug('Mensagem', 'Module', { data });
-logger.warn('Aviso', 'Module', error);
-logger.error('Erro', error, 'Module');
-```
+## Support
 
-### React DevTools
-```bash
-npx react-native-debugger
-```
+For issues or questions, check:
+1. Console logs (Metro terminal)
+2. Redux DevTools (if using Redux)
+3. React Native Debugger
+4. Network tab (API calls)
 
-### Network Inspection
-O API client registra todas as requisições com timing e status.
-
-## 🚀 Best Practices
-
-### 1. Usar Hooks Customizados
-```typescript
-// ✅ Bom
-const { user } = useAuth();
-const { error, validateField } = useFormValidation();
-
-// ❌ Evitar
-const context = useContext(AuthContext);
-```
-
-### 2. Validação Antes de Submeter
-```typescript
-// ✅ Bom
-const result = validateForm('register', data);
-if (result.isValid) {
-  await register(...);
-}
-
-// ❌ Evitar
-await register(email, password, name); // Sem validação
-```
-
-### 3. Error Handling
-```typescript
-// ✅ Bom
-try {
-  await bookingService.createBooking(data);
-  toast.success('Agendamento criado');
-} catch (error) {
-  const message = error.response?.data?.message || 'Erro desconhecido';
-  toast.error(message);
-}
-
-// ❌ Evitar
-await bookingService.createBooking(data); // Sem try/catch
-```
-
-### 4. Loading States
-```typescript
-// ✅ Bom
-const [isLoading, setIsLoading] = useState(false);
-
-const handleSubmit = async () => {
-  setIsLoading(true);
-  try {
-    // ... operação
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-// ❌ Evitar
-await bookingService.createBooking(data); // Sem feedback visual
-```
-
-### 5. Cleanup em useEffect
-```typescript
-// ✅ Bom
-useEffect(() => {
-  const subscription = onBookingUpdated(handleUpdate);
-  return () => subscription?.unsubscribe();
-}, []);
-
-// ❌ Evitar
-useEffect(() => {
-  onBookingUpdated(handleUpdate); // Sem cleanup
-}, []);
-```
-
-## 📚 Recursos
-
-- [React Navigation](https://reactnavigation.org/)
-- [Expo Documentation](https://docs.expo.dev/)
-- [Axios Documentation](https://axios-http.com/)
-- [React Hooks Guide](https://react.dev/reference/react/hooks)
-
-## 🎯 Próximas Melhorias
-
-- [ ] Push notifications via Firebase
-- [ ] Sistema de avaliações
-- [ ] Integração de pagamento
-- [ ] Chat com terapeutas
-- [ ] Histórico de consultas detalhado
-- [ ] A/B testing setup
-- [ ] Performance monitoring
-
----
-
-**Última atualização:** Março 22, 2026
+Happy coding! 🚀
