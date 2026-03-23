@@ -206,6 +206,7 @@ export default function RegisterScreen() {
               checked={agreedToTerms}
               onChange={setAgreedToTerms}
               label="Concordo com os termos e condições"
+              testID="terms-checkbox"
             />
           </View>
 
