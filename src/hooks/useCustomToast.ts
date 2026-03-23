@@ -13,7 +13,6 @@ export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
 export interface ToastOptions {
   duration?: number;
-  position?: 'top' | 'bottom';
   action?: {
     label: string;
     onPress: () => void;
@@ -38,7 +37,7 @@ export const useCustomToast = (): UseCustomToastReturn => {
 
   const show = useCallback(
     (message: string, type: ToastType = 'info', options: ToastOptions = {}) => {
-      const { duration = 3000, position = 'bottom' } = options;
+      const { duration = 3000 } = options;
 
       const icons: Record<ToastType, string> = {
         success: '✅',
@@ -53,7 +52,6 @@ export const useCustomToast = (): UseCustomToastReturn => {
         message: formattedMessage,
         type,
         duration,
-        position: position as any,
       });
     },
     [showToast]

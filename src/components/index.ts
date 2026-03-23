@@ -33,6 +33,8 @@ export { TabBarIcon } from './TabBarIcon';
 export { ErrorFallback } from './ErrorFallback';
 export { OfflineBanner } from './OfflineBanner';
 export { ErrorState } from './ErrorState';
+export { ErrorRetryBox } from './ErrorRetryBox';
+export { StatusBadge } from './StatusBadge';
 
 // Form Components
 export { default as FormField } from './FormField';
