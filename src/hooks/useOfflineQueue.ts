@@ -1,160 +1,191 @@
-/**
- * useOfflineQueue Hook
- * Integrates offline queue functionality with component lifecycle
- */
-
-import { useEffect, useCallback, useState } from 'react';
-import { useNetworkStatus } from '../utils/networkStatus';
-import { offlineQueueService, QueuedRequest } from '../services/offlineQueue';
-import { api } from '../config/api';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/logger';
 
-export interface OfflineQueueStats {
-  total: number;
-  byMethod: Record<string, number>;
-  byPriority: Record<string, number>;
-  oldestTimestamp: number | null;
+interface QueuedOperation<T = any> {
+  id: string;
+  type: string;
+  data: T;
+  timestamp: number;
+  attempts: number;
+  maxAttempts: number;
+  error?: string;
 }
 
-export const useOfflineQueue = () => {
-  const { isOnline } = useNetworkStatus();
+interface UseOfflineQueueResult<T = any> {
+  queue: QueuedOperation<T>[];
+  isProcessing: boolean;
+  queueSize: number;
+  addToQueue: (type: string, data: T, maxAttempts?: number) => Promise<void>;
+  processQueue: (processor: (op: QueuedOperation<T>) => Promise<void>) => Promise<void>;
+  removeFromQueue: (id: string) => Promise<void>;
+  clearQueue: () => Promise<void>;
+  getQueuedOperation: (id: string) => QueuedOperation<T> | undefined;
+}
+
+const QUEUE_STORAGE_KEY = 'qlinica_offline_queue';
+const QUEUE_PREFIX = 'queue_op_';
+
+/**
+ * Hook for managing offline operations queue with persistence
+ * Automatically saves operations to AsyncStorage for reliable retry logic
+ * 
+ * @param storageKey - Custom storage key (default: qlinica_offline_queue)
+ * 
+ * @example
+ * const { queue, addToQueue, processQueue } = useOfflineQueue();
+ * 
+ * // Add operation to queue
+ * await addToQueue('create_booking', { serviceId: '1', date: '2024-03-23' });
+ * 
+ * // Process queue when online
+ * await processQueue(async (operation) => {
+ *   await api.post('/bookings', operation.data);
+ * });
+ */
+export const useOfflineQueue = <T = any>(storageKey: string = QUEUE_STORAGE_KEY): UseOfflineQueueResult<T> => {
+  const [queue, setQueue] = useState<QueuedOperation<T>[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [stats, setStats] = useState<OfflineQueueStats>({
-    total: 0,
-    byMethod: {},
-    byPriority: {},
-    oldestTimestamp: null,
-  });
+  const processingRef = useRef(false);
 
-  // Initialize queue on mount
+  // Load queue from storage on mount
   useEffect(() => {
-    const init = async () => {
-      try {
-        await offlineQueueService.initialize();
-        updateStats();
-      } catch (error) {
-        logger.error(
-          'Error initializing offline queue',
-          error as Error);
+    loadQueue();
+  }, []);
+
+  const loadQueue = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem(storageKey);
+      if (stored) {
+        const parsedQueue = JSON.parse(stored) as QueuedOperation<T>[];
+        setQueue(parsedQueue);
+        logger.debug(`Loaded ${parsedQueue.length} operations from offline queue`);
       }
-    };
-
-    init();
-  }, []);
-
-  // Update stats whenever we need them
-  const updateStats = useCallback(() => {
-    setStats(offlineQueueService.getStats());
-  }, []);
-
-  // Process queue when connection is restored
-  useEffect(() => {
-    if (!isOnline) {
-      return;
+    } catch (error) {
+      logger.error('Error loading offline queue', error);
     }
+  }, [storageKey]);
 
-    const processQueue = async () => {
-      setIsProcessing(true);
+  const saveQueue = useCallback(
+    async (newQueue: QueuedOperation<T>[]) => {
       try {
-        const result = await offlineQueueService.processQueue(
-          async (request: QueuedRequest) => {
-            try {
-              const config: any = {
-                method: request.method.toLowerCase(),
-                url: request.endpoint,
-              };
-
-              if (request.data) {
-                config.data = request.data;
-              }
-
-              // Make the request using the configured API
-              const response = await api(config);
-              return response.status >= 200 && response.status < 300;
-            } catch (error) {
-              logger.error(
-                `Failed to process queued request: ${request.method} ${request.endpoint}`,
-                error as Error);
-              return false;
-            }
-          }
-        );
-
-        if (result.successful > 0) {
-          logger.debug(
-            `Processed ${result.successful} queued requests`);
-        }
-
-        if (result.failed > 0) {
-          logger.warn(
-            `${result.failed} queued requests failed after retries`);
-        }
-
-        updateStats();
+        await AsyncStorage.setItem(storageKey, JSON.stringify(newQueue));
       } catch (error) {
-        logger.error(
-          'Error processing offline queue',
-          error as Error);
-      } finally {
-        setIsProcessing(false);
-      }
-    };
-
-    processQueue();
-  }, [isOnline, updateStats]);
-
-  // Queue a new request
-  const queueRequest = useCallback(
-    async (
-      method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-      endpoint: string,
-      data?: any,
-      priority: 'high' | 'normal' | 'low' = 'normal'
-    ) => {
-      try {
-        const request = await offlineQueueService.addToQueue(
-          method,
-          endpoint,
-          data,
-          priority
-        );
-        updateStats();
-        return request;
-      } catch (error) {
-        logger.error(
-          `Error queuing request: ${method} ${endpoint}`,
-          error as Error);
-        throw error;
+        logger.error('Error saving offline queue', error);
       }
     },
-    [updateStats]
+    [storageKey]
   );
 
-  // Get current queue
-  const getQueue = useCallback(() => {
-    return offlineQueueService.getQueue();
-  }, []);
+  const addToQueue = useCallback(
+    async (type: string, data: T, maxAttempts: number = 3) => {
+      const operation: QueuedOperation<T> = {
+        id: `${QUEUE_PREFIX}${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type,
+        data,
+        timestamp: Date.now(),
+        attempts: 0,
+        maxAttempts,
+      };
 
-  // Clear queue
+      setQueue((prev) => {
+        const newQueue = [...prev, operation];
+        saveQueue(newQueue);
+        return newQueue;
+      });
+
+      logger.debug(`Added operation to offline queue: ${operation.id}`, { type, data });
+    },
+    [saveQueue]
+  );
+
+  const removeFromQueue = useCallback(
+    async (id: string) => {
+      setQueue((prev) => {
+        const newQueue = prev.filter((op) => op.id !== id);
+        saveQueue(newQueue);
+        return newQueue;
+      });
+
+      logger.debug(`Removed operation from offline queue: ${id}`);
+    },
+    [saveQueue]
+  );
+
   const clearQueue = useCallback(async () => {
-    try {
-      await offlineQueueService.clearQueue();
-      updateStats();
-    } catch (error) {
-      logger.error(
-        'Error clearing offline queue',
-        error as Error);
-      throw error;
-    }
-  }, [updateStats]);
+    setQueue([]);
+    await AsyncStorage.removeItem(storageKey);
+    logger.debug('Cleared offline queue');
+  }, [storageKey]);
+
+  const processQueue = useCallback(
+    async (processor: (op: QueuedOperation<T>) => Promise<void>) => {
+      if (processingRef.current || queue.length === 0) {
+        return;
+      }
+
+      processingRef.current = true;
+      setIsProcessing(true);
+
+      try {
+        for (const operation of queue) {
+          try {
+            logger.debug(`Processing offline operation: ${operation.id}`, { type: operation.type });
+            await processor(operation);
+            await removeFromQueue(operation.id);
+            logger.debug(`Successfully processed offline operation: ${operation.id}`);
+          } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            operation.attempts += 1;
+
+            if (operation.attempts >= operation.maxAttempts) {
+              logger.error(
+                `Operation ${operation.id} failed after ${operation.maxAttempts} attempts`,
+                error
+              );
+              operation.error = errorMsg;
+              // Keep in queue with error flag for manual retry
+            } else {
+              logger.warn(
+                `Operation ${operation.id} failed, will retry (${operation.attempts}/${operation.maxAttempts})`,
+                error
+              );
+            }
+
+            setQueue((prev) =>
+              prev.map((op) => (op.id === operation.id ? operation : op))
+            );
+          }
+        }
+
+        // Save final queue state
+        setQueue((prev) => {
+          saveQueue(prev);
+          return prev;
+        });
+      } finally {
+        processingRef.current = false;
+        setIsProcessing(false);
+      }
+    },
+    [queue, removeFromQueue, saveQueue]
+  );
+
+  const getQueuedOperation = useCallback(
+    (id: string) => {
+      return queue.find((op) => op.id === id);
+    },
+    [queue]
+  );
 
   return {
-    isOnline,
+    queue,
     isProcessing,
-    stats,
-    queueRequest,
-    getQueue,
+    queueSize: queue.length,
+    addToQueue,
+    processQueue,
+    removeFromQueue,
     clearQueue,
-    updateStats,
+    getQueuedOperation,
   };
 };
