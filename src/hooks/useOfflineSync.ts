@@ -1,77 +1,85 @@
 /**
- * useOfflineSync
- * Hook for managing offline operations and sync status
+ * useOfflineSync Hook
+ * Provides access to offline sync capabilities
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { offlineSyncService, OfflineBookingQueue } from '../services/offlineSyncService';
+import { offlineSync, SyncState, QueuedOperation } from '../utils/offlineSync';
 
-export interface UsOfflineSyncReturn {
-  queue: OfflineBookingQueue[];
-  queueCount: number;
+interface UseOfflineSyncReturn {
   isOnline: boolean;
   isSyncing: boolean;
-  queueBooking: (
-    operation: 'create' | 'reschedule' | 'cancel',
-    data: any,
-    bookingId?: string
-  ) => Promise<string>;
-  sync: () => Promise<{ synced: number; failed: number }>;
+  queueLength: number;
+  lastSyncTime: number | null;
+  queuedOperations: QueuedOperation[];
+  queue: () => Promise<QueuedOperation>;
+  sync: () => Promise<boolean>;
   clearQueue: () => Promise<void>;
-  retryOperation: (operationId: string) => Promise<void>;
 }
 
-export const useOfflineSync = (): UsOfflineSyncReturn => {
-  const [queue, setQueue] = useState<OfflineBookingQueue[]>([]);
-  const [isOnline, setIsOnline] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  // Subscribe to queue changes
-  useEffect(() => {
-    const unsubscribe = offlineSyncService.subscribeToQueueChanges((newQueue: OfflineBookingQueue[]) => {
-      setQueue(newQueue);
-    });
-
-    return unsubscribe;
-  }, []);
-
-  const queueBooking = useCallback(
-    async (
-      operation: 'create' | 'reschedule' | 'cancel',
-      data: any,
-      bookingId?: string
-    ): Promise<string> => {
-      return offlineSyncService.queueBookingOperation(operation, data, bookingId);
-    },
-    []
+export const useOfflineSync = (): UseOfflineSyncReturn => {
+  const [syncState, setSyncState] = useState<SyncState>(offlineSync.getSyncState());
+  const [queuedOperations, setQueuedOperations] = useState<QueuedOperation[]>(
+    offlineSync.getQueue(),
   );
 
-  const sync = useCallback(async () => {
-    setIsSyncing(true);
+  // Subscribe to sync state changes
+  useEffect(() => {
+    const unsubscribe = offlineSync.subscribe((newState) => {
+      setSyncState(newState);
+      setQueuedOperations(offlineSync.getQueue());
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  // Queue operation with error handling
+  const queue = useCallback(
+    async (
+      type: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+      endpoint: string,
+      data?: any,
+    ): Promise<QueuedOperation> => {
+      try {
+        return await offlineSync.queueOperation(type, endpoint, data);
+      } catch (error) {
+        console.error('Error queueing operation:', error);
+        throw error;
+      }
+    },
+    [],
+  );
+
+  // Manually trigger sync
+  const sync = useCallback(async (): Promise<boolean> => {
     try {
-      const result = await offlineSyncService.sync();
-      return result;
-    } finally {
-      setIsSyncing(false);
+      return await offlineSync.syncQueue();
+    } catch (error) {
+      console.error('Error syncing queue:', error);
+      return false;
     }
   }, []);
 
-  const clearQueue = useCallback(async () => {
-    await offlineSyncService.clearQueue();
-  }, []);
-
-  const retryOperation = useCallback(async (operationId: string) => {
-    await offlineSyncService.retryOperation(operationId);
+  // Clear queue
+  const clearQueue = useCallback(async (): Promise<void> => {
+    try {
+      await offlineSync.clearQueue();
+    } catch (error) {
+      console.error('Error clearing queue:', error);
+      throw error;
+    }
   }, []);
 
   return {
+    isOnline: syncState.isOnline,
+    isSyncing: syncState.isSyncing,
+    queueLength: syncState.queueLength,
+    lastSyncTime: syncState.lastSyncTime,
+    queuedOperations,
     queue,
-    queueCount: queue.length,
-    isOnline,
-    isSyncing,
-    queueBooking,
     sync,
     clearQueue,
-    retryOperation,
   };
 };
