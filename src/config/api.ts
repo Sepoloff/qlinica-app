@@ -91,8 +91,10 @@ api.interceptors.response.use(
     const key = `${config.method}:${config.url}`;
     const currentRetry = retryCount.get(key) || 0;
 
-    // Handle 401 - Try to refresh token
-    if (error.response?.status === 401 && !config._retried && authContextRefresh) {
+    // Handle 401 - Try to refresh token (but not on the refresh endpoint itself to avoid infinite loop)
+    const isRefreshEndpoint = config.url?.includes('/auth/refresh');
+    
+    if (error.response?.status === 401 && !config._retried && !isRefreshEndpoint && authContextRefresh) {
       try {
         logger.warn('🔄 Token expired - attempting refresh...');
         config._retried = true;
