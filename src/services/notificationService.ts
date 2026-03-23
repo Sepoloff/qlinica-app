@@ -388,7 +388,7 @@ export function onNotificationReceived(
  */
 export const notificationService = {
   sendBookingConfirmationNotification,
-  sendBookingReminderNotification,
+  sendBookingReminderNotification: sendAppointmentReminderNotification,
   sendCancellationNotification,
   sendRescheduleNotification,
   sendPaymentNotification,

@@ -377,8 +377,8 @@ class AdvancedAnalyticsService {
       }
 
       const parsed = JSON.parse(data);
-      const lastActive = parsed.lastActiveTime || 0;
-      const daysSinceActive = lastActive ? Math.floor((Date.now() - lastActive) / (1000 * 60 * 60 * 24)) : 0;
+      const lastActiveTime = parsed.lastActiveTime || 0;
+      const daysSinceActive = lastActiveTime ? Math.floor((Date.now() - lastActiveTime) / (1000 * 60 * 60 * 24)) : 0;
 
       return {
         totalSessions: parsed.totalSessions || 0,

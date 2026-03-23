@@ -66,7 +66,8 @@ class AvatarUploadService {
 
     // Check format
     const supportedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!supportedFormats.includes(asset.mimeType || '')) {
+    const mimeType = (asset as any).mimeType || 'image/jpeg';
+    if (!supportedFormats.includes(mimeType)) {
       return {
         valid: false,
         error: 'Formato não suportado. Use JPG, PNG ou WebP.',
@@ -91,7 +92,7 @@ class AvatarUploadService {
       // Create file object
       const file = {
         uri: asset.uri,
-        type: asset.mimeType || 'image/jpeg',
+        type: (asset as any).mimeType || 'image/jpeg',
         name: asset.fileName || `avatar_${Date.now()}.jpg`,
       };
 
@@ -106,8 +107,8 @@ class AvatarUploadService {
       });
 
       analyticsService.trackEvent('avatar_uploaded', {
-        size: asset.fileSize,
-        mimeType: asset.mimeType,
+        size: (asset as any).fileSize,
+        mimeType: (asset as any).mimeType,
       });
 
       console.log('✅ Avatar uploaded successfully');

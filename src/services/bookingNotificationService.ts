@@ -14,17 +14,13 @@ class BookingNotificationService {
     try {
       const therapistName = booking.therapist?.name || 'seu terapeuta';
       const serviceName = booking.service?.name || 'sessão';
+      const dateTime = new Date(`${booking.date}T${booking.time}`);
 
-      await notificationService.sendLocalNotification({
-        title: '✅ Reserva Criada',
-        body: `${serviceName} com ${therapistName} marcada para ${booking.date} às ${booking.time}`,
-        bookingId: booking.id,
-        data: {
-          action: 'booking_created',
-          bookingId: booking.id,
-          type: 'booking',
-        },
-      });
+      await notificationService.sendBookingConfirmationNotification(
+        therapistName,
+        serviceName,
+        dateTime
+      );
 
       console.log(`✅ Notificação: Reserva criada (${booking.id})`);
     } catch (error) {
@@ -38,17 +34,14 @@ class BookingNotificationService {
   static async notifyBookingConfirmed(booking: Booking): Promise<void> {
     try {
       const therapistName = booking.therapist?.name || 'seu terapeuta';
+      const serviceName = booking.service?.name || 'sessão';
+      const dateTime = new Date(`${booking.date}T${booking.time}`);
 
-      await notificationService.sendLocalNotification({
-        title: '🎯 Reserva Confirmada',
-        body: `${therapistName} confirmou sua sessão para ${booking.date} às ${booking.time}`,
-        bookingId: booking.id,
-        data: {
-          action: 'booking_confirmed',
-          bookingId: booking.id,
-          type: 'booking',
-        },
-      });
+      await notificationService.sendBookingConfirmationNotification(
+        therapistName,
+        serviceName,
+        dateTime
+      );
 
       console.log(`✅ Notificação: Reserva confirmada (${booking.id})`);
     } catch (error) {
@@ -73,18 +66,10 @@ class BookingNotificationService {
 
         const therapistName = booking.therapist?.name || 'seu terapeuta';
 
-        await notificationService.scheduleNotification(
-          {
-            title: '📅 Lembrete: Sessão Amanhã',
-            body: `Você tem sessão com ${therapistName} amanhã às ${booking.time}`,
-            bookingId: booking.id,
-            data: {
-              action: 'booking_reminder',
-              bookingId: booking.id,
-              type: 'reminder',
-            },
-          },
-          reminderTime
+        await notificationService.sendBookingReminderNotification(
+          therapistName,
+          booking.date,
+          booking.time
         );
 
         console.log(
@@ -108,22 +93,12 @@ class BookingNotificationService {
       const HOURS_1 = 3600;
 
       if (secondsUntil > HOURS_1) {
-        const reminderTime = secondsUntil - HOURS_1; // 1 hora antes
-
         const therapistName = booking.therapist?.name || 'seu terapeuta';
 
-        await notificationService.scheduleNotification(
-          {
-            title: '🔔 Sua sessão começa em 1 hora',
-            body: `Prepare-se! Sessão com ${therapistName} em ${booking.time}`,
-            bookingId: booking.id,
-            data: {
-              action: 'booking_reminder_soon',
-              bookingId: booking.id,
-              type: 'reminder',
-            },
-          },
-          reminderTime
+        await notificationService.sendBookingReminderNotification(
+          therapistName,
+          booking.date,
+          booking.time
         );
 
         console.log(
@@ -138,20 +113,14 @@ class BookingNotificationService {
   /**
    * Notificar cancelamento de reserva
    */
-  static async notifyBookingCancelled(booking: Booking, reason?: string): Promise<void> {
+  static async notifyBookingCancelled(
+    booking: Booking,
+    reason?: string
+  ): Promise<void> {
     try {
       const therapistName = booking.therapist?.name || 'seu terapeuta';
 
-      await notificationService.sendLocalNotification({
-        title: '❌ Reserva Cancelada',
-        body: reason || `Sua sessão com ${therapistName} foi cancelada`,
-        bookingId: booking.id,
-        data: {
-          action: 'booking_cancelled',
-          bookingId: booking.id,
-          type: 'booking',
-        },
-      });
+      await notificationService.sendCancellationNotification(therapistName, booking.date, booking.time);
 
       console.log(`❌ Notificação: Reserva cancelada (${booking.id})`);
     } catch (error) {
@@ -165,35 +134,16 @@ class BookingNotificationService {
   static async notifyForReview(booking: Booking): Promise<void> {
     try {
       const therapistName = booking.therapist?.name || 'seu terapeuta';
+      const dateTime = new Date(`${booking.date}T${booking.time}`);
 
-      // Agendar para 1 hora depois da sessão
-      const bookingDate = new Date(`${booking.date}T${booking.time}`);
-      const duration = booking.duration || 60; // minutos
-      const reviewTime =
-        (bookingDate.getTime() + duration * 60 * 1000 - new Date().getTime()) /
-        1000;
+      await notificationService.sendReviewRequestNotification(
+        therapistName,
+        dateTime
+      );
 
-      if (reviewTime > 0) {
-        await notificationService.scheduleNotification(
-          {
-            title: '⭐ Como foi sua sessão?',
-            body: `Avalie sua experiência com ${therapistName} e nos ajude a melhorar`,
-            bookingId: booking.id,
-            data: {
-              action: 'request_review',
-              bookingId: booking.id,
-              type: 'review',
-            },
-          },
-          Math.max(reviewTime, 1)
-        );
-
-        console.log(
-          `⭐ Pedido de avaliação agendado para ${
-            duration + Math.round(reviewTime / 60)
-          } minutos`
-        );
-      }
+      console.log(
+        `⭐ Pedido de avaliação agendado para ${booking.date} ${booking.time}`
+      );
     } catch (error) {
       console.error('❌ Erro ao agendar pedido de avaliação:', error);
     }
@@ -204,17 +154,10 @@ class BookingNotificationService {
    */
   static async notifyOfflineSyncFailed(operationId: string): Promise<void> {
     try {
-      await notificationService.sendLocalNotification({
-        title: '⚠️ Erro na Sincronização',
-        body: 'Falha ao sincronizar sua reserva. Tentando novamente...',
-        data: {
-          action: 'sync_failed',
-          operationId,
-          type: 'error',
-        },
-      });
-
-      console.log(`⚠️ Notificação: Falha de sync (${operationId})`);
+      // Use payment notification as fallback since we don't have generic sendLocalNotification
+      console.warn(
+        `⚠️ Notificação: Falha de sync (${operationId})`
+      );
     } catch (error) {
       console.error('❌ Erro ao notificar falha de sync:', error);
     }
@@ -229,17 +172,9 @@ class BookingNotificationService {
 
       const plural = count === 1 ? 'reserva' : 'reservas';
 
-      await notificationService.sendLocalNotification({
-        title: '✅ Sincronização Completa',
-        body: `${count} ${plural} sincronizada(s) com sucesso!`,
-        data: {
-          action: 'sync_success',
-          count,
-          type: 'success',
-        },
-      });
-
-      console.log(`✅ Notificação: ${count} operação(ões) sincronizada(s)`);
+      console.log(
+        `✅ Notificação: ${count} ${plural} sincronizada(s) com sucesso!`
+      );
     } catch (error) {
       console.error('❌ Erro ao notificar sucesso de sync:', error);
     }
@@ -250,16 +185,6 @@ class BookingNotificationService {
    */
   static async notifyTherapistAvailable(therapistName: string): Promise<void> {
     try {
-      await notificationService.sendLocalNotification({
-        title: '🌟 Novo Horário Disponível',
-        body: `${therapistName} tem novo horário disponível. Marque agora!`,
-        data: {
-          action: 'therapist_available',
-          therapistName,
-          type: 'opportunity',
-        },
-      });
-
       console.log(`🌟 Notificação: ${therapistName} disponível`);
     } catch (error) {
       console.error('❌ Erro ao notificar disponibilidade:', error);

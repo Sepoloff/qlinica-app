@@ -200,12 +200,7 @@ class ErrorRecoveryService {
   /**
    * Get error report for debugging
    */
-  getErrorReport(): {
-    totalErrors: number;
-    lastError?: Error;
-    errorTypes: string[];
-    history: typeof this.errorHistory;
-  } {
+  getErrorReport() {
     return {
       totalErrors: this.errorHistory.length,
       lastError: this.errorHistory[this.errorHistory.length - 1]?.error,
