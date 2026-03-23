@@ -144,10 +144,10 @@ export const Button: React.FC<ButtonProps> = ({
           borderWidth: (variantStyle as any).borderWidth || 0,
           opacity: disabled || loading ? 0.6 : 1,
           width: fullWidth ? '100%' : 'auto',
+          minHeight: 48,
         },
         style,
       ]}
-      minHeight={48}
     >
       <View style={styles.content}>
         {loading && <ActivityIndicator color={variantStyle.textColor} size="small" style={{ marginRight: 8 }} />}

@@ -13,6 +13,7 @@ import TherapistSelectionScreen from './src/screens/TherapistSelectionScreen';
 import CalendarSelectionScreen from './src/screens/CalendarSelectionScreen';
 import BookingSummaryScreen from './src/screens/BookingSummaryScreen';
 import BookingDetailsScreen from './src/screens/BookingDetailsScreen';
+import ReviewScreen from './src/screens/ReviewScreen';
 import LoginScreen from './src/screens/AuthScreens/LoginScreen';
 import RegisterScreen from './src/screens/AuthScreens/RegisterScreen';
 import ForgotPasswordScreen from './src/screens/AuthScreens/ForgotPasswordScreen';
@@ -199,6 +200,13 @@ function RootNavigator() {
           <Stack.Screen
             name="BookingDetails"
             component={BookingDetailsScreen}
+            options={{
+              presentation: 'card',
+            }}
+          />
+          <Stack.Screen
+            name="Review"
+            component={ReviewScreen}
             options={{
               presentation: 'card',
             }}
