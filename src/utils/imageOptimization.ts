@@ -3,8 +3,7 @@
  * Handles lazy loading, caching, and responsive image sizing
  */
 
-import { Dimensions } from 'react-native';
-import * as ImageCache from 'expo-image';
+import { Dimensions, Image as RNImage } from 'react-native';
 
 interface ImageCacheOptions {
   maxAge?: number; // milliseconds
@@ -75,7 +74,8 @@ export const prefetchImage = async (
   if (!url || url.startsWith('file://')) return;
 
   try {
-    await ImageCache.prefetchAsync([url]);
+    // Use React Native's Image.prefetch
+    await RNImage.prefetch(url);
   } catch (error) {
     console.warn('Failed to prefetch image:', url, error);
   }

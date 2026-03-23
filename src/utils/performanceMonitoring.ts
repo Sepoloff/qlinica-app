@@ -28,7 +28,7 @@ class PerformanceMonitor {
   /**
    * Mark the start of a performance measurement
    */
-  start(label: string): { end: () => number } {
+  start(label: string): { end: (metadata?: Record<string, any>) => number } {
     const startTime = performance.now();
 
     return {
@@ -157,10 +157,10 @@ export const useRenderTime = (componentName: string) => {
     const timer = performanceMonitor.start(`render:${componentName}`);
     try {
       const result = fn();
-      timer.end();
+      timer.end({});
       return result;
     } catch (error) {
-      timer.end();
+      timer.end({ error: true });
       throw error;
     }
   };

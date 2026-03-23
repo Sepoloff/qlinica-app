@@ -98,8 +98,10 @@ export const memoize = <Args extends any[], R>(
 
     // Store in cache (with size limit)
     if (cache.size >= maxSize) {
-      const firstKey = cache.keys().next().value;
-      cache.delete(firstKey);
+      const firstKey = cache.keys().next().value as string | undefined;
+      if (firstKey !== undefined) {
+        cache.delete(firstKey);
+      }
     }
     cache.set(key, result);
 
