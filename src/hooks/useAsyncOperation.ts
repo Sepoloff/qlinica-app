@@ -1,108 +1,76 @@
-/**
- * useAsyncOperation
- * Manages async operations with loading, error, and data states
- */
+import { useState, useCallback } from 'react';
 
-import React, { useState, useCallback, useRef } from 'react';
-import { logger } from '../utils/logger';
+type OperationState = 'idle' | 'loading' | 'success' | 'error';
 
-interface AsyncState<T> {
-  data: T | null;
-  loading: boolean;
+interface UseAsyncOperationResult<T> {
+  state: OperationState;
+  isLoading: boolean;
+  isSuccess: boolean;
+  isError: boolean;
   error: Error | null;
+  data: T | null;
+  execute: (fn: () => Promise<T>) => Promise<T | null>;
+  reset: () => void;
+  setError: (error: Error | string) => void;
 }
 
-interface AsyncOperationOptions {
-  onSuccess?: (data: any) => void;
-  onError?: (error: Error) => void;
-  timeout?: number;
-}
+/**
+ * Hook for managing async operations with simplified state
+ * Handles loading, success, and error states automatically
+ * 
+ * @example
+ * const { state, error, data, execute } = useAsyncOperation<string>();
+ * 
+ * const handleSubmit = async () => {
+ *   const result = await execute(async () => {
+ *     return await someAsyncFunction();
+ *   });
+ * };
+ */
+export const useAsyncOperation = <T = any>(): UseAsyncOperationResult<T> => {
+  const [state, setState] = useState<OperationState>('idle');
+  const [error, setErrorState] = useState<Error | null>(null);
+  const [data, setData] = useState<T | null>(null);
 
-export const useAsyncOperation = <T,>(
-  asyncFunction: () => Promise<T>,
-  options: AsyncOperationOptions = {}
-) => {
-  const [state, setState] = useState<AsyncState<T>>({
-    data: null,
-    loading: false,
-    error: null,
-  });
+  const execute = useCallback(async (fn: () => Promise<T>): Promise<T | null> => {
+    setState('loading');
+    setErrorState(null);
+    setData(null);
 
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  const isMountedRef = useRef(true);
-
-  const execute = useCallback(
-    async (overrideOptions?: AsyncOperationOptions) => {
-      const mergedOptions = { ...options, ...overrideOptions };
-
-      try {
-        setState({ data: null, loading: true, error: null });
-
-        // Execute with optional timeout
-        const promise = asyncFunction();
-        let result: T;
-
-        if (mergedOptions.timeout) {
-          result = await Promise.race([
-            promise,
-            new Promise<T>((_, reject) =>
-              setTimeout(
-                () => reject(new Error('Operation timeout')),
-                mergedOptions.timeout
-              )
-            ),
-          ]);
-        } else {
-          result = await promise;
-        }
-
-        if (isMountedRef.current) {
-          setState({ data: result, loading: false, error: null });
-          mergedOptions.onSuccess?.(result);
-          logger.debug('Async operation completed', { hasData: !!result });
-        }
-
-        return result;
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error));
-
-        if (isMountedRef.current) {
-          setState({ data: null, loading: false, error: err });
-          mergedOptions.onError?.(err);
-          logger.trackError('Async operation failed', err);
-        }
-
-        throw err;
-      }
-    },
-    [asyncFunction, options]
-  );
-
-  const reset = useCallback(() => {
-    setState({ data: null, loading: false, error: null });
+    try {
+      const result = await fn();
+      setData(result);
+      setState('success');
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setErrorState(error);
+      setState('error');
+      return null;
+    }
   }, []);
 
-  const retry = useCallback(() => {
-    return execute();
-  }, [execute]);
+  const reset = useCallback(() => {
+    setState('idle');
+    setErrorState(null);
+    setData(null);
+  }, []);
 
-  // Cleanup on unmount
-  React.useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
+  const setError = useCallback((err: Error | string) => {
+    const error = typeof err === 'string' ? new Error(err) : err;
+    setErrorState(error);
+    setState('error');
   }, []);
 
   return {
-    ...state,
+    state,
+    isLoading: state === 'loading',
+    isSuccess: state === 'success',
+    isError: state === 'error',
+    error,
+    data,
     execute,
-    retry,
     reset,
-    isLoading: state.loading,
-    isError: !!state.error,
-    isSuccess: !state.error && !!state.data,
+    setError,
   };
 };
