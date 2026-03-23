@@ -1,6 +1,6 @@
 'use strict';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,67 +14,78 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { getPasswordStrength } from '../../utils/validation';
+import { getPasswordStrength, validateName, validatePhone } from '../../utils/validation';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { logger } from '../../utils/logger';
-import { FormInput } from '../../components/FormInput';
+import { FormField } from '../../components/FormField';
 import { Checkbox } from '../../components/Checkbox';
 import { Button } from '../../components/Button';
-import { useFormValidation, ValidationRule } from '../../hooks/useFormValidation';
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_MIN_LENGTH = 8;
-const NAME_MIN_LENGTH = 2;
+import { useRealTimeValidation } from '../../hooks/useRealTimeValidation';
+import { useAsyncOperation } from '../../hooks/useAsyncOperation';
+import { OperationStatus } from '../../components/OperationStatus';
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
-  const { register, isLoading, error, clearError } = useAuth();
+  const { register, clearError } = useAuth();
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
+  const { state, execute, error: asyncError, reset } = useAsyncOperation<void>();
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  // Validation setup
+  const { fields, updateField, validateAll, hasErrors, reset: resetValidation } = useRealTimeValidation(
+    {
+      name: (value) => {
+        if (!value) return 'Nome é obrigatório';
+        if (!validateName(value)) return 'Nome deve ter pelo menos 2 caracteres';
+        return null;
+      },
+      email: (value) => {
+        if (!value) return 'Email é obrigatório';
+        // Simple email validation
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Email inválido';
+        return null;
+      },
+      phone: (value) => {
+        if (!value) return 'Telefone é obrigatório';
+        if (!validatePhone(value)) return 'Telefone português inválido (9XX XXX XXX)';
+        return null;
+      },
+      password: (value) => {
+        if (!value) return 'Senha é obrigatória';
+        if (value.length < 8) return 'Mínimo 8 caracteres';
+        if (!/[A-Z]/.test(value)) return 'Deve conter uma letra maiúscula';
+        if (!/\d/.test(value)) return 'Deve conter um número';
+        return null;
+      },
+      confirmPassword: (value) => {
+        if (!value) return 'Confirmação de senha é obrigatória';
+        if (value !== fields.password.value) return 'As senhas não correspondem';
+        return null;
+      },
+    },
+    300
+  );
+
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [registrationError, setRegistrationError] = useState<string | null>(null);
-
-  const validationSchema: { [key: string]: ValidationRule } = {
-    name: { required: true, minLength: NAME_MIN_LENGTH },
-    email: { required: true, pattern: EMAIL_PATTERN },
-    password: { required: true, minLength: PASSWORD_MIN_LENGTH },
-    confirmPassword: { required: true },
-  };
-
-  const { validateForm, getFieldError } = useFormValidation(validationSchema);
 
   useFocusEffect(
     React.useCallback(() => {
       trackScreenView('register');
       clearError();
-      setRegistrationError(null);
       return () => {};
     }, [trackScreenView, clearError])
   );
 
-  const passwordStrength = getPasswordStrength(password);
+  const passwordStrength = getPasswordStrength(fields.password.value);
 
-  const handleRegister = async () => {
-    clearError();
-    setRegistrationError(null);
+  const handleRegister = useCallback(async () => {
+    reset();
 
     // Validate all fields
-    const validationErrors = validateForm({ name, email, password, confirmPassword });
-    
-    if (Object.keys(validationErrors).length > 0) {
+    const isValid = await validateAll();
+    if (!isValid) {
       showToast('Verifique todos os campos do formulário', 'error');
-      trackEvent('register_validation_error', { errorCount: Object.keys(validationErrors).length });
-      return;
-    }
-
-    // Check password confirmation
-    if (password !== confirmPassword) {
-      showToast('As palavras-passe não correspondem', 'error');
+      trackEvent('register_validation_error');
       return;
     }
 
@@ -84,47 +95,49 @@ export default function RegisterScreen() {
       return;
     }
 
-    try {
-      logger.debug(`Attempting registration for ${email}`);
-      await register(email, password, name);
-      
-      logger.debug(`Registration successful for ${email}`);
-      showToast('Conta criada com sucesso! Inicie sessão para continuar.', 'success');
+    // Execute registration
+    await execute(async () => {
+      logger.debug(`Attempting registration for ${fields.email.value}`);
+      await register(fields.email.value, fields.password.value, fields.name.value);
+      logger.debug(`Registration successful for ${fields.email.value}`);
+      showToast('Conta criada com sucesso! Iniciando sessão...', 'success');
       trackEvent('register_success');
-      
-      // Navigate to login
-      setTimeout(() => {
-        navigation.navigate('Login' as never);
-      }, 1000);
-    } catch (err: any) {
-      const errorMessage = err.message || 'Falha ao criar conta';
-      logger.error(`Registration failed: ${errorMessage}`, err as Error);
-      setRegistrationError(errorMessage);
-      showToast(errorMessage, 'error');
-      trackEvent('register_error', { error: errorMessage });
-    }
-  };
+    });
+  }, [
+    reset,
+    validateAll,
+    showToast,
+    trackEvent,
+    agreedToTerms,
+    execute,
+    fields.email.value,
+    fields.password.value,
+    fields.name.value,
+    register,
+  ]);
 
-  const handleLoginLink = () => {
+  const handleLogin = () => {
     trackEvent('login_link_clicked');
     navigation.navigate('Login' as never);
   };
 
-  const nameError = getFieldError('name');
-  const emailError = getFieldError('email');
-  const passwordError = getFieldError('password');
-  const confirmPasswordError = getFieldError('confirmPassword') || 
-    (password !== confirmPassword && confirmPassword ? 'As palavras-passe não correspondem' : null);
-
-  const passwordScore = passwordStrength?.score || 0;
-  const passwordColor = passwordScore >= 4 ? COLORS.success : passwordScore >= 2 ? '#FFA500' : '#FF6B6B';
+  const isLoading = state === 'loading';
+  const buttonDisabled =
+    isLoading ||
+    hasErrors ||
+    !agreedToTerms ||
+    !fields.name.value ||
+    !fields.email.value ||
+    !fields.phone.value ||
+    !fields.password.value ||
+    !fields.confirmPassword.value;
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
@@ -136,90 +149,166 @@ export default function RegisterScreen() {
           style={styles.header}
         >
           <Text style={styles.headerTitle}>Criar Conta</Text>
-          <Text style={styles.headerSubtitle}>Junte-se à nossa comunidade de bem-estar</Text>
+          <Text style={styles.headerSubtitle}>Junte-se à comunidade Qlinica</Text>
         </LinearGradient>
 
         {/* Form Container */}
         <View style={styles.formContainer}>
-          {/* Name Input */}
-          <FormInput
+          {/* Operation Status */}
+          {state !== 'idle' && (
+            <OperationStatus
+              state={state}
+              message="Criando sua conta..."
+              errorMessage={asyncError?.message || 'Falha ao criar conta'}
+              onRetry={handleRegister}
+              onDismiss={reset}
+            />
+          )}
+
+          {/* Name Field */}
+          <FormField
             label="Nome Completo"
-            placeholder="Seu nome completo"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-            error={nameError || undefined}
+            placeholder="João Silva"
+            value={fields.name.value}
+            onChangeText={(text) => updateField('name', text)}
+            error={fields.name.isTouched ? fields.name.error : null}
+            isValidating={fields.name.isValidating}
+            isValid={fields.name.value.length > 0 && !fields.name.error}
+            editable={!isLoading}
+            required
+            showValidation
           />
 
-          {/* Email Input */}
-          <FormInput
+          {/* Email Field */}
+          <FormField
             label="Email"
             placeholder="seu@email.com"
-            value={email}
-            onChangeText={setEmail}
+            value={fields.email.value}
+            onChangeText={(text) => updateField('email', text)}
+            error={fields.email.isTouched ? fields.email.error : null}
+            isValidating={fields.email.isValidating}
+            isValid={fields.email.value.length > 0 && !fields.email.error}
             keyboardType="email-address"
             autoCapitalize="none"
-            error={emailError || undefined}
+            editable={!isLoading}
+            required
+            showValidation
           />
 
-          {/* Password Input */}
-          <FormInput
-            label="Palavra-passe"
-            placeholder="Mínimo 8 caracteres"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            error={passwordError || undefined}
-          />
-          {password && (
-            <View style={styles.passwordStrengthContainer}>
-              <View style={[styles.strengthBar, { width: `${(passwordScore / 5) * 100}%`, backgroundColor: passwordColor }]} />
-            </View>
-          )}
-          {password && (
-            <Text style={[styles.strengthText, { color: passwordColor }]}>
-              Força: {passwordStrength?.label}
-            </Text>
-          )}
-
-          {/* Confirm Password Input */}
-          <FormInput
-            label="Confirmar Palavra-passe"
-            placeholder="Confirme sua palavra-passe"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-            error={confirmPasswordError || undefined}
+          {/* Phone Field */}
+          <FormField
+            label="Telefone"
+            placeholder="9XX XXX XXX"
+            value={fields.phone.value}
+            onChangeText={(text) => updateField('phone', text)}
+            error={fields.phone.isTouched ? fields.phone.error : null}
+            isValidating={fields.phone.isValidating}
+            isValid={fields.phone.value.length > 0 && !fields.phone.error}
+            keyboardType="phone-pad"
+            editable={!isLoading}
+            required
+            showValidation
+            helperText="Número de telefone português"
           />
 
-          {/* Terms Checkbox */}
-          <View style={styles.termsContainer}>
-            <Checkbox
-              checked={agreedToTerms}
-              onValueChange={setAgreedToTerms}
-              label="Concordo com os termos e condições"
-              testID="terms-checkbox"
+          {/* Password Field */}
+          <View>
+            <FormField
+              label="Senha"
+              placeholder="••••••••"
+              value={fields.password.value}
+              onChangeText={(text) => updateField('password', text)}
+              error={fields.password.isTouched ? fields.password.error : null}
+              isValidating={fields.password.isValidating}
+              isValid={fields.password.value.length > 0 && !fields.password.error}
+              secureTextEntry
+              editable={!isLoading}
+              required
+              showValidation
             />
+
+            {/* Password Strength Indicator */}
+            {fields.password.value.length > 0 && (
+              <View style={styles.passwordStrengthContainer}>
+                <View style={styles.strengthBar}>
+                  <View
+                    style={[
+                      styles.strengthFill,
+                      {
+                        width: `${(passwordStrength.score / 5) * 100}%`,
+                        backgroundColor:
+                          passwordStrength.strength === 'weak'
+                            ? COLORS.danger
+                            : passwordStrength.strength === 'medium'
+                            ? COLORS.gold
+                            : COLORS.success,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.strengthText,
+                    {
+                      color:
+                        passwordStrength.strength === 'weak'
+                          ? COLORS.danger
+                          : passwordStrength.strength === 'medium'
+                          ? COLORS.gold
+                          : COLORS.success,
+                    },
+                  ]}
+                >
+                  Força: {passwordStrength.strength === 'weak' ? 'Fraca' : passwordStrength.strength === 'medium' ? 'Média' : 'Forte'}
+                </Text>
+              </View>
+            )}
           </View>
 
-          {/* Submit Button */}
-          <Button
-            title={isLoading ? 'A Registar...' : 'Registar'}
-            onPress={handleRegister}
-            disabled={isLoading || !agreedToTerms}
-            loading={isLoading}
-            variant="primary"
-            size="large"
-            style={{ marginTop: 20 }}
+          {/* Confirm Password Field */}
+          <FormField
+            label="Confirmar Senha"
+            placeholder="••••••••"
+            value={fields.confirmPassword.value}
+            onChangeText={(text) => updateField('confirmPassword', text)}
+            error={fields.confirmPassword.isTouched ? fields.confirmPassword.error : null}
+            isValidating={fields.confirmPassword.isValidating}
+            isValid={fields.confirmPassword.value.length > 0 && !fields.confirmPassword.error}
+            secureTextEntry
+            editable={!isLoading}
+            required
+            showValidation
           />
-        </View>
 
-        {/* Login Link */}
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Já tem conta? </Text>
-          <TouchableOpacity onPress={handleLoginLink}>
-            <Text style={styles.loginLink}>Inicie sessão aqui</Text>
-          </TouchableOpacity>
+          {/* Terms & Conditions */}
+          <View style={styles.termsContainer}>
+            <Checkbox
+              value={agreedToTerms}
+              onValueChange={setAgreedToTerms}
+              disabled={isLoading}
+            />
+            <Text style={styles.termsText}>
+              Concordo com os{' '}
+              <Text style={styles.termsLink}>Termos e Condições</Text>
+            </Text>
+          </View>
+
+          {/* Register Button */}
+          <Button
+            title={isLoading ? 'Criando conta...' : 'Criar Conta'}
+            onPress={handleRegister}
+            disabled={buttonDisabled}
+            loading={isLoading}
+            style={styles.registerButton}
+          />
+
+          {/* Login Link */}
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Já tem conta? </Text>
+            <TouchableOpacity onPress={handleLogin} disabled={isLoading}>
+              <Text style={styles.loginLink}>Inicie sessão aqui</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -233,19 +322,19 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
+    justifyContent: 'space-between',
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 40,
-    paddingBottom: 30,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingBottom: 32,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: COLORS.white,
-    fontFamily: 'Cormorant',
+    fontFamily: 'DMSans',
     marginBottom: 8,
   },
   headerSubtitle: {
@@ -254,47 +343,56 @@ const styles = StyleSheet.create({
     fontFamily: 'DMSans',
   },
   formContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
-    flex: 1,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.grey,
-    fontFamily: 'DMSans',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    gap: 16,
   },
   passwordStrengthContainer: {
-    height: 4,
-    backgroundColor: `${COLORS.gold}20`,
-    borderRadius: 2,
     marginTop: 8,
-    overflow: 'hidden',
+    marginBottom: 16,
+    gap: 8,
   },
   strengthBar: {
+    height: 4,
+    backgroundColor: '#34495E',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  strengthFill: {
     height: '100%',
     borderRadius: 2,
   },
   strengthText: {
     fontSize: 11,
+    fontWeight: '600',
     fontFamily: 'DMSans',
-    marginTop: 4,
-    fontWeight: '500',
   },
   termsContainer: {
-    marginVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginVertical: 8,
+  },
+  termsText: {
+    fontSize: 12,
+    color: COLORS.grey,
+    fontFamily: 'DMSans',
+    flex: 1,
+  },
+  termsLink: {
+    color: COLORS.gold,
+    fontWeight: '600',
+  },
+  registerButton: {
+    marginTop: 8,
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    marginTop: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#34495E',
   },
   loginText: {
     fontSize: 13,
@@ -304,7 +402,7 @@ const styles = StyleSheet.create({
   loginLink: {
     fontSize: 13,
     color: COLORS.gold,
-    fontFamily: 'DMSans',
     fontWeight: '600',
+    fontFamily: 'DMSans',
   },
 });
