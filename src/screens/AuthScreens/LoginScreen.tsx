@@ -1,7 +1,7 @@
 'use strict';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,32 +15,42 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { FormInput } from '../../components/FormInput';
+import { FormField } from '../../components/FormField';
 import { Button } from '../../components/Button';
-import { useFormValidation, ValidationRule } from '../../hooks/useFormValidation';
+import { useRealTimeValidation } from '../../hooks/useRealTimeValidation';
+import { useAsyncOperation } from '../../hooks/useAsyncOperation';
+import { validateEmail, validatePassword } from '../../utils/validation';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { OperationStatus } from '../../components/OperationStatus';
 import { logger } from '../../utils/logger';
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_MIN_LENGTH = 8;
 
 export default function LoginScreen() {
   const navigation = useNavigation();
-  const { login, isLoading, error, clearError } = useAuth();
+  const { login, clearError } = useAuth();
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
-  
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { state, execute, error: asyncError, reset } = useAsyncOperation<void>();
+
+  // Validation setup
+  const { fields, updateField, validateAll, hasErrors, reset: resetValidation } = useRealTimeValidation(
+    {
+      email: (value) => {
+        if (!value) return 'Email é obrigatório';
+        if (!validateEmail(value)) return 'Email inválido';
+        return null;
+      },
+      password: (value) => {
+        if (!value) return 'Senha é obrigatória';
+        const validation = validatePassword(value);
+        if (!validation.valid) return validation.errors[0];
+        return null;
+      },
+    },
+    300
+  );
+
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isRateLimited, setIsRateLimited] = useState(false);
-  
-  const validationSchema: { [key: string]: ValidationRule } = {
-    email: { required: true, pattern: EMAIL_PATTERN },
-    password: { required: true, minLength: PASSWORD_MIN_LENGTH },
-  };
-  
-  const { errors, validateForm, getFieldError } = useFormValidation(validationSchema);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -50,52 +60,60 @@ export default function LoginScreen() {
     }, [trackScreenView, clearError])
   );
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     // Rate limiting check
     if (isRateLimited) {
       showToast('Demasiadas tentativas. Aguarde alguns minutos antes de tentar novamente', 'error');
       return;
     }
 
-    clearError();
-    const validationErrors = validateForm({ email, password });
-    
-    if (Object.keys(validationErrors).length > 0) {
+    reset();
+
+    // Validate all fields
+    const isValid = await validateAll();
+    if (!isValid) {
       showToast('Verifique os campos do formulário', 'error');
-      trackEvent('login_validation_error', { errorCount: Object.keys(validationErrors).length });
+      trackEvent('login_validation_error');
       return;
     }
 
-    try {
-      logger.debug(`Attempting login for ${email}`);
-      await login(email, password);
-      
-      logger.debug(`Login successful for ${email}`);
+    // Execute login
+    await execute(async () => {
+      logger.debug(`Attempting login for ${fields.email.value}`);
+      await login(fields.email.value, fields.password.value);
+      logger.debug(`Login successful for ${fields.email.value}`);
       showToast('Login realizado com sucesso!', 'success');
       trackEvent('login_success');
-      
-      // Navigation will be handled by auth context changes
-    } catch (err: any) {
-      const errorMessage = err.message || 'Falha ao fazer login';
-      logger.error(`Login failed: ${errorMessage}`, err as Error);
-      
-      // Increment login attempts
+    });
+
+    // Handle rate limiting on error
+    if (state === 'error') {
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);
 
-      // Rate limit after 5 failed attempts
       if (newAttempts >= 5) {
         setIsRateLimited(true);
         setTimeout(() => {
           setIsRateLimited(false);
           setLoginAttempts(0);
-        }, 60000); // 1 minute lockout
+        }, 60000);
       }
 
-      showToast(errorMessage, 'error');
-      trackEvent('login_error', { attempts: newAttempts, error: errorMessage });
+      trackEvent('login_error', { attempts: newAttempts });
     }
-  };
+  }, [
+    isRateLimited,
+    showToast,
+    reset,
+    validateAll,
+    execute,
+    fields.email.value,
+    fields.password.value,
+    login,
+    trackEvent,
+    loginAttempts,
+    state,
+  ]);
 
   const handleForgotPassword = () => {
     trackEvent('forgot_password_clicked');
@@ -107,15 +125,15 @@ export default function LoginScreen() {
     navigation.navigate('Register' as never);
   };
 
-  const emailError = getFieldError('email');
-  const passwordError = getFieldError('password');
+  const isLoading = state === 'loading';
+  const buttonDisabled = isLoading || hasErrors || !fields.email.value || !fields.password.value;
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
@@ -132,50 +150,73 @@ export default function LoginScreen() {
 
         {/* Form Container */}
         <View style={styles.formContainer}>
-          {/* Email Input */}
-          <FormInput
+          {/* Operation Status */}
+          {state !== 'idle' && (
+            <OperationStatus
+              state={state}
+              message="Iniciando sessão..."
+              errorMessage={asyncError?.message || 'Falha ao fazer login'}
+              onRetry={handleLogin}
+              onDismiss={reset}
+            />
+          )}
+
+          {/* Email Field */}
+          <FormField
             label="Email"
             placeholder="seu@email.com"
-            value={email}
-            onChangeText={setEmail}
+            value={fields.email.value}
+            onChangeText={(text) => updateField('email', text)}
+            error={fields.email.isTouched ? fields.email.error : null}
+            isValidating={fields.email.isValidating}
+            isValid={fields.email.value.length > 0 && !fields.email.error}
             keyboardType="email-address"
             autoCapitalize="none"
-            error={emailError || undefined}
+            editable={!isLoading}
+            required
+            showValidation
           />
 
-          {/* Password Input */}
-          <FormInput
-            label="Palavra-passe"
-            placeholder="Mínimo 8 caracteres"
-            value={password}
-            onChangeText={setPassword}
+          {/* Password Field */}
+          <FormField
+            label="Senha"
+            placeholder="••••••••"
+            value={fields.password.value}
+            onChangeText={(text) => updateField('password', text)}
+            error={fields.password.isTouched ? fields.password.error : null}
+            isValidating={fields.password.isValidating}
+            isValid={fields.password.value.length > 0 && !fields.password.error}
             secureTextEntry
-            error={passwordError || undefined}
+            editable={!isLoading}
+            required
+            showValidation
           />
 
           {/* Forgot Password Link */}
-          <TouchableOpacity onPress={handleForgotPassword}>
-            <Text style={styles.forgotPasswordLink}>Esqueceu a palavra-passe?</Text>
+          <TouchableOpacity
+            style={styles.forgotPasswordLink}
+            onPress={handleForgotPassword}
+            disabled={isLoading}
+          >
+            <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
           </TouchableOpacity>
 
-          {/* Submit Button */}
+          {/* Login Button */}
           <Button
-            title={isLoading ? 'A iniciar sessão...' : 'Iniciar Sessão'}
+            title={isLoading ? 'Iniciando sessão...' : 'Iniciar Sessão'}
             onPress={handleLogin}
-            disabled={isLoading || isRateLimited}
+            disabled={buttonDisabled}
             loading={isLoading}
-            variant="primary"
-            size="large"
-            style={{ marginTop: 20 }}
+            style={styles.loginButton}
           />
-        </View>
 
-        {/* Register Link */}
-        <View style={styles.registerContainer}>
-          <Text style={styles.registerText}>Ainda não tem conta? </Text>
-          <TouchableOpacity onPress={handleRegister}>
-            <Text style={styles.registerLink}>Registe-se aqui</Text>
-          </TouchableOpacity>
+          {/* Register Link */}
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>Não tem conta? </Text>
+            <TouchableOpacity onPress={handleRegister} disabled={isLoading}>
+              <Text style={styles.registerLink}>Registre-se aqui</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -189,19 +230,19 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flexGrow: 1,
+    justifyContent: 'space-between',
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 40,
-    paddingBottom: 30,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingBottom: 32,
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: COLORS.white,
-    fontFamily: 'Cormorant',
+    fontFamily: 'DMSans',
     marginBottom: 8,
   },
   headerSubtitle: {
@@ -210,35 +251,30 @@ const styles = StyleSheet.create({
     fontFamily: 'DMSans',
   },
   formContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
-    flex: 1,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.grey,
-    fontFamily: 'DMSans',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    gap: 16,
   },
   forgotPasswordLink: {
-    fontSize: 13,
+    alignSelf: 'flex-end',
+    marginTop: 8,
+  },
+  forgotPasswordText: {
     color: COLORS.gold,
+    fontSize: 12,
+    fontWeight: '600',
     fontFamily: 'DMSans',
-    fontWeight: '500',
-    textAlign: 'right',
+  },
+  loginButton: {
     marginTop: 8,
   },
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    marginTop: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#34495E',
   },
   registerText: {
     fontSize: 13,
@@ -248,7 +284,7 @@ const styles = StyleSheet.create({
   registerLink: {
     fontSize: 13,
     color: COLORS.gold,
-    fontFamily: 'DMSans',
     fontWeight: '600',
+    fontFamily: 'DMSans',
   },
 });
