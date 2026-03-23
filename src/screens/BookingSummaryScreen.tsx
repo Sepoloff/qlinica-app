@@ -182,9 +182,11 @@ export default function BookingSummaryScreen() {
 
       logger.info(`Booking flow completed successfully. Booking ID: ${booking.id}`);
 
-      // Navigate to bookings
+      // Navigate back to main tabs, then to Bookings
       setTimeout(() => {
-        navigation.navigate('Bookings' as never);
+        navigation.navigate('MainTabs' as never, {
+          screen: 'Bookings',
+        });
       }, 1000);
     } catch (error: any) {
       logger.error('Error confirming booking', error);

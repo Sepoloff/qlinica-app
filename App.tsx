@@ -59,21 +59,26 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen
-        name="home"
+        name="Home"
         component={HomeScreen}
         options={{
           title: 'Início',
         }}
       />
       <Tab.Screen
-        name="bookings"
+        name="Bookings"
         component={BookingsScreen}
         options={{
           title: 'Marcações',
         }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            // Allow navigation to Bookings tab
+          },
+        })}
       />
       <Tab.Screen
-        name="profile"
+        name="Profile"
         component={ProfileScreen}
         options={{
           title: 'Perfil',
