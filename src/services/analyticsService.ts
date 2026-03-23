@@ -1,180 +1,170 @@
-'use strict';
-
-/**
- * Analytics Service
- * 
- * Integrates with multiple analytics providers:
- * - Sentry (error tracking)
- * - Custom logging (local storage)
- * 
- * In production, integrate with:
- * - Mixpanel / Segment
- * - Firebase Analytics
- * - Amplitude
- */
-
-interface AnalyticsEvent {
-  name: string;
-  properties?: Record<string, any>;
-  timestamp: number;
+export interface AnalyticsEvent {
+  eventName: string;
+  timestamp: Date;
   userId?: string;
+  properties?: Record<string, any>;
   sessionId?: string;
 }
 
-interface AnalyticsConfig {
-  enabled: boolean;
-  debugMode: boolean;
-  maxLocalEvents: number;
+export interface AnalyticsSession {
+  sessionId: string;
+  userId?: string;
+  startTime: Date;
+  endTime?: Date;
+  screenViews: string[];
+  totalEvents: number;
 }
 
 class AnalyticsService {
-  private config: AnalyticsConfig = {
-    enabled: true,
-    debugMode: __DEV__,
-    maxLocalEvents: 100,
-  };
-
+  private static instance: AnalyticsService;
   private events: AnalyticsEvent[] = [];
-  private sessionId: string = this.generateSessionId();
+  private sessions: Map<string, AnalyticsSession> = new Map();
+  private currentSessionId: string;
+  private currentUserId?: string;
 
-  initialize(config: Partial<AnalyticsConfig>) {
-    this.config = { ...this.config, ...config };
+  private constructor() {
+    this.currentSessionId = this.generateSessionId();
+  }
+
+  static getInstance(): AnalyticsService {
+    if (!AnalyticsService.instance) {
+      AnalyticsService.instance = new AnalyticsService();
+    }
+    return AnalyticsService.instance;
   }
 
   private generateSessionId(): string {
-    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  track(event: AnalyticsEvent) {
-    if (!this.config.enabled) return;
+  setUserId(userId: string): void {
+    this.currentUserId = userId;
+  }
 
-    const enrichedEvent: AnalyticsEvent = {
-      ...event,
-      sessionId: this.sessionId,
-      timestamp: event.timestamp || Date.now(),
+  trackEvent(eventName: string, properties?: Record<string, any>): void {
+    const event: AnalyticsEvent = {
+      eventName,
+      timestamp: new Date(),
+      userId: this.currentUserId,
+      properties,
+      sessionId: this.currentSessionId,
     };
 
-    // Store locally
-    this.storeEvent(enrichedEvent);
-
-    // Log in debug mode
-    if (this.config.debugMode) {
-      console.log('📊 Analytics:', enrichedEvent);
-    }
-
-    // Send to external services
-    this.sendToExternal(enrichedEvent);
-  }
-
-  trackPageView(screenName: string, properties?: Record<string, any>) {
-    this.track({
-      name: 'page_view',
-      properties: {
-        screen_name: screenName,
-        ...properties,
-      },
-      timestamp: Date.now(),
-    });
-  }
-
-  trackEvent(eventName: string, properties?: Record<string, any>) {
-    this.track({
-      name: eventName,
-      properties,
-      timestamp: Date.now(),
-    });
-  }
-
-  trackError(error: Error | string, context?: Record<string, any>) {
-    const errorMsg = typeof error === 'string' ? error : error.message;
-    const stack = error instanceof Error ? error.stack : undefined;
-
-    this.track({
-      name: 'error_occurred',
-      properties: {
-        error_message: errorMsg,
-        error_stack: stack,
-        ...context,
-      },
-      timestamp: Date.now(),
-    });
-
-    // Also log to console
-    console.error('❌ Analytics Error Track:', {
-      errorMsg,
-      stack,
-      context,
-    });
-  }
-
-  trackBookingEvent(action: 'started' | 'service_selected' | 'therapist_selected' | 'date_selected' | 'completed' | 'cancelled', bookingData?: Record<string, any>) {
-    this.track({
-      name: `booking_${action}`,
-      properties: bookingData,
-      timestamp: Date.now(),
-    });
-  }
-
-  trackAuthEvent(action: 'login' | 'register' | 'logout', userId?: string) {
-    this.track({
-      name: `auth_${action}`,
-      userId,
-      timestamp: Date.now(),
-    });
-  }
-
-  setUserId(userId: string) {
-    // Store user ID for all subsequent events
-    const allEvents = this.events.map(e => ({
-      ...e,
-      userId,
-    }));
-    this.events = allEvents;
-  }
-
-  getSessionId(): string {
-    return this.sessionId;
-  }
-
-  startNewSession() {
-    this.sessionId = this.generateSessionId();
-    this.events = [];
-  }
-
-  private storeEvent(event: AnalyticsEvent) {
     this.events.push(event);
 
-    // Keep only last N events
-    if (this.events.length > this.config.maxLocalEvents) {
-      this.events = this.events.slice(-this.config.maxLocalEvents);
+    // Keep only last 1000 events in memory
+    if (this.events.length > 1000) {
+      this.events = this.events.slice(-1000);
     }
+
+    // Send to backend if available
+    this.sendEventToBackend(event);
   }
 
-  private async sendToExternal(event: AnalyticsEvent) {
-    try {
-      // Example: Send to Sentry for error events
-      if (event.name === 'error_occurred') {
-        console.log('📤 Would send error to Sentry:', event);
-        // In production: Sentry.captureException(event.properties?.error);
-      }
-
-      // Example: Send to custom backend
-      if (this.config.enabled && !this.config.debugMode) {
-        // Optionally batch and send events to your backend
-        // await fetch('/api/analytics', { method: 'POST', body: JSON.stringify(event) });
-      }
-    } catch (error) {
-      console.error('Failed to send analytics to external service:', error);
-    }
+  trackScreenView(screenName: string, properties?: Record<string, any>): void {
+    this.trackEvent('screen_view', {
+      screenName,
+      ...properties,
+    });
   }
 
-  getLocalEvents(): AnalyticsEvent[] {
+  trackBookingFlow(step: 'started' | 'service_selected' | 'therapist_selected' | 'date_selected' | 'completed' | 'cancelled', properties?: Record<string, any>): void {
+    this.trackEvent(`booking_${step}`, properties);
+  }
+
+  trackPayment(status: 'initiated' | 'success' | 'failed', amount: number, properties?: Record<string, any>): void {
+    this.trackEvent(`payment_${status}`, {
+      amount,
+      ...properties,
+    });
+  }
+
+  trackError(errorName: string | Error, errorMessage?: string | Record<string, any>, errorStack?: string): void {
+    let name = '';
+    let message = '';
+    let stack = '';
+
+    if (typeof errorName === 'string') {
+      name = errorName;
+      message = errorMessage ? (typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage)) : '';
+      stack = errorStack || '';
+    } else if (errorName instanceof Error) {
+      name = errorName.name;
+      message = errorName.message;
+      stack = errorName.stack || '';
+    }
+
+    this.trackEvent('error_occurred', {
+      errorName: name,
+      errorMessage: message,
+      errorStack: stack,
+    });
+  }
+
+  trackUserAction(actionName: string, properties?: Record<string, any>): void {
+    this.trackEvent(`user_action_${actionName}`, properties);
+  }
+
+  trackPerformance(metricName: string, duration: number, properties?: Record<string, any>): void {
+    this.trackEvent(`performance_${metricName}`, {
+      duration,
+      ...properties,
+    });
+  }
+
+  getEvents(): AnalyticsEvent[] {
     return [...this.events];
   }
 
-  clearLocalEvents() {
+  getEventsByName(eventName: string): AnalyticsEvent[] {
+    return this.events.filter(e => e.eventName === eventName);
+  }
+
+  getEventsByUser(userId: string): AnalyticsEvent[] {
+    return this.events.filter(e => e.userId === userId);
+  }
+
+  getSessionAnalytics(): { totalEvents: number; uniqueUsers: number; totalSessions: number } {
+    const uniqueUsers = new Set(this.events.map(e => e.userId).filter(Boolean)).size;
+    const uniqueSessions = new Set(this.events.map(e => e.sessionId)).size;
+
+    return {
+      totalEvents: this.events.length,
+      uniqueUsers,
+      totalSessions: uniqueSessions,
+    };
+  }
+
+  clearEvents(): void {
     this.events = [];
+  }
+
+  startNewSession(): string {
+    this.currentSessionId = this.generateSessionId();
+    return this.currentSessionId;
+  }
+
+  private async sendEventToBackend(event: AnalyticsEvent): Promise<void> {
+    try {
+      // This would be implemented to send to your backend
+      // await fetch('/api/analytics', { method: 'POST', body: JSON.stringify(event) });
+      // For now, just log in development
+      if (__DEV__) {
+        console.log('[Analytics]', event.eventName, event.properties);
+      }
+    } catch (error) {
+      console.error('Failed to send analytics event:', error);
+    }
+  }
+
+  exportAnalytics(): Record<string, any> {
+    return {
+      exportDate: new Date().toISOString(),
+      totalEvents: this.events.length,
+      events: this.events,
+      summary: this.getSessionAnalytics(),
+    };
   }
 }
 
-export const analyticsService = new AnalyticsService();
+export const analyticsService = AnalyticsService.getInstance();
