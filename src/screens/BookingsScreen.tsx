@@ -148,10 +148,10 @@ export default function BookingsScreen() {
                 },
               });
               
-              toast.info('ℹ️ Selecione uma nova data e horário para a consulta');
+              showToast('Selecione uma nova data e horário para a consulta', 'info', 3000);
             } catch (error) {
-              console.error('Error initiating reschedule:', error);
-              toast.error('❌ Erro ao iniciar reagendamento');
+              logger.error('Error initiating reschedule:', error);
+              showToast('Erro ao iniciar reagendamento', 'error', 3000);
             }
           },
         },

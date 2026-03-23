@@ -302,11 +302,7 @@
 <a name='L237'></a><a href='#L237'>237</a>
 <a name='L238'></a><a href='#L238'>238</a>
 <a name='L239'></a><a href='#L239'>239</a>
-<a name='L240'></a><a href='#L240'>240</a>
-<a name='L241'></a><a href='#L241'>241</a>
-<a name='L242'></a><a href='#L242'>242</a>
-<a name='L243'></a><a href='#L243'>243</a>
-<a name='L244'></a><a href='#L244'>244</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L240'></a><a href='#L240'>240</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -505,14 +501,10 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -584,11 +576,11 @@ export const <span class="cstat-no" title="statement not covered" >useServices =
         isLoading: false,
         error: null,
       }));
-<span class="cstat-no" title="statement not covered" >      logger.debug(`✅ Loaded ${services.length} services`, 'Hook:Services');</span>
+<span class="cstat-no" title="statement not covered" >      logger.debug(`✅ Loaded ${services.length} services`);</span>
 <span class="cstat-no" title="statement not covered" >      return services;</span>
     } catch (err: any) {
       const errorMsg = <span class="cstat-no" title="statement not covered" >err.message || 'Failed to load services';</span>
-<span class="cstat-no" title="statement not covered" >      logger.error('Failed to fetch services', err, 'Hook:Services');</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Failed to fetch services', err);</span>
 <span class="cstat-no" title="statement not covered" >      setState(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
         ...prev,
         services: [],
@@ -659,11 +651,11 @@ export const <span class="cstat-no" title="statement not covered" >useTherapists
         error: null,
         filters: { specialty },
       }));
-<span class="cstat-no" title="statement not covered" >      logger.debug(`✅ Loaded ${therapists.length} therapists`, 'Hook:Therapists');</span>
+<span class="cstat-no" title="statement not covered" >      logger.debug(`✅ Loaded ${therapists.length} therapists`);</span>
 <span class="cstat-no" title="statement not covered" >      return therapists;</span>
     } catch (err: any) {
       const errorMsg = <span class="cstat-no" title="statement not covered" >err.message || 'Failed to load therapists';</span>
-<span class="cstat-no" title="statement not covered" >      logger.error('Failed to fetch therapists', err, 'Hook:Therapists');</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Failed to fetch therapists', err);</span>
 <span class="cstat-no" title="statement not covered" >      setState(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
         ...prev,
         therapists: [],
@@ -747,17 +739,13 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
         error: null,
       }));
 <span class="cstat-no" title="statement not covered" >      logger.debug(</span>
-        `✅ Loaded availability for therapist ${therapistId}`,
-        'Hook:Availability'
-      );
+        `✅ Loaded availability for therapist ${therapistId}`);
 <span class="cstat-no" title="statement not covered" >      return availability;</span>
     } catch (err: any) {
       const errorMsg = <span class="cstat-no" title="statement not covered" >err.message || 'Failed to load availability';</span>
 <span class="cstat-no" title="statement not covered" >      logger.error(</span>
         `Failed to fetch availability for therapist ${therapistId}`,
-        err,
-        'Hook:Availability'
-      );
+        err);
 <span class="cstat-no" title="statement not covered" >      setState(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
         ...prev,
         availability: {},
@@ -799,7 +787,7 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-22T23:18:43.009Z
+                at 2026-03-23T02:19:52.323Z
             </div>
         <script src="../prettify.js"></script>
         <script>

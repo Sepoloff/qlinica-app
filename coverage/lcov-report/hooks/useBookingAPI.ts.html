@@ -495,7 +495,7 @@ export const <span class="cstat-no" title="statement not covered" >useBookingAPI
       const errorMsg = <span class="cstat-no" title="statement not covered" >err.message || 'Failed to load bookings';</span>
 <span class="cstat-no" title="statement not covered" >      setState(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, error: errorMsg, isLoading: false })</span>);</span>
 <span class="cstat-no" title="statement not covered" >      toast.error(errorMsg);</span>
-<span class="cstat-no" title="statement not covered" >      logger.error('Failed to fetch bookings', err, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >      logger.error('Failed to fetch bookings', err);</span>
 <span class="cstat-no" title="statement not covered" >      throw err;</span>
     }
   }, [toast]);
@@ -514,7 +514,7 @@ export const <span class="cstat-no" title="statement not covered" >useBookingAPI
       const errorMsg = <span class="cstat-no" title="statement not covered" >err.message || 'Failed to load booking';</span>
 <span class="cstat-no" title="statement not covered" >      setState(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, error: errorMsg, isLoading: false })</span>);</span>
 <span class="cstat-no" title="statement not covered" >      toast.error(errorMsg);</span>
-<span class="cstat-no" title="statement not covered" >      logger.error(`Failed to fetch booking ${id}`, err, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >      logger.error(`Failed to fetch booking ${id}`, err);</span>
 <span class="cstat-no" title="statement not covered" >      throw err;</span>
     }
   }, [toast]);
@@ -540,13 +540,13 @@ export const <span class="cstat-no" title="statement not covered" >useBookingAPI
           isLoading: false,
         }));
 <span class="cstat-no" title="statement not covered" >        toast.success('Booking created successfully!');</span>
-<span class="cstat-no" title="statement not covered" >        logger.debug(`Booking created: ${booking.id}`, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.debug(`Booking created: ${booking.id}`);</span>
 <span class="cstat-no" title="statement not covered" >        return booking;</span>
       } catch (err: any) {
         const errorMsg = <span class="cstat-no" title="statement not covered" >err.message || 'Failed to create booking';</span>
 <span class="cstat-no" title="statement not covered" >        setState(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, error: errorMsg, isLoading: false })</span>);</span>
 <span class="cstat-no" title="statement not covered" >        toast.error(errorMsg);</span>
-<span class="cstat-no" title="statement not covered" >        logger.error('Failed to create booking', err, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Failed to create booking', err);</span>
 <span class="cstat-no" title="statement not covered" >        throw err;</span>
       }
     },
@@ -568,13 +568,13 @@ export const <span class="cstat-no" title="statement not covered" >useBookingAPI
           isLoading: false,
         }));
 <span class="cstat-no" title="statement not covered" >        toast.success('Booking updated successfully!');</span>
-<span class="cstat-no" title="statement not covered" >        logger.debug(`Booking updated: ${id}`, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.debug(`Booking updated: ${id}`);</span>
 <span class="cstat-no" title="statement not covered" >        return booking;</span>
       } catch (err: any) {
         const errorMsg = <span class="cstat-no" title="statement not covered" >err.message || 'Failed to update booking';</span>
 <span class="cstat-no" title="statement not covered" >        setState(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, error: errorMsg, isLoading: false })</span>);</span>
 <span class="cstat-no" title="statement not covered" >        toast.error(errorMsg);</span>
-<span class="cstat-no" title="statement not covered" >        logger.error(`Failed to update booking ${id}`, err, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.error(`Failed to update booking ${id}`, err);</span>
 <span class="cstat-no" title="statement not covered" >        throw err;</span>
       }
     },
@@ -596,12 +596,12 @@ export const <span class="cstat-no" title="statement not covered" >useBookingAPI
           isLoading: false,
         }));
 <span class="cstat-no" title="statement not covered" >        toast.success('Booking cancelled successfully!');</span>
-<span class="cstat-no" title="statement not covered" >        logger.debug(`Booking cancelled: ${id}`, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.debug(`Booking cancelled: ${id}`);</span>
       } catch (err: any) {
         const errorMsg = <span class="cstat-no" title="statement not covered" >err.message || 'Failed to cancel booking';</span>
 <span class="cstat-no" title="statement not covered" >        setState(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, error: errorMsg, isLoading: false })</span>);</span>
 <span class="cstat-no" title="statement not covered" >        toast.error(errorMsg);</span>
-<span class="cstat-no" title="statement not covered" >        logger.error(`Failed to cancel booking ${id}`, err, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.error(`Failed to cancel booking ${id}`, err);</span>
 <span class="cstat-no" title="statement not covered" >        throw err;</span>
       }
     },
@@ -623,13 +623,13 @@ export const <span class="cstat-no" title="statement not covered" >useBookingAPI
           isLoading: false,
         }));
 <span class="cstat-no" title="statement not covered" >        toast.success('Booking rescheduled successfully!');</span>
-<span class="cstat-no" title="statement not covered" >        logger.debug(`Booking rescheduled: ${id}`, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.debug(`Booking rescheduled: ${id}`);</span>
 <span class="cstat-no" title="statement not covered" >        return booking;</span>
       } catch (err: any) {
         const errorMsg = <span class="cstat-no" title="statement not covered" >err.message || 'Failed to reschedule booking';</span>
 <span class="cstat-no" title="statement not covered" >        setState(<span class="fstat-no" title="function not covered" >prev </span>=&gt; (<span class="cstat-no" title="statement not covered" >{ ...prev, error: errorMsg, isLoading: false })</span>);</span>
 <span class="cstat-no" title="statement not covered" >        toast.error(errorMsg);</span>
-<span class="cstat-no" title="statement not covered" >        logger.error(`Failed to reschedule booking ${id}`, err, 'Hook:BookingAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.error(`Failed to reschedule booking ${id}`, err);</span>
 <span class="cstat-no" title="statement not covered" >        throw err;</span>
       }
     },
@@ -661,7 +661,7 @@ export const <span class="cstat-no" title="statement not covered" >useBookingAPI
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-22T23:18:43.009Z
+                at 2026-03-23T02:19:52.323Z
             </div>
         <script src="../prettify.js"></script>
         <script>

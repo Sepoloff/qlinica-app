@@ -274,9 +274,7 @@
 <a name='L209'></a><a href='#L209'>209</a>
 <a name='L210'></a><a href='#L210'>210</a>
 <a name='L211'></a><a href='#L211'>211</a>
-<a name='L212'></a><a href='#L212'>212</a>
-<a name='L213'></a><a href='#L213'>213</a>
-<a name='L214'></a><a href='#L214'>214</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L212'></a><a href='#L212'>212</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -397,8 +395,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -558,7 +554,7 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
           isLoading: false,
         }));
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        logger.debug(`Fetched ${data.length} therapists`, 'useTherapistAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.debug(`Fetched ${data.length} therapists`);</span>
 <span class="cstat-no" title="statement not covered" >        return data;</span>
       } catch (error) {
         const errorMessage = <span class="cstat-no" title="statement not covered" >error instanceof Error ? error.message : 'Failed to fetch therapists';</span>
@@ -567,7 +563,7 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
           error: errorMessage,
           isLoading: false,
         }));
-<span class="cstat-no" title="statement not covered" >        logger.error('Error fetching therapists', error as Error, 'useTherapistAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Error fetching therapists', error);</span>
 <span class="cstat-no" title="statement not covered" >        throw error;</span>
       }
     },
@@ -587,7 +583,7 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
         isLoading: false,
       }));
 &nbsp;
-<span class="cstat-no" title="statement not covered" >      logger.debug(`Fetched therapist: ${id}`, 'useTherapistAPI');</span>
+<span class="cstat-no" title="statement not covered" >      logger.debug(`Fetched therapist: ${id}`);</span>
 <span class="cstat-no" title="statement not covered" >      return therapist;</span>
     } catch (error) {
       const errorMessage = <span class="cstat-no" title="statement not covered" >error instanceof Error ? error.message : 'Failed to fetch therapist';</span>
@@ -596,7 +592,7 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
         error: errorMessage,
         isLoading: false,
       }));
-<span class="cstat-no" title="statement not covered" >      logger.error(`Error fetching therapist ${id}`, error as Error, 'useTherapistAPI');</span>
+<span class="cstat-no" title="statement not covered" >      logger.error(`Error fetching therapist ${id}`, error as Error);</span>
 <span class="cstat-no" title="statement not covered" >      throw error;</span>
     }
   }, []);
@@ -610,13 +606,11 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
         const { availableSlots } = <span class="cstat-no" title="statement not covered" >response.data;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        logger.debug(</span>
-          `Fetched ${availableSlots.length} slots for therapist ${therapistId} on ${date}`,
-          'useTherapistAPI'
-        );
+          `Fetched ${availableSlots.length} slots for therapist ${therapistId} on ${date}`);
 &nbsp;
 <span class="cstat-no" title="statement not covered" >        return availableSlots;</span>
       } catch (error) {
-<span class="cstat-no" title="statement not covered" >        logger.error('Error fetching availability', error as Error, 'useTherapistAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Error fetching availability', error);</span>
 <span class="cstat-no" title="statement not covered" >        throw error;</span>
       }
     },
@@ -637,7 +631,7 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
           isLoading: false,
         }));
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        logger.debug(`Search found ${therapists.length} therapists`, 'useTherapistAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.debug(`Search found ${therapists.length} therapists`);</span>
 <span class="cstat-no" title="statement not covered" >        return therapists;</span>
       } catch (error) {
         const errorMessage = <span class="cstat-no" title="statement not covered" >error instanceof Error ? error.message : 'Search failed';</span>
@@ -646,7 +640,7 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
           error: errorMessage,
           isLoading: false,
         }));
-<span class="cstat-no" title="statement not covered" >        logger.error('Search error', error as Error, 'useTherapistAPI');</span>
+<span class="cstat-no" title="statement not covered" >        logger.error('Search error', error);</span>
 <span class="cstat-no" title="statement not covered" >        throw error;</span>
       }
     },
@@ -709,7 +703,7 @@ export const <span class="cstat-no" title="statement not covered" >useTherapistA
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-22T23:18:43.009Z
+                at 2026-03-23T02:19:52.323Z
             </div>
         <script src="../prettify.js"></script>
         <script>
