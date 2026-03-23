@@ -16,6 +16,7 @@ import { useBooking } from '../context/BookingContext';
 import { useToast } from '../context/ToastContext';
 import { useNotificationManager } from '../hooks/useNotificationManager';
 import { useBookingAPI } from '../hooks/useBookingAPI';
+import { useAnalytics } from '../hooks/useAnalytics';
 import { BookingProgress } from '../components/BookingProgress';
 import { Button } from '../components/Button';
 import { logger } from '../utils/logger';
@@ -45,7 +46,8 @@ export default function BookingSummaryScreen() {
   const { bookingData, resetBooking } = useBooking();
   const { showToast } = useToast();
   const { notifyBookingConfirmation, scheduleAppointmentReminder } = useNotificationManager();
-  const { submitBooking } = useBookingAPI();
+  const { createBooking } = useBookingAPI();
+  const { trackEvent } = useAnalytics();
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmationError, setConfirmationError] = useState<string | null>(null);
   
@@ -104,6 +106,7 @@ export default function BookingSummaryScreen() {
     if (!validation.valid) {
       setConfirmationError(validation.error || 'Dados de agendamento inválidos');
       showToast(validation.error || 'Dados de agendamento inválidos', 'error', 4000);
+      logger.warn(`Booking validation failed: ${validation.error}`);
       return;
     }
 
@@ -111,41 +114,65 @@ export default function BookingSummaryScreen() {
     setConfirmationError(null);
     
     try {
-      logger.debug('Validating and confirming booking');
+      logger.debug('Validating and confirming booking', {
+        serviceId: service?.id,
+        therapistId: therapist?.id,
+        date,
+        time,
+      });
       
-      // Submit booking via context
-      const booking = await submitBooking();
-      logger.debug(`Booking created: ${booking.id}`);
+      // Submit booking via API
+      const booking = await createBooking({
+        serviceId: String(service?.id || ''),
+        therapistId: String(therapist?.id || ''),
+        date,
+        time,
+      });
+      
+      // Track successful booking
+      trackEvent('booking_created', {
+        bookingId: booking.id,
+        serviceId: service?.id,
+        therapistId: therapist?.id,
+        date,
+        time,
+      });
+      
+      if (!booking || !booking.id) {
+        throw new Error('Resposta inválida do servidor');
+      }
+
+      logger.debug(`Booking created successfully: ${booking.id}`);
 
       // Parse date and time to create appointment datetime
       // Assuming date is in format "DD/MM/YYYY" and time is "HH:MM"
-      const [day, month, year] = date.split('/');
-      const [hours, minutes] = time.split(':');
-      const appointmentDate = new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes)
-      );
-
-      // Send booking confirmation notification
+      let appointmentDate: Date;
       try {
-        await notifyBookingConfirmation(therapist.name, service.name, appointmentDate);
-      } catch (notificationError) {
-        logger.warn('Notification send failed (non-critical)', notificationError as Error, 'BookingSummaryScreen');
-      }
-
-      // Schedule appointment reminder
-      try {
-        await scheduleAppointmentReminder(
-          therapist.name,
-          service.name,
-          appointmentDate
+        const [day, month, year] = date.split('/');
+        const [hours, minutes] = time.split(':');
+        appointmentDate = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes)
         );
-      } catch (reminderError) {
-        logger.warn('Reminder schedule failed (non-critical)', reminderError as Error, 'BookingSummaryScreen');
+      } catch (dateParseError) {
+        logger.warn('Failed to parse appointment date', dateParseError as Error);
+        appointmentDate = new Date();
       }
+
+      // Send booking confirmation notification (non-blocking)
+      notifyBookingConfirmation(therapist.name, service.name, appointmentDate)
+        .catch((notificationError) => {
+          logger.warn('Notification send failed (non-critical)', notificationError as Error);
+        });
+
+      // Schedule appointment reminder (non-blocking)
+      scheduleAppointmentReminder(therapist.name, service.name, appointmentDate)
+        .catch((reminderError) => {
+          logger.warn('Reminder schedule failed (non-critical)', reminderError as Error);
+        });
 
       // Reset booking context
       resetBooking();
@@ -153,13 +180,30 @@ export default function BookingSummaryScreen() {
       // Show success toast
       showToast('Consulta agendada com sucesso!', 'success', 3000);
 
+      logger.info(`Booking flow completed successfully. Booking ID: ${booking.id}`);
+
       // Navigate to bookings
       setTimeout(() => {
-        navigation.navigate('bookings' as never);
+        navigation.navigate('Bookings' as never);
       }, 1000);
     } catch (error: any) {
-      logger.error('Error confirming booking', error as Error, 'BookingSummaryScreen');
-      const errorMessage = error?.message || 'Falha ao agendar consulta. Verifique sua conexão e tente novamente.';
+      logger.error('Error confirming booking', error);
+      
+      // Provide specific error messages based on error type
+      let errorMessage = 'Falha ao agendar consulta. Verifique sua conexão e tente novamente.';
+      
+      if (error?.response?.status === 409) {
+        errorMessage = 'Este horário não está mais disponível. Selecione outro.';
+      } else if (error?.response?.status === 400) {
+        errorMessage = 'Dados de agendamento inválidos. Tente novamente.';
+      } else if (error?.response?.status === 401) {
+        errorMessage = 'Sessão expirada. Faça login novamente.';
+      } else if (error?.response?.status >= 500) {
+        errorMessage = 'Erro no servidor. Tente mais tarde.';
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       setConfirmationError(errorMessage);
       showToast(errorMessage, 'error', 4000);
       setIsConfirming(false);
