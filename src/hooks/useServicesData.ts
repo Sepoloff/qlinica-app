@@ -35,7 +35,7 @@ export const useServicesData = () => {
         services: services || [],
         isLoading: false,
       }));
-      logger.debug(`Loaded ${services?.length || 0} services`, 'UseServicesData');
+      logger.debug(`Loaded ${services?.length || 0} services`);
     } catch (err: any) {
       const errorMsg = err.message || 'Falha ao carregar serviços';
       setState((prev) => ({
@@ -43,7 +43,7 @@ export const useServicesData = () => {
         error: errorMsg,
         isLoading: false,
       }));
-      logger.error(`Failed to load services: ${errorMsg}`, err, 'UseServicesData');
+      logger.error(`Failed to load services: ${errorMsg}`, err);
     }
   }, []);
 
@@ -103,9 +103,7 @@ export const useTherapistsData = (serviceId?: string) => {
       }));
 
       logger.debug(
-        `Loaded ${therapists?.length || 0} therapists${serviceId ? ` for service ${serviceId}` : ''}`,
-        'UseTherapistsData'
-      );
+        `Loaded ${therapists?.length || 0} therapists${serviceId ? ` for service ${serviceId}` : ''}`);
     } catch (err: any) {
       const errorMsg = err.message || 'Falha ao carregar terapeutas';
       setState((prev) => ({
@@ -115,9 +113,7 @@ export const useTherapistsData = (serviceId?: string) => {
       }));
       logger.error(
         `Failed to load therapists: ${errorMsg}`,
-        err,
-        'UseTherapistsData'
-      );
+        err);
     }
   }, [serviceId]);
 
@@ -187,7 +183,7 @@ export const useBookingAvailability = (therapistId: string, serviceId: string, d
         isLoading: false,
       }));
 
-      logger.debug(`Loaded ${slots?.length || 0} available slots for ${date}`, 'UseBookingAvailability');
+      logger.debug(`Loaded ${slots?.length || 0} available slots for ${date}`);
     } catch (err: any) {
       const errorMsg = err.message || 'Falha ao carregar horários';
       setState((prev) => ({
@@ -195,7 +191,7 @@ export const useBookingAvailability = (therapistId: string, serviceId: string, d
         error: errorMsg,
         isLoading: false,
       }));
-      logger.error(`Failed to load slots: ${errorMsg}`, err, 'UseBookingAvailability');
+      logger.error(`Failed to load slots: ${errorMsg}`, err);
     }
   }, [therapistId, serviceId, date]);
 

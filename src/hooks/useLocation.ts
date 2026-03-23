@@ -34,7 +34,7 @@ export const useLocation = (): UseLocationReturn => {
 
       if (userLocation) {
         setLocation(userLocation);
-        logger.debug('User location updated', 'useLocation');
+        logger.debug('User location updated');
         return userLocation;
       } else {
         setError('Could not retrieve location. Please check permissions.');

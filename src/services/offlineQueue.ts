@@ -32,7 +32,7 @@ class OfflineQueueService {
       const stored = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
       if (stored) {
         this.queue = JSON.parse(stored);
-        logger.debug(`Loaded ${this.queue.length} queued requests`, 'OfflineQueue');
+        logger.debug(`Loaded ${this.queue.length} queued requests`);
       }
     } catch (error) {
       logger.error('Error loading offline queue', error);
@@ -65,18 +65,14 @@ class OfflineQueueService {
     if (this.queue.length >= MAX_QUEUE_SIZE) {
       const removed = this.queue.shift();
       logger.warn(
-        `Queue full, removing oldest request: ${removed?.id}`,
-        'OfflineQueue'
-      );
+        `Queue full, removing oldest request: ${removed?.id}`);
     }
 
     this.queue.push(request);
     await this.persist();
 
     logger.debug(
-      `Added request to queue: ${method} ${endpoint}`,
-      'OfflineQueue'
-    );
+      `Added request to queue: ${method} ${endpoint}`);
 
     return request;
   }
@@ -109,7 +105,7 @@ class OfflineQueueService {
   async clearQueue(): Promise<void> {
     this.queue = [];
     await AsyncStorage.removeItem(OFFLINE_QUEUE_KEY);
-    logger.debug('Offline queue cleared', 'OfflineQueue');
+    logger.debug('Offline queue cleared');
   }
 
   /**
@@ -123,7 +119,7 @@ class OfflineQueueService {
     remaining: number;
   }> {
     if (this.isProcessing) {
-      logger.debug('Queue already processing, skipping...', 'OfflineQueue');
+      logger.debug('Queue already processing, skipping...');
       return {
         successful: 0,
         failed: 0,
@@ -154,9 +150,7 @@ class OfflineQueueService {
             await this.removeFromQueue(request.id);
             successful++;
             logger.debug(
-              `Processed queued request: ${request.method} ${request.endpoint}`,
-              'OfflineQueue'
-            );
+              `Processed queued request: ${request.method} ${request.endpoint}`);
           } else {
             // Increment retry count
             request.retryCount++;
@@ -182,9 +176,7 @@ class OfflineQueueService {
         } catch (error) {
           logger.error(
             `Error processing queued request: ${request.method} ${request.endpoint}`,
-            error as Error,
-            'OfflineQueue'
-          );
+            error as Error);
 
           // Try next request
           continue;
@@ -235,9 +227,7 @@ class OfflineQueueService {
     } catch (error) {
       logger.error(
         'Error persisting offline queue',
-        error as Error,
-        'OfflineQueue'
-      );
+        error as Error);
     }
   }
 }

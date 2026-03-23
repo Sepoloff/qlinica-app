@@ -43,7 +43,7 @@ export default function TherapistSelectionScreen() {
     setError(null);
     try {
       const serviceId = bookingData.service?.id || bookingState.serviceId;
-      logger.debug(`Loading therapists for service ${serviceId}`, 'TherapistSelectionScreen');
+      logger.debug(`Loading therapists for service ${serviceId}`);
       
       let data: Therapist[];
       if (serviceId) {
@@ -67,7 +67,7 @@ export default function TherapistSelectionScreen() {
 
   const handleTherapistSelect = (therapist: Therapist | typeof THERAPISTS[0]) => {
     try {
-      logger.debug(`Therapist selected: ${therapist.id} - ${therapist.name}`, 'TherapistSelectionScreen');
+      logger.debug(`Therapist selected: ${therapist.id} - ${therapist.name}`);
       setSelectedTherapist(String(therapist.id));
       setTherapist(therapist as any);
       setBookingState({ therapistId: therapist.id });

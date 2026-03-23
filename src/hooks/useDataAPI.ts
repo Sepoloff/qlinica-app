@@ -33,7 +33,7 @@ export const useServices = () => {
         isLoading: false,
         error: null,
       }));
-      logger.debug(`✅ Loaded ${services.length} services`, 'Hook:Services');
+      logger.debug(`✅ Loaded ${services.length} services`);
       return services;
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to load services';
@@ -108,7 +108,7 @@ export const useTherapists = () => {
         error: null,
         filters: { specialty },
       }));
-      logger.debug(`✅ Loaded ${therapists.length} therapists`, 'Hook:Therapists');
+      logger.debug(`✅ Loaded ${therapists.length} therapists`);
       return therapists;
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to load therapists';
@@ -196,17 +196,13 @@ export const useTherapistAvailability = (therapistId: string) => {
         error: null,
       }));
       logger.debug(
-        `✅ Loaded availability for therapist ${therapistId}`,
-        'Hook:Availability'
-      );
+        `✅ Loaded availability for therapist ${therapistId}`);
       return availability;
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to load availability';
       logger.error(
         `Failed to fetch availability for therapist ${therapistId}`,
-        err,
-        'Hook:Availability'
-      );
+        err);
       setState(prev => ({
         ...prev,
         availability: {},

@@ -35,9 +35,7 @@ export const useOfflineQueue = () => {
       } catch (error) {
         logger.error(
           'Error initializing offline queue',
-          error as Error,
-          'useOfflineQueue'
-        );
+          error as Error);
       }
     };
 
@@ -76,9 +74,7 @@ export const useOfflineQueue = () => {
             } catch (error) {
               logger.error(
                 `Failed to process queued request: ${request.method} ${request.endpoint}`,
-                error as Error,
-                'useOfflineQueue'
-              );
+                error as Error);
               return false;
             }
           }
@@ -86,25 +82,19 @@ export const useOfflineQueue = () => {
 
         if (result.successful > 0) {
           logger.debug(
-            `Processed ${result.successful} queued requests`,
-            'useOfflineQueue'
-          );
+            `Processed ${result.successful} queued requests`);
         }
 
         if (result.failed > 0) {
           logger.warn(
-            `${result.failed} queued requests failed after retries`,
-            'useOfflineQueue'
-          );
+            `${result.failed} queued requests failed after retries`);
         }
 
         updateStats();
       } catch (error) {
         logger.error(
           'Error processing offline queue',
-          error as Error,
-          'useOfflineQueue'
-        );
+          error as Error);
       } finally {
         setIsProcessing(false);
       }
@@ -133,9 +123,7 @@ export const useOfflineQueue = () => {
       } catch (error) {
         logger.error(
           `Error queuing request: ${method} ${endpoint}`,
-          error as Error,
-          'useOfflineQueue'
-        );
+          error as Error);
         throw error;
       }
     },
@@ -155,9 +143,7 @@ export const useOfflineQueue = () => {
     } catch (error) {
       logger.error(
         'Error clearing offline queue',
-        error as Error,
-        'useOfflineQueue'
-      );
+        error as Error);
       throw error;
     }
   }, [updateStats]);

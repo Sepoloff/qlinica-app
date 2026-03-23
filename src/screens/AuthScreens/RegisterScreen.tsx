@@ -112,10 +112,10 @@ export default function RegisterScreen() {
     }
 
     try {
-      logger.debug(`Attempting registration for ${values.email}`, 'RegisterScreen');
+      logger.debug(`Attempting registration for ${values.email}`);
       await register(values.email, values.password, values.name);
       
-      logger.debug(`Registration successful for ${values.email}`, 'RegisterScreen');
+      logger.debug(`Registration successful for ${values.email}`);
       showToast({
         type: 'success',
         title: 'Sucesso',
@@ -126,7 +126,7 @@ export default function RegisterScreen() {
       // Navigation handled by auth context
     } catch (err: any) {
       const errorMessage = err.message || 'Falha ao registrar';
-      logger.error(`Registration failed: ${errorMessage}`, err, 'RegisterScreen');
+      logger.error(`Registration failed: ${errorMessage}`, err);
       setRegistrationError(errorMessage);
       
       showToast({

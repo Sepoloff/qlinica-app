@@ -55,7 +55,7 @@ export const useBookingAPI = () => {
       const errorMsg = err.message || 'Failed to load booking';
       setState(prev => ({ ...prev, error: errorMsg, isLoading: false }));
       toast.error(errorMsg);
-      logger.error(`Failed to fetch booking ${id}`, err, 'Hook:BookingAPI');
+      logger.error(`Failed to fetch booking ${id}`, err);
       throw err;
     }
   }, [toast]);
@@ -81,7 +81,7 @@ export const useBookingAPI = () => {
           isLoading: false,
         }));
         toast.success('Booking created successfully!');
-        logger.debug(`Booking created: ${booking.id}`, 'Hook:BookingAPI');
+        logger.debug(`Booking created: ${booking.id}`);
         return booking;
       } catch (err: any) {
         const errorMsg = err.message || 'Failed to create booking';
@@ -109,13 +109,13 @@ export const useBookingAPI = () => {
           isLoading: false,
         }));
         toast.success('Booking updated successfully!');
-        logger.debug(`Booking updated: ${id}`, 'Hook:BookingAPI');
+        logger.debug(`Booking updated: ${id}`);
         return booking;
       } catch (err: any) {
         const errorMsg = err.message || 'Failed to update booking';
         setState(prev => ({ ...prev, error: errorMsg, isLoading: false }));
         toast.error(errorMsg);
-        logger.error(`Failed to update booking ${id}`, err, 'Hook:BookingAPI');
+        logger.error(`Failed to update booking ${id}`, err);
         throw err;
       }
     },
@@ -137,12 +137,12 @@ export const useBookingAPI = () => {
           isLoading: false,
         }));
         toast.success('Booking cancelled successfully!');
-        logger.debug(`Booking cancelled: ${id}`, 'Hook:BookingAPI');
+        logger.debug(`Booking cancelled: ${id}`);
       } catch (err: any) {
         const errorMsg = err.message || 'Failed to cancel booking';
         setState(prev => ({ ...prev, error: errorMsg, isLoading: false }));
         toast.error(errorMsg);
-        logger.error(`Failed to cancel booking ${id}`, err, 'Hook:BookingAPI');
+        logger.error(`Failed to cancel booking ${id}`, err);
         throw err;
       }
     },
@@ -164,13 +164,13 @@ export const useBookingAPI = () => {
           isLoading: false,
         }));
         toast.success('Booking rescheduled successfully!');
-        logger.debug(`Booking rescheduled: ${id}`, 'Hook:BookingAPI');
+        logger.debug(`Booking rescheduled: ${id}`);
         return booking;
       } catch (err: any) {
         const errorMsg = err.message || 'Failed to reschedule booking';
         setState(prev => ({ ...prev, error: errorMsg, isLoading: false }));
         toast.error(errorMsg);
-        logger.error(`Failed to reschedule booking ${id}`, err, 'Hook:BookingAPI');
+        logger.error(`Failed to reschedule booking ${id}`, err);
         throw err;
       }
     },

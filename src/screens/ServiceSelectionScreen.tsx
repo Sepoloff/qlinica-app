@@ -40,9 +40,9 @@ export default function ServiceSelectionScreen() {
     setLoading(true);
     setError(null);
     try {
-      logger.debug('Loading services', 'ServiceSelectionScreen');
+      logger.debug('Loading services');
       const data = await bookingService.getServices().catch(() => {
-        logger.warn('Fallback to mock services', undefined, 'ServiceSelectionScreen');
+        logger.warn('Fallback to mock services', undefined);
         return convertMockServices();
       });
       setServices(data || []);
@@ -60,7 +60,7 @@ export default function ServiceSelectionScreen() {
 
   const handleServiceSelect = (service: Service | typeof SERVICES[0]) => {
     try {
-      logger.debug(`Service selected: ${service.id} - ${service.name}`, 'ServiceSelectionScreen');
+      logger.debug(`Service selected: ${service.id} - ${service.name}`);
       
       setSelectedServiceId(service.id);
       setService(service as any);

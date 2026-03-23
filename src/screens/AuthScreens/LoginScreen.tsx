@@ -71,10 +71,10 @@ export default function LoginScreen() {
     }
 
     try {
-      logger.debug(`Attempting login for ${email}`, 'LoginScreen');
+      logger.debug(`Attempting login for ${email}`);
       await login(email, password);
       
-      logger.debug(`Login successful for ${email}`, 'LoginScreen');
+      logger.debug(`Login successful for ${email}`);
       showToast({
         type: 'success',
         title: 'Sucesso',
@@ -85,7 +85,7 @@ export default function LoginScreen() {
       // Navigation will be handled by auth context changes
     } catch (err: any) {
       const errorMessage = err.message || 'Falha ao fazer login';
-      logger.error(`Login failed: ${errorMessage}`, err, 'LoginScreen');
+      logger.error(`Login failed: ${errorMessage}`, err);
       
       // Increment login attempts
       const newAttempts = loginAttempts + 1;

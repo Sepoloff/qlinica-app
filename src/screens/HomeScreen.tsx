@@ -46,15 +46,15 @@ export default function HomeScreen() {
       
       // Load services
       await refreshServices();
-      logger.debug('Services loaded successfully', 'HomeScreen');
+      logger.debug('Services loaded successfully');
 
       // Load bookings if authenticated
       if (user) {
         try {
           await fetchBookings();
-          logger.debug('Bookings loaded successfully', 'HomeScreen');
+          logger.debug('Bookings loaded successfully');
         } catch (err) {
-          logger.warn('Failed to fetch bookings, using fallback', err as Error, 'HomeScreen');
+          logger.warn('Failed to fetch bookings, using fallback', err as Error);
           // Fallback to mock data
         }
       }
@@ -88,7 +88,7 @@ export default function HomeScreen() {
       return;
     }
     trackEvent('booking_flow_started');
-    logger.debug(`Booking flow started for user: ${user.id}`, 'HomeScreen');
+    logger.debug(`Booking flow started for user: ${user.id}`);
     safeNav.navigate('ServiceSelection');
   };
 

@@ -76,7 +76,7 @@ export default function BookingSummaryScreen() {
     try {
       // Submit booking via context
       const booking = await submitBooking();
-      logger.debug(`Booking created: ${booking.id}`, 'BookingSummaryScreen');
+      logger.debug(`Booking created: ${booking.id}`);
 
       // Parse date and time to create appointment datetime
       // Assuming date is in format "DD/MM/YYYY" and time is "HH:MM"

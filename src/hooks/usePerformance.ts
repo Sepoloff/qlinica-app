@@ -32,9 +32,7 @@ export const usePerformance = (componentName: string): PerformanceMetrics => {
       metricsRef.current.mountTime = mountTime;
       
       logger.debug(
-        `${componentName} mounted in ${mountTime}ms`,
-        'Performance'
-      );
+        `${componentName} mounted in ${mountTime}ms`);
     };
   }, [componentName]);
 
@@ -91,15 +89,11 @@ export const useAsyncPerformance = (
       durationRef.current = Date.now() - startTime;
 
       logger.debug(
-        `${operationName} completed in ${durationRef.current}ms`,
-        'Performance'
-      );
+        `${operationName} completed in ${durationRef.current}ms`);
     } catch (error) {
       logger.error(
         `${operationName} failed`,
-        error as Error,
-        'Performance'
-      );
+        error as Error);
       throw error;
     } finally {
       isExecutingRef.current = false;

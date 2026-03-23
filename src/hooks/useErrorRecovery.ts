@@ -76,16 +76,12 @@ export const useErrorRecovery = () => {
             // Only retry on network errors or 5xx errors
             if (!isNetworkError && !lastErr.message?.includes('5')) {
               logger.warn(
-                `Skipping retry for non-recoverable error: ${lastErr.message}`,
-                'ErrorRecovery'
-              );
+                `Skipping retry for non-recoverable error: ${lastErr.message}`);
               break;
             }
 
             logger.warn(
-              `Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${currentDelay}ms: ${lastErr.message}`,
-              'ErrorRecovery'
-            );
+              `Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${currentDelay}ms: ${lastErr.message}`);
 
             onRetry?.(attempt + 1);
             await new Promise((resolve) => setTimeout(resolve, currentDelay));
@@ -97,9 +93,7 @@ export const useErrorRecovery = () => {
       // All retries exhausted
       logger.error(
         `All ${maxRetries} retries failed`,
-        lastErr as Error,
-        'ErrorRecovery'
-      );
+        lastErr as Error);
       onFinalError?.(lastErr as Error);
       setIsRetrying(false);
       return null;

@@ -140,7 +140,7 @@ export const BookingFlowProvider: React.FC<{ children: ReactNode }> = ({ childre
         createdBooking: booking,
       }));
 
-      logger.debug(`✅ Booking created successfully: ${booking.id}`, 'BookingFlowContext');
+      logger.debug(`✅ Booking created successfully: ${booking.id}`);
       
       // Keep booking data but reset after a delay so UI can show summary
       // (caller should explicitly call resetBookingState when done)

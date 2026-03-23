@@ -72,14 +72,14 @@ export default function CalendarSelectionScreen() {
     setError(null);
     try {
       const formattedDate = formatDateISO(selectedDate!);
-      logger.debug(`Loading available slots for date ${formattedDate}`, 'CalendarSelectionScreen');
+      logger.debug(`Loading available slots for date ${formattedDate}`);
       
       const slots = await bookingService.getAvailableSlots(
         String(bookingData.therapist?.id || ''),
         String(bookingData.service?.id || ''),
         formattedDate
       ).catch((err) => {
-        logger.warn('Fallback to default slots', err as Error, 'CalendarSelectionScreen');
+        logger.warn('Fallback to default slots', err as Error);
         // Fallback to default times if API fails
         return [
           '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',

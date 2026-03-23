@@ -67,7 +67,7 @@ export const useTherapistAPI = () => {
           isLoading: false,
         }));
 
-        logger.debug(`Fetched ${data.length} therapists`, 'useTherapistAPI');
+        logger.debug(`Fetched ${data.length} therapists`);
         return data;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch therapists';
@@ -96,7 +96,7 @@ export const useTherapistAPI = () => {
         isLoading: false,
       }));
 
-      logger.debug(`Fetched therapist: ${id}`, 'useTherapistAPI');
+      logger.debug(`Fetched therapist: ${id}`);
       return therapist;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch therapist';
@@ -105,7 +105,7 @@ export const useTherapistAPI = () => {
         error: errorMessage,
         isLoading: false,
       }));
-      logger.error(`Error fetching therapist ${id}`, error as Error, 'useTherapistAPI');
+      logger.error(`Error fetching therapist ${id}`, error as Error);
       throw error;
     }
   }, []);
@@ -119,9 +119,7 @@ export const useTherapistAPI = () => {
         const { availableSlots } = response.data;
 
         logger.debug(
-          `Fetched ${availableSlots.length} slots for therapist ${therapistId} on ${date}`,
-          'useTherapistAPI'
-        );
+          `Fetched ${availableSlots.length} slots for therapist ${therapistId} on ${date}`);
 
         return availableSlots;
       } catch (error) {
@@ -146,7 +144,7 @@ export const useTherapistAPI = () => {
           isLoading: false,
         }));
 
-        logger.debug(`Search found ${therapists.length} therapists`, 'useTherapistAPI');
+        logger.debug(`Search found ${therapists.length} therapists`);
         return therapists;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Search failed';

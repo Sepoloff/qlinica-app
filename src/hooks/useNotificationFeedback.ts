@@ -49,17 +49,17 @@ export const useNotificationFeedback = () => {
       
       switch (logLevel) {
         case 'debug':
-          logger.debug(logMessage, 'Notification');
+          logger.debug(logMessage);
           break;
         case 'warn':
-          logger.warn(logMessage, 'Notification');
+          logger.warn(logMessage);
           break;
         case 'error':
           logger.error(logMessage, new Error(message), 'Notification');
           break;
         case 'info':
         default:
-          logger.info(logMessage, 'Notification');
+          logger.info(logMessage);
       }
 
       // Show toast

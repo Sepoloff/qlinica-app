@@ -29,9 +29,9 @@ class LocationService {
       this.hasPermission = status === 'granted';
       
       if (this.hasPermission) {
-        logger.debug('Location permission granted', 'LocationService');
+        logger.debug('Location permission granted');
       } else {
-        logger.warn('Location permission denied', 'LocationService');
+        logger.warn('Location permission denied');
       }
       
       return this.hasPermission;
@@ -49,7 +49,7 @@ class LocationService {
       if (!this.hasPermission) {
         const hasPermission = await this.requestPermission();
         if (!hasPermission) {
-          logger.warn('Location permission required but not granted', 'LocationService');
+          logger.warn('Location permission required but not granted');
           return null;
         }
       }
@@ -64,7 +64,7 @@ class LocationService {
         accuracy: location.coords.accuracy || undefined,
       };
 
-      logger.debug(`User location obtained: ${coords.latitude}, ${coords.longitude}`, 'LocationService');
+      logger.debug(`User location obtained: ${coords.latitude}, ${coords.longitude}`);
       return coords;
     } catch (error) {
       logger.error('Error getting user location', error);
@@ -120,7 +120,7 @@ class LocationService {
           .filter(Boolean)
           .join(', ');
 
-        logger.debug(`Address resolved: ${fullAddress}`, 'LocationService');
+        logger.debug(`Address resolved: ${fullAddress}`);
         return fullAddress;
       }
 
@@ -145,7 +145,7 @@ class LocationService {
           accuracy: locations[0].altitude || undefined,
         };
 
-        logger.debug(`Coordinates resolved for "${address}": ${coords.latitude}, ${coords.longitude}`, 'LocationService');
+        logger.debug(`Coordinates resolved for "${address}": ${coords.latitude}, ${coords.longitude}`);
         return coords;
       }
 

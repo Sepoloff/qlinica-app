@@ -54,7 +54,7 @@ export default function ProfileScreen() {
   const savePreferences = async (sms: boolean, email: boolean, push: boolean) => {
     try {
       await AsyncStorage.setItem('notificationPrefs', JSON.stringify({ sms, email, push }));
-      logger.debug('Preferences saved', 'ProfileScreen');
+      logger.debug('Preferences saved');
     } catch (error) {
       logger.error('Error saving preferences', error);
     }
@@ -99,7 +99,7 @@ export default function ProfileScreen() {
 
     setSavingPhone(true);
     try {
-      logger.debug(`Updating phone to ${phoneToValidate}`, 'ProfileScreen');
+      logger.debug(`Updating phone to ${phoneToValidate}`);
       await updateUser({ phone: phoneToValidate });
       
       showToast({
@@ -110,9 +110,9 @@ export default function ProfileScreen() {
       
       setEditingPhone(false);
       trackEvent('profile_phone_updated', { success: true });
-      logger.debug('Phone updated successfully', 'ProfileScreen');
+      logger.debug('Phone updated successfully');
     } catch (error: any) {
-      logger.error('Error updating phone', error, 'ProfileScreen');
+      logger.error('Error updating phone', error);
       showToast({
         type: 'error',
         title: 'Erro',
@@ -136,7 +136,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             setLoggingOut(true);
             try {
-              logger.debug('Logging out user', 'ProfileScreen');
+              logger.debug('Logging out user');
               await logout();
               
               showToast({
@@ -146,7 +146,7 @@ export default function ProfileScreen() {
               });
               
               trackEvent('logout_success');
-              logger.debug('User logged out successfully', 'ProfileScreen');
+              logger.debug('User logged out successfully');
             } catch (error) {
               logger.error('Error logging out', error);
               showToast({

@@ -132,14 +132,14 @@ export default function PaymentScreen({
 
     setProcessingPayment(true);
     try {
-      logger.debug(`Processing payment for booking ${bookingId}`, 'PaymentScreen');
+      logger.debug(`Processing payment for booking ${bookingId}`);
       
       if (showNewCardForm) {
-        logger.debug('Processing new card payment', 'PaymentScreen');
+        logger.debug('Processing new card payment');
         // Validate card format (already done above)
         // Add card to payment service
       } else {
-        logger.debug(`Processing with saved method ${selectedMethod}`, 'PaymentScreen');
+        logger.debug(`Processing with saved method ${selectedMethod}`);
       }
 
       // Simulate payment processing

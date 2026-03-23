@@ -47,7 +47,7 @@ class PerformanceMonitor {
   end(label: string, metadata?: Record<string, any>): number {
     const startTime = this.timers.get(label);
     if (!startTime) {
-      logger.warn(`Timer for "${label}" was never started`, 'Performance');
+      logger.warn(`Timer for "${label}" was never started`);
       return 0;
     }
 
@@ -194,7 +194,7 @@ class PerformanceMonitor {
 
     Object.entries(summary).forEach(([label, stats]) => {
       const message = `${label}: avg ${stats.avgDuration.toFixed(2)}ms (${stats.count} samples, ${stats.slowCount} slow)`;
-      logger.debug(message, 'Performance:Summary');
+      logger.debug(message);
     });
   }
 

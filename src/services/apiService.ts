@@ -68,10 +68,10 @@ export const authAPI = {
         email,
         password,
       });
-      logger.debug(`✅ Login successful for ${email}`, 'API:Auth');
+      logger.debug(`✅ Login successful for ${email}`);
       return response.data;
     } catch (error: any) {
-      logger.error('Login failed', error, 'API:Auth');
+      logger.error('Login failed', error);
       throw new Error(error.response?.data?.message || 'Login failed');
     }
   },
@@ -90,10 +90,10 @@ export const authAPI = {
         password,
         name,
       });
-      logger.debug(`✅ Registration successful for ${email}`, 'API:Auth');
+      logger.debug(`✅ Registration successful for ${email}`);
       return response.data;
     } catch (error: any) {
-      logger.error('Registration failed', error, 'API:Auth');
+      logger.error('Registration failed', error);
       throw new Error(error.response?.data?.message || 'Registration failed');
     }
   },
@@ -104,9 +104,9 @@ export const authAPI = {
   logout: async (): Promise<void> => {
     try {
       await api.post('/auth/logout');
-      logger.debug('✅ Logout successful', 'API:Auth');
+      logger.debug('✅ Logout successful');
     } catch (error: any) {
-      logger.error('Logout failed', error, 'API:Auth');
+      logger.error('Logout failed', error);
       // Don't throw - always clear local auth
     }
   },
@@ -119,7 +119,7 @@ export const authAPI = {
       const response = await api.get<User>('/auth/me');
       return response.data;
     } catch (error: any) {
-      logger.error('Failed to fetch profile', error, 'API:Auth');
+      logger.error('Failed to fetch profile', error);
       throw new Error(error.response?.data?.message || 'Failed to fetch profile');
     }
   },
@@ -130,10 +130,10 @@ export const authAPI = {
   updateProfile: async (data: Partial<User>): Promise<User> => {
     try {
       const response = await api.put<User>('/auth/me', data);
-      logger.debug('✅ Profile updated', 'API:Auth');
+      logger.debug('✅ Profile updated');
       return response.data;
     } catch (error: any) {
-      logger.error('Failed to update profile', error, 'API:Auth');
+      logger.error('Failed to update profile', error);
       throw new Error(error.response?.data?.message || 'Failed to update profile');
     }
   },
@@ -144,9 +144,9 @@ export const authAPI = {
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
     try {
       await api.post('/auth/change-password', { currentPassword, newPassword });
-      logger.debug('✅ Password changed', 'API:Auth');
+      logger.debug('✅ Password changed');
     } catch (error: any) {
-      logger.error('Failed to change password', error, 'API:Auth');
+      logger.error('Failed to change password', error);
       throw new Error(error.response?.data?.message || 'Failed to change password');
     }
   },
@@ -157,9 +157,9 @@ export const authAPI = {
   requestPasswordReset: async (email: string): Promise<void> => {
     try {
       await api.post('/auth/forgot-password', { email });
-      logger.debug(`✅ Password reset requested for ${email}`, 'API:Auth');
+      logger.debug(`✅ Password reset requested for ${email}`);
     } catch (error: any) {
-      logger.error('Failed to request password reset', error, 'API:Auth');
+      logger.error('Failed to request password reset', error);
       throw new Error(error.response?.data?.message || 'Failed to request password reset');
     }
   },
@@ -170,9 +170,9 @@ export const authAPI = {
   resetPassword: async (token: string, newPassword: string): Promise<void> => {
     try {
       await api.post('/auth/reset-password', { token, newPassword });
-      logger.debug('✅ Password reset successful', 'API:Auth');
+      logger.debug('✅ Password reset successful');
     } catch (error: any) {
-      logger.error('Failed to reset password', error, 'API:Auth');
+      logger.error('Failed to reset password', error);
       throw new Error(error.response?.data?.message || 'Failed to reset password');
     }
   },
@@ -190,10 +190,10 @@ export const servicesAPI = {
     try {
       const response = await api.get<Service[]>('/services');
       const services = Array.isArray(response.data) ? response.data : [];
-      logger.debug(`✅ Fetched ${services.length} services`, 'API:Services');
+      logger.debug(`✅ Fetched ${services.length} services`);
       return services;
     } catch (error: any) {
-      logger.error('Failed to fetch services', error, 'API:Services');
+      logger.error('Failed to fetch services', error);
       return []; // Return empty array as fallback
     }
   },
@@ -206,7 +206,7 @@ export const servicesAPI = {
       const response = await api.get<Service>(`/services/${id}`);
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to fetch service ${id}`, error, 'API:Services');
+      logger.error(`Failed to fetch service ${id}`, error);
       return null;
     }
   },
@@ -224,10 +224,10 @@ export const therapistsAPI = {
     try {
       const response = await api.get<Therapist[]>('/therapists');
       const therapists = Array.isArray(response.data) ? response.data : [];
-      logger.debug(`✅ Fetched ${therapists.length} therapists`, 'API:Therapists');
+      logger.debug(`✅ Fetched ${therapists.length} therapists`);
       return therapists;
     } catch (error: any) {
-      logger.error('Failed to fetch therapists', error, 'API:Therapists');
+      logger.error('Failed to fetch therapists', error);
       return []; // Return empty array as fallback
     }
   },
@@ -240,7 +240,7 @@ export const therapistsAPI = {
       const response = await api.get<Therapist>(`/therapists/${id}`);
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to fetch therapist ${id}`, error, 'API:Therapists');
+      logger.error(`Failed to fetch therapist ${id}`, error);
       return null;
     }
   },
@@ -254,7 +254,7 @@ export const therapistsAPI = {
       const therapists = Array.isArray(response.data) ? response.data : [];
       return therapists;
     } catch (error: any) {
-      logger.error(`Failed to fetch therapists for specialty ${specialty}`, error, 'API:Therapists');
+      logger.error(`Failed to fetch therapists for specialty ${specialty}`, error);
       return [];
     }
   },
@@ -274,7 +274,7 @@ export const therapistsAPI = {
       );
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to fetch availability for therapist ${therapistId}`, error, 'API:Therapists');
+      logger.error(`Failed to fetch availability for therapist ${therapistId}`, error);
       return {};
     }
   },
@@ -292,10 +292,10 @@ export const bookingsAPI = {
     try {
       const response = await api.get<Booking[]>('/bookings');
       const bookings = Array.isArray(response.data) ? response.data : [];
-      logger.debug(`✅ Fetched ${bookings.length} bookings`, 'API:Bookings');
+      logger.debug(`✅ Fetched ${bookings.length} bookings`);
       return bookings;
     } catch (error: any) {
-      logger.error('Failed to fetch bookings', error, 'API:Bookings');
+      logger.error('Failed to fetch bookings', error);
       return [];
     }
   },
@@ -308,7 +308,7 @@ export const bookingsAPI = {
       const response = await api.get<Booking>(`/bookings/${id}`);
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to fetch booking ${id}`, error, 'API:Bookings');
+      logger.error(`Failed to fetch booking ${id}`, error);
       return null;
     }
   },
@@ -325,10 +325,10 @@ export const bookingsAPI = {
   }): Promise<Booking> => {
     try {
       const response = await api.post<Booking>('/bookings', bookingData);
-      logger.debug(`✅ Booking created: ${response.data.id}`, 'API:Bookings');
+      logger.debug(`✅ Booking created: ${response.data.id}`);
       return response.data;
     } catch (error: any) {
-      logger.error('Failed to create booking', error, 'API:Bookings');
+      logger.error('Failed to create booking', error);
       throw new Error(error.response?.data?.message || 'Failed to create booking');
     }
   },
@@ -339,10 +339,10 @@ export const bookingsAPI = {
   update: async (id: string, data: Partial<Booking>): Promise<Booking> => {
     try {
       const response = await api.put<Booking>(`/bookings/${id}`, data);
-      logger.debug(`✅ Booking updated: ${id}`, 'API:Bookings');
+      logger.debug(`✅ Booking updated: ${id}`);
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to update booking ${id}`, error, 'API:Bookings');
+      logger.error(`Failed to update booking ${id}`, error);
       throw new Error(error.response?.data?.message || 'Failed to update booking');
     }
   },
@@ -353,9 +353,9 @@ export const bookingsAPI = {
   cancel: async (id: string): Promise<void> => {
     try {
       await api.post(`/bookings/${id}/cancel`);
-      logger.debug(`✅ Booking cancelled: ${id}`, 'API:Bookings');
+      logger.debug(`✅ Booking cancelled: ${id}`);
     } catch (error: any) {
-      logger.error(`Failed to cancel booking ${id}`, error, 'API:Bookings');
+      logger.error(`Failed to cancel booking ${id}`, error);
       throw new Error(error.response?.data?.message || 'Failed to cancel booking');
     }
   },
@@ -366,10 +366,10 @@ export const bookingsAPI = {
   reschedule: async (id: string, date: string, time: string): Promise<Booking> => {
     try {
       const response = await api.post<Booking>(`/bookings/${id}/reschedule`, { date, time });
-      logger.debug(`✅ Booking rescheduled: ${id}`, 'API:Bookings');
+      logger.debug(`✅ Booking rescheduled: ${id}`);
       return response.data;
     } catch (error: any) {
-      logger.error(`Failed to reschedule booking ${id}`, error, 'API:Bookings');
+      logger.error(`Failed to reschedule booking ${id}`, error);
       throw new Error(error.response?.data?.message || 'Failed to reschedule booking');
     }
   },

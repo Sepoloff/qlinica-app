@@ -48,7 +48,7 @@ export const useBookingPersistence = (options: BookingPersistenceOptions = {}) =
       }
 
       await AsyncStorage.setItem(key, JSON.stringify(bookingState));
-      logger.debug(`Booking persisted: ${key}`, 'useBookingPersistence');
+      logger.debug(`Booking persisted: ${key}`);
     } catch (error) {
       logger.error('Error persisting booking', error);
     }
@@ -61,7 +61,7 @@ export const useBookingPersistence = (options: BookingPersistenceOptions = {}) =
       if (persisted) {
         const previousState = JSON.parse(persisted);
         setBookingState(previousState);
-        logger.debug(`Booking restored from persistence: ${key}`, 'useBookingPersistence');
+        logger.debug(`Booking restored from persistence: ${key}`);
         return previousState;
       }
     } catch (error) {
@@ -75,7 +75,7 @@ export const useBookingPersistence = (options: BookingPersistenceOptions = {}) =
     try {
       await AsyncStorage.removeItem(key);
       resetBookingState();
-      logger.debug(`Booking cleared from persistence: ${key}`, 'useBookingPersistence');
+      logger.debug(`Booking cleared from persistence: ${key}`);
     } catch (error) {
       logger.error('Error clearing booking persistence', error);
     }

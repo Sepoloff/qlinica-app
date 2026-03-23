@@ -52,7 +52,7 @@ export const useServicesAPI = () => {
         isLoading: false,
       }));
 
-      logger.debug(`Fetched ${services.length} services`, 'useServicesAPI');
+      logger.debug(`Fetched ${services.length} services`);
       return services;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch services';
@@ -76,10 +76,10 @@ export const useServicesAPI = () => {
         selectedService: service,
       }));
 
-      logger.debug(`Fetched service: ${id}`, 'useServicesAPI');
+      logger.debug(`Fetched service: ${id}`);
       return service;
     } catch (error) {
-      logger.error(`Error fetching service ${id}`, error as Error, 'useServicesAPI');
+      logger.error(`Error fetching service ${id}`, error as Error);
       throw error;
     }
   }, []);
@@ -88,7 +88,7 @@ export const useServicesAPI = () => {
     try {
       return await fetchServices({ category });
     } catch (error) {
-      logger.error(`Error fetching services for category ${category}`, error as Error, 'useServicesAPI');
+      logger.error(`Error fetching services for category ${category}`, error as Error);
       throw error;
     }
   }, [fetchServices]);
@@ -106,7 +106,7 @@ export const useServicesAPI = () => {
         isLoading: false,
       }));
 
-      logger.debug(`Search found ${services.length} services`, 'useServicesAPI');
+      logger.debug(`Search found ${services.length} services`);
       return services;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Search failed';

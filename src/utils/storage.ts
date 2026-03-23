@@ -29,7 +29,7 @@ export const getStorageItem = async <T>(key: string, defaultValue?: T): Promise<
       try {
         item = encryptionService.decrypt(item);
       } catch (decryptError) {
-        logger.warn(`Failed to decrypt ${key}, using as-is`, 'storage');
+        logger.warn(`Failed to decrypt ${key}, using as-is`);
       }
     }
 

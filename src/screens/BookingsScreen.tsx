@@ -51,7 +51,7 @@ export default function BookingsScreen() {
       setOperationError(null);
       if (user) {
         await fetchBookings();
-        logger.debug('Bookings loaded successfully', 'BookingsScreen');
+        logger.debug('Bookings loaded successfully');
         trackEvent('bookings_loaded', { count: bookings?.length || 0 });
       }
     } catch (error) {
@@ -90,7 +90,7 @@ export default function BookingsScreen() {
               setOperationError(null);
               try {
                 await cancelBookingAPI(bookingId);
-                logger.debug(`Booking cancelled: ${bookingId}`, 'BookingsScreen');
+                logger.debug(`Booking cancelled: ${bookingId}`);
                 
                 // Send cancellation notification
                 if (booking) {
@@ -113,7 +113,7 @@ export default function BookingsScreen() {
                 });
                 trackEvent('booking_cancelled', { bookingId });
               } catch (error: any) {
-                logger.error('Error cancelling booking', error, 'BookingsScreen');
+                logger.error('Error cancelling booking', error);
                 const errorMsg = error.message || 'Falha ao cancelar consulta. Tente novamente.';
                 showToast({
                   type: 'error',
