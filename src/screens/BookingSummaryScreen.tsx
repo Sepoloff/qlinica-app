@@ -69,11 +69,75 @@ export default function BookingSummaryScreen() {
     navigation.goBack();
   };
 
+  const validateBookingDateTime = (): { valid: boolean; error?: string } => {
+    try {
+      // Validate date format
+      const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+      const dateMatch = date.match(dateRegex);
+      if (!dateMatch) {
+        return { valid: false, error: 'Formato de data inválido (DD/MM/YYYY)' };
+      }
+
+      const [, day, month, year] = dateMatch;
+      const dayNum = parseInt(day, 10);
+      const monthNum = parseInt(month, 10);
+      const yearNum = parseInt(year, 10);
+
+      // Validate date values
+      if (monthNum < 1 || monthNum > 12) {
+        return { valid: false, error: 'Mês inválido' };
+      }
+      if (dayNum < 1 || dayNum > 31) {
+        return { valid: false, error: 'Dia inválido' };
+      }
+
+      // Validate time format
+      const timeRegex = /^(\d{2}):(\d{2})$/;
+      const timeMatch = time.match(timeRegex);
+      if (!timeMatch) {
+        return { valid: false, error: 'Formato de hora inválido (HH:MM)' };
+      }
+
+      const [, hours, minutes] = timeMatch;
+      const hoursNum = parseInt(hours, 10);
+      const minutesNum = parseInt(minutes, 10);
+
+      // Validate time values
+      if (hoursNum < 0 || hoursNum > 23) {
+        return { valid: false, error: 'Hora inválida' };
+      }
+      if (minutesNum < 0 || minutesNum > 59) {
+        return { valid: false, error: 'Minutos inválidos' };
+      }
+
+      // Check if date is in the past
+      const appointmentDate = new Date(yearNum, monthNum - 1, dayNum, hoursNum, minutesNum);
+      const now = new Date();
+      if (appointmentDate < now) {
+        return { valid: false, error: 'A data e hora já passaram' };
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return { valid: false, error: 'Erro ao validar data e hora' };
+    }
+  };
+
   const handleConfirmBooking = async () => {
+    // Validate booking data first
+    const validation = validateBookingDateTime();
+    if (!validation.valid) {
+      setConfirmationError(validation.error || 'Dados de agendamento inválidos');
+      showToast(validation.error || 'Dados de agendamento inválidos', 'error', 4000);
+      return;
+    }
+
     setIsConfirming(true);
     setConfirmationError(null);
     
     try {
+      logger.debug('Validating and confirming booking');
+      
       // Submit booking via context
       const booking = await submitBooking();
       logger.debug(`Booking created: ${booking.id}`);
@@ -120,7 +184,7 @@ export default function BookingSummaryScreen() {
       }, 1000);
     } catch (error: any) {
       logger.error('Error confirming booking', error as Error, 'BookingSummaryScreen');
-      const errorMessage = error?.message || 'Falha ao agendar consulta';
+      const errorMessage = error?.message || 'Falha ao agendar consulta. Verifique sua conexão e tente novamente.';
       setConfirmationError(errorMessage);
       showToast(errorMessage, 'error', 4000);
       setIsConfirming(false);
