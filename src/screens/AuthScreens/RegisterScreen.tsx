@@ -16,6 +16,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { getPasswordStrength, validateName, validatePhone } from '../../utils/validation';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { useScreenPerformance, useAsyncPerformance } from '../../hooks/usePerformanceTracking';
 import { logger } from '../../utils/logger';
 import { FormField } from '../../components/FormField';
 import { Checkbox } from '../../components/Checkbox';
@@ -30,6 +31,13 @@ export default function RegisterScreen() {
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
   const { state, execute, error: asyncError, reset } = useAsyncOperation<void>();
+  
+  // Performance tracking
+  const { getRenderCount } = useScreenPerformance({
+    screenName: 'RegisterScreen',
+    logToConsole: __DEV__,
+  });
+  const { trackOperation } = useAsyncPerformance('auth:register');
 
   // Validation setup
   const { fields, updateField, validateAll, hasErrors, reset: resetValidation } = useRealTimeValidation(
@@ -95,13 +103,19 @@ export default function RegisterScreen() {
       return;
     }
 
-    // Execute registration
+    // Execute registration with performance tracking
     await execute(async () => {
-      logger.debug(`Attempting registration for ${fields.email.value}`);
-      await register(fields.email.value, fields.password.value, fields.name.value);
-      logger.debug(`Registration successful for ${fields.email.value}`);
-      showToast('Conta criada com sucesso! Iniciando sessão...', 'success');
-      trackEvent('register_success');
+      await trackOperation(
+        async () => {
+          logger.debug(`Attempting registration for ${fields.email.value}`);
+          await register(fields.email.value, fields.password.value, fields.name.value);
+          logger.debug(`Registration successful for ${fields.email.value}`);
+          showToast('Conta criada com sucesso! Iniciando sessão...', 'success');
+          trackEvent('register_success');
+          return null;
+        },
+        { email: fields.email.value }
+      );
     });
   }, [
     reset,

@@ -21,6 +21,7 @@ import { useRealTimeValidation } from '../../hooks/useRealTimeValidation';
 import { useAsyncOperation } from '../../hooks/useAsyncOperation';
 import { validateEmail, validatePassword } from '../../utils/validation';
 import { useAnalytics } from '../../hooks/useAnalytics';
+import { useScreenPerformance, useAsyncPerformance } from '../../hooks/usePerformanceTracking';
 import { OperationStatus } from '../../components/OperationStatus';
 import { logger } from '../../utils/logger';
 
@@ -30,6 +31,13 @@ export default function LoginScreen() {
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
   const { state, execute, error: asyncError, reset } = useAsyncOperation<void>();
+  
+  // Performance tracking
+  const { getRenderCount } = useScreenPerformance({
+    screenName: 'LoginScreen',
+    logToConsole: __DEV__,
+  });
+  const { trackOperation } = useAsyncPerformance('auth:login');
 
   // Validation setup
   const { fields, updateField, validateAll, hasErrors, reset: resetValidation } = useRealTimeValidation(
@@ -77,13 +85,19 @@ export default function LoginScreen() {
       return;
     }
 
-    // Execute login
+    // Execute login with performance tracking
     await execute(async () => {
-      logger.debug(`Attempting login for ${fields.email.value}`);
-      await login(fields.email.value, fields.password.value);
-      logger.debug(`Login successful for ${fields.email.value}`);
-      showToast('Login realizado com sucesso!', 'success');
-      trackEvent('login_success');
+      await trackOperation(
+        async () => {
+          logger.debug(`Attempting login for ${fields.email.value}`);
+          await login(fields.email.value, fields.password.value);
+          logger.debug(`Login successful for ${fields.email.value}`);
+          showToast('Login realizado com sucesso!', 'success');
+          trackEvent('login_success');
+          return null;
+        },
+        { email: fields.email.value }
+      );
     });
 
     // Handle rate limiting on error

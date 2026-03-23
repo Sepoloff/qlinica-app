@@ -11,12 +11,20 @@ import { Button } from '../components/Button';
 import { AlertModal } from '../components/AlertModal';
 import { logger } from '../utils/logger';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { useScreenPerformance, useAsyncPerformance } from '../hooks/usePerformanceTracking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuth();
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
+  
+  // Performance tracking
+  const { getRenderCount } = useScreenPerformance({
+    screenName: 'ProfileScreen',
+    logToConsole: __DEV__,
+  });
+  const { trackOperation } = useAsyncPerformance('profile:preferences');
   
   const [notifSms, setNotifSms] = useState(true);
   const [notifEmail, setNotifEmail] = useState(true);
@@ -38,26 +46,36 @@ export default function ProfileScreen() {
   );
 
   const loadPreferences = async () => {
-    try {
-      const prefs = await AsyncStorage.getItem('notificationPrefs');
-      if (prefs) {
-        const parsed = JSON.parse(prefs);
-        setNotifSms(parsed.sms ?? true);
-        setNotifEmail(parsed.email ?? true);
-        setNotifPush(parsed.push ?? false);
-      }
-    } catch (error) {
+    return trackOperation(
+      async () => {
+        const prefs = await AsyncStorage.getItem('notificationPrefs');
+        if (prefs) {
+          const parsed = JSON.parse(prefs);
+          setNotifSms(parsed.sms ?? true);
+          setNotifEmail(parsed.email ?? true);
+          setNotifPush(parsed.push ?? false);
+        }
+        return null;
+      },
+      { action: 'loadPreferences' }
+    ).catch((error) => {
       logger.error('Error loading preferences', error);
-    }
+      return null;
+    });
   };
 
   const savePreferences = async (sms: boolean, email: boolean, push: boolean) => {
-    try {
-      await AsyncStorage.setItem('notificationPrefs', JSON.stringify({ sms, email, push }));
-      logger.debug('Preferences saved');
-    } catch (error) {
+    return trackOperation(
+      async () => {
+        await AsyncStorage.setItem('notificationPrefs', JSON.stringify({ sms, email, push }));
+        logger.debug('Preferences saved');
+        return null;
+      },
+      { action: 'savePreferences', sms, email, push }
+    ).catch((error) => {
       logger.error('Error saving preferences', error);
-    }
+      return null;
+    });
   };
 
   const handleNotifChange = (type: 'sms' | 'email' | 'push', value: boolean) => {

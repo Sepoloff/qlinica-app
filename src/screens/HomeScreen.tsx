@@ -9,6 +9,7 @@ import { useAnalytics } from '../hooks/useAnalytics';
 import { useServices } from '../hooks/useDataAPI';
 import { useBookingAPI } from '../hooks/useBookingAPI';
 import { useScreenPerformance, useApiPerformance } from '../hooks/usePerformanceTracking';
+import { useApiCache } from '../hooks/useApiCache';
 import { Service, Booking } from '../services/apiService';
 import { convertMockBookings, convertMockServices } from '../utils/mockDataConverters';
 import { SkeletonLoader } from '../components/SkeletonLoader';
