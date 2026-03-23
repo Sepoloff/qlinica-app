@@ -35,7 +35,7 @@ export const getStorageItem = async <T>(key: string, defaultValue?: T): Promise<
 
     return JSON.parse(item) as T;
   } catch (error) {
-    logger.error(`Error getting item from storage (${key}):`, error as Error, 'storage');
+    logger.error(`Error getting item from storage (${key}):`, error);
     return defaultValue || null;
   }
 };
@@ -55,7 +55,7 @@ export const setStorageItem = async <T>(key: string, value: T): Promise<void> =>
 
     await AsyncStorage.setItem(key, itemToStore);
   } catch (error) {
-    logger.error(`Error setting item in storage (${key}):`, error as Error, 'storage');
+    logger.error(`Error setting item in storage (${key}):`, error);
   }
 };
 
@@ -66,7 +66,7 @@ export const removeStorageItem = async (key: string): Promise<void> => {
   try {
     await AsyncStorage.removeItem(key);
   } catch (error) {
-    logger.error(`Error removing item from storage (${key}):`, error as Error, 'storage');
+    logger.error(`Error removing item from storage (${key}):`, error);
   }
 };
 
@@ -76,9 +76,9 @@ export const removeStorageItem = async (key: string): Promise<void> => {
 export const clearStorage = async (): Promise<void> => {
   try {
     await AsyncStorage.clear();
-    logger.debug('Storage cleared successfully', 'storage');
+    logger.debug('Storage cleared successfully');
   } catch (error) {
-    logger.error('Error clearing storage:', error as Error, 'storage');
+    logger.error('Error clearing storage:', error);
   }
 };
 

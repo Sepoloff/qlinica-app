@@ -9,6 +9,20 @@ import { api } from '../../config/api';
 // Mock do api
 jest.mock('../../config/api');
 
+// Mock do logger
+jest.mock('../../utils/logger', () => ({
+  logger: {
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    trackAPI: jest.fn(),
+    trackAction: jest.fn(),
+    trackScreen: jest.fn(),
+    trackError: jest.fn(),
+  },
+}));
+
 describe('BookingService - Bookings Management', () => {
   beforeEach(() => {
     jest.clearAllMocks();

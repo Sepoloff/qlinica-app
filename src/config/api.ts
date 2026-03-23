@@ -43,9 +43,9 @@ api.interceptors.request.use(
       // Log API request
       const startTime = Date.now();
       (config as any).metadata = { startTime };
-      logger.debug(`${config.method?.toUpperCase()} ${config.url}`, 'API:Request');
+      logger.debug(`${config.method?.toUpperCase()} ${config.url}`);
     } catch (error) {
-      logger.error('Error retrieving token', error as Error, 'API:Auth');
+      logger.error('Error retrieving token', error);
     }
     return config;
   },
@@ -63,11 +63,10 @@ api.interceptors.response.use(
     const metadata = (response.config as any).metadata;
     if (metadata?.startTime) {
       const duration = Date.now() - metadata.startTime;
-      logger.logApiCall(
+      logger.trackAPI(
         response.config.method?.toUpperCase() || 'UNKNOWN',
         response.config.url || 'unknown',
-        response.status,
-        duration
+        response.status
       );
     }
     
@@ -87,13 +86,13 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       try {
         await authStorage.removeToken();
-        logger.warn('🔐 Token expired - user logged out', 'API:Auth', { endpoint: config.url });
+        logger.warn('🔐 Token expired - user logged out');
         analyticsService.trackError(error, {
           type: 'auth_expired',
           endpoint: config.url,
         });
       } catch (storageError) {
-        logger.error('Error clearing storage', storageError as Error, 'API:Auth');
+        logger.error('Error clearing storage', storageError);
       }
       return Promise.reject(error);
     }
@@ -142,8 +141,6 @@ api.interceptors.response.use(
     
     logger.error(
       `API Error after ${currentRetry} retries`,
-      error,
-      'API:Response',
       {
         method: config.method,
         url: config.url,

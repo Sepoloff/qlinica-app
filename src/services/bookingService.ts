@@ -73,11 +73,11 @@ class BookingService {
    */
   async getBookings(filters?: { status?: string; from?: string; to?: string }): Promise<Booking[]> {
     try {
-      logger.debug('Fetching user bookings', 'BookingService', { filters });
+      logger.debug('Fetching user bookings', { filters });
       const response = await api.get('/bookings', { params: filters });
       
       const bookings = response.data?.data || response.data || [];
-      logger.logApiCall('GET', '/bookings', response.status, 0);
+      logger.trackAPI('GET', '/bookings', response.status);
       
       // Validate that bookings is an array
       if (!Array.isArray(bookings)) {
@@ -87,7 +87,7 @@ class BookingService {
       
       return bookings;
     } catch (error) {
-      logger.warn('Failed to fetch bookings from API, using mock data', 'BookingService', error);
+      logger.warn('Failed to fetch bookings from API, using mock data');
       // Return mock data as fallback
       return BOOKINGS as any;
     }
@@ -98,11 +98,11 @@ class BookingService {
    */
   async getBookingById(id: string): Promise<Booking | null> {
     try {
-      logger.debug(`Fetching booking ${id}`, 'BookingService');
+      logger.debug(`Fetching booking ${id}`);
       const response = await api.get(`/bookings/${id}`);
       return response.data || null;
     } catch (error) {
-      logger.warn(`Failed to fetch booking ${id}`, 'BookingService', error);
+      logger.warn(`Failed to fetch booking ${id}`);
       return null;
     }
   }
@@ -115,7 +115,7 @@ class BookingService {
       const bookings = await this.getBookings({ status: 'upcoming' });
       return bookings.length;
     } catch (error) {
-      logger.error('Error getting upcoming bookings count', error as Error, 'BookingService');
+      logger.error('Error getting upcoming bookings count', error);
       return 0;
     }
   }
@@ -125,7 +125,7 @@ class BookingService {
    */
   async createBooking(payload: CreateBookingPayload): Promise<Booking> {
     try {
-      logger.debug('Creating new booking', 'BookingService', { serviceId: payload.serviceId, therapistId: payload.therapistId });
+      logger.debug('Creating new booking', { serviceId: payload.serviceId, therapistId: payload.therapistId });
       
       const response = await api.post('/bookings', {
         service_id: payload.serviceId,
@@ -135,10 +135,10 @@ class BookingService {
         notes: payload.notes,
       });
       
-      logger.logApiCall('POST', '/bookings', response.status, 0);
+      logger.trackAPI('POST', '/bookings', response.status);
       return response.data;
     } catch (error) {
-      logger.error('Error creating booking', error as Error, 'BookingService', { payload });
+      logger.error('Error creating booking', error);
       throw error;
     }
   }
@@ -148,11 +148,11 @@ class BookingService {
    */
   async updateBooking(id: string, payload: Partial<CreateBookingPayload>): Promise<Booking> {
     try {
-      logger.debug(`Updating booking ${id}`, 'BookingService');
+      logger.debug(`Updating booking ${id}`);
       const response = await api.put(`/bookings/${id}`, payload);
       return response.data;
     } catch (error) {
-      logger.error(`Error updating booking ${id}`, error as Error, 'BookingService');
+      logger.error(`Error updating booking ${id}`, error);
       throw error;
     }
   }
@@ -162,11 +162,11 @@ class BookingService {
    */
   async cancelBooking(id: string, reason?: string): Promise<Booking> {
     try {
-      logger.debug(`Cancelling booking ${id}`, 'BookingService', { reason });
+      logger.debug(`Cancelling booking ${id}`, { reason });
       const response = await api.post(`/bookings/${id}/cancel`, { reason });
       return response.data;
     } catch (error) {
-      logger.error(`Error cancelling booking ${id}`, error as Error, 'BookingService');
+      logger.error(`Error cancelling booking ${id}`, error);
       throw error;
     }
   }
@@ -176,7 +176,7 @@ class BookingService {
    */
   async getAvailableSlots(therapistId: number | string, date: string): Promise<AvailableSlot[]> {
     try {
-      logger.debug(`Fetching slots for therapist ${therapistId}`, 'BookingService', { date });
+      logger.debug(`Fetching slots for therapist ${therapistId}`, { date });
       const response = await api.get(`/therapists/${therapistId}/availability`, {
         params: { date },
       });
@@ -184,7 +184,7 @@ class BookingService {
       const slots = response.data?.available_slots || response.data?.slots || [];
       return slots;
     } catch (error) {
-      logger.warn(`Failed to fetch slots for therapist ${therapistId}, using defaults`, 'BookingService');
+      logger.warn(`Failed to fetch slots for therapist ${therapistId}, using defaults`);
       // Return mock data with realistic slots
       const mockSlots: AvailableSlot[] = [];
       for (let hour = 9; hour < 18; hour++) {
@@ -200,13 +200,13 @@ class BookingService {
    */
   async getServices(): Promise<Service[]> {
     try {
-      logger.debug('Fetching services', 'BookingService');
+      logger.debug('Fetching services');
       const response = await api.get('/services');
       const services = response.data?.data || response.data || SERVICES;
-      logger.logApiCall('GET', '/services', response.status, 0);
+      logger.trackAPI('GET', '/services', response.status);
       return services;
     } catch (error) {
-      logger.warn('Failed to fetch services from API, using mock data', 'BookingService');
+      logger.warn('Failed to fetch services from API, using mock data');
       return SERVICES;
     }
   }
@@ -217,14 +217,14 @@ class BookingService {
   async getTherapists(serviceId?: number | string): Promise<Therapist[]> {
     try {
       const params = serviceId ? { service_id: serviceId } : {};
-      logger.debug('Fetching therapists', 'BookingService', { serviceId });
+      logger.debug('Fetching therapists', { serviceId });
       
       const response = await api.get('/therapists', { params });
       const therapists = response.data?.data || response.data || THERAPISTS;
-      logger.logApiCall('GET', '/therapists', response.status, 0);
+      logger.trackAPI('GET', '/therapists', response.status);
       return therapists;
     } catch (error) {
-      logger.warn('Failed to fetch therapists from API, using mock data', 'BookingService');
+      logger.warn('Failed to fetch therapists from API, using mock data');
       return THERAPISTS;
     }
   }
@@ -234,11 +234,11 @@ class BookingService {
    */
   async getTherapistById(id: number | string): Promise<Therapist | null> {
     try {
-      logger.debug(`Fetching therapist ${id}`, 'BookingService');
+      logger.debug(`Fetching therapist ${id}`);
       const response = await api.get(`/therapists/${id}`);
       return response.data || null;
     } catch (error) {
-      logger.warn(`Failed to fetch therapist ${id}, trying mock data`, 'BookingService');
+      logger.warn(`Failed to fetch therapist ${id}, trying mock data`);
       const therapist = THERAPISTS.find((t) => t.id === id);
       return therapist || null;
     }
@@ -249,11 +249,11 @@ class BookingService {
    */
   async rateBooking(bookingId: string, rating: number, comment?: string): Promise<void> {
     try {
-      logger.debug(`Rating booking ${bookingId}`, 'BookingService', { rating });
+      logger.debug(`Rating booking ${bookingId}`, { rating });
       await api.post(`/bookings/${bookingId}/rate`, { rating, comment });
-      logger.logApiCall('POST', `/bookings/${bookingId}/rate`, 200, 0);
+      logger.trackAPI('POST', `/bookings/${bookingId}/rate`, 200);
     } catch (error) {
-      logger.error(`Error rating booking ${bookingId}`, error as Error, 'BookingService');
+      logger.error(`Error rating booking ${bookingId}`, error);
       throw error;
     }
   }
@@ -263,11 +263,11 @@ class BookingService {
    */
   async getBookingStats(): Promise<any> {
     try {
-      logger.debug('Fetching booking stats', 'BookingService');
+      logger.debug('Fetching booking stats');
       const response = await api.get('/bookings/stats');
       return response.data;
     } catch (error) {
-      logger.warn('Failed to fetch booking stats', 'BookingService');
+      logger.warn('Failed to fetch booking stats');
       // Return default stats
       const bookings = await this.getBookings();
       return {
@@ -286,7 +286,7 @@ class BookingService {
     try {
       return await this.getBookings({ status });
     } catch (error) {
-      logger.error(`Error fetching bookings with status ${status}`, error as Error, 'BookingService');
+      logger.error(`Error fetching bookings with status ${status}`, error);
       return [];
     }
   }
@@ -306,7 +306,7 @@ class BookingService {
         return bookingDate >= now && bookingDate <= nextWeek;
       }).slice(0, 3); // Show top 3
     } catch (error) {
-      logger.error('Error fetching upcoming bookings', error as Error, 'BookingService');
+      logger.error('Error fetching upcoming bookings', error);
       return [];
     }
   }

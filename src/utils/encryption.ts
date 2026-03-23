@@ -34,7 +34,7 @@ class EncryptionService {
       const encoded = Buffer.from(xored, 'binary').toString('base64');
       return encoded;
     } catch (error) {
-      logger.error('Encryption failed', error as Error, 'EncryptionService');
+      logger.error('Encryption failed', error);
       return data; // Fallback to plaintext
     }
   }
@@ -48,7 +48,7 @@ class EncryptionService {
       const xored = this.xorCipher(decoded, ENCRYPTION_KEY);
       return xored;
     } catch (error) {
-      logger.error('Decryption failed', error as Error, 'EncryptionService');
+      logger.error('Decryption failed', error);
       return encryptedData; // Fallback
     }
   }
@@ -59,9 +59,9 @@ class EncryptionService {
   async secureStore(key: string, value: string): Promise<void> {
     try {
       await SecureStore.setItemAsync(key, value);
-      logger.debug(`Secure value stored for key: ${key}`, 'EncryptionService');
+      logger.debug(`Secure value stored for key: ${key}`);
     } catch (error) {
-      logger.error(`Failed to securely store value for key: ${key}`, error as Error, 'EncryptionService');
+      logger.error(`Failed to securely store value for key: ${key}`, error);
       throw error;
     }
   }
@@ -74,7 +74,7 @@ class EncryptionService {
       const value = await SecureStore.getItemAsync(key);
       return value;
     } catch (error) {
-      logger.error(`Failed to retrieve secure value for key: ${key}`, error as Error, 'EncryptionService');
+      logger.error(`Failed to retrieve secure value for key: ${key}`, error);
       return null;
     }
   }
@@ -85,9 +85,9 @@ class EncryptionService {
   async secureRemove(key: string): Promise<void> {
     try {
       await SecureStore.deleteItemAsync(key);
-      logger.debug(`Secure value removed for key: ${key}`, 'EncryptionService');
+      logger.debug(`Secure value removed for key: ${key}`);
     } catch (error) {
-      logger.error(`Failed to remove secure value for key: ${key}`, error as Error, 'EncryptionService');
+      logger.error(`Failed to remove secure value for key: ${key}`, error);
       throw error;
     }
   }
@@ -106,7 +106,7 @@ class EncryptionService {
       }
       return Math.abs(hash).toString(16);
     } catch (error) {
-      logger.error('Password hashing failed', error as Error, 'EncryptionService');
+      logger.error('Password hashing failed', error);
       return '';
     }
   }
