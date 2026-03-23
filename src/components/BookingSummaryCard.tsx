@@ -171,7 +171,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
 
       {/* Total Section */}
       {data.total && (
-        <Card style={[styles.section, styles.totalSection]}>
+        <Card style={[styles.section, styles.totalSection] as any}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total a Pagar:</Text>
             <Text style={styles.totalPrice}>{data.total}</Text>
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   section: {
-    marginHorizontal: 0,
+    marginHorizontal: 16,
     marginVertical: 8,
     padding: 16,
   },

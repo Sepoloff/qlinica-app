@@ -86,7 +86,7 @@ export const EnhancedFormField: React.FC<EnhancedFormFieldProps> = ({
 }) => {
   const [secureTextEntry, setSecureTextEntry] = useState(initialSecureTextEntry);
   const [internalValue, setInternalValue] = useState<string>('');
-  const [localError, setLocalError] = useState<string | null>(error);
+  const [localError, setLocalError] = useState<string | null>(error || null);
   const [validationState_, setValidationState] = useState<ValidationState>(validationState);
   const [errorOpacity] = useState(new Animated.Value(0));
 
@@ -99,7 +99,7 @@ export const EnhancedFormField: React.FC<EnhancedFormFieldProps> = ({
 
   // Update error state when prop changes
   useEffect(() => {
-    setLocalError(error);
+    setLocalError(error || null);
   }, [error]);
 
   // Animate error message

@@ -120,7 +120,7 @@ export default function LoginScreenEnhanced() {
     }
   }, [email, password, emailValid, passwordValid, isRateLimited, loginAttempts, authLogin, clearError, execute, trackEvent, showToast]);
 
-  const canSubmit = emailValid && passwordValid && !isLoading && !loginState.loading && !isRateLimited;
+  const canSubmit = emailValid && passwordValid && !isLoading && loginState !== 'loading' && !isRateLimited;
 
   if (isLoading) {
     return (
@@ -215,9 +215,9 @@ export default function LoginScreenEnhanced() {
             {/* Submit Button */}
             <Button
               onPress={handleLogin}
-              title={loginState.loading ? 'Carregando...' : 'Entrar'}
+              title={loginState === 'loading' ? 'Carregando...' : 'Entrar'}
               disabled={!canSubmit}
-              loading={loginState.loading}
+              loading={loginState === 'loading'}
               fullWidth
               style={styles.loginButton}
             />
