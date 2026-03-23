@@ -108,8 +108,6 @@ export default function BookingsScreen() {
                 logger.error('Error cancelling booking', error);
                 const errorMsg = error.message || 'Falha ao cancelar consulta. Tente novamente.';
                 showToast(errorMsg, 'error');
-                  message: errorMsg
-                });
                 trackEvent('booking_cancel_error', { error: errorMsg });
               } finally {
                 setCancelling(null);
