@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   specialty: {
     fontSize: 13,
-    color: COLORS.gray,
+    color: COLORS.grey,
     marginBottom: 8,
   },
   ratingRow: {
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
   },
   statusUnavailable: {
-    backgroundColor: COLORS.gray,
+    backgroundColor: COLORS.grey,
   },
   statusText: {
     fontSize: 12,
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     color: '#4CAF50',
   },
   statusUnavailableText: {
-    color: COLORS.gray,
+    color: COLORS.grey,
   },
 });
 

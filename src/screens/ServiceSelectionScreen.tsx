@@ -149,7 +149,7 @@ export default function ServiceSelectionScreen() {
               </View>
             ))}
           </>
-        ) : (services.length > 0 ? services : convertMockServices()).map((service) => (
+        ) : (services && services.length > 0 ? services : convertMockServices()).map((service) => (
           <TouchableOpacity 
             key={service.id}
             style={styles.serviceCard}
