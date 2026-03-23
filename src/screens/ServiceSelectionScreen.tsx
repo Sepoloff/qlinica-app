@@ -1,7 +1,7 @@
 'use strict';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
@@ -10,6 +10,8 @@ import { useBooking } from '../context/BookingContext';
 import { useToast } from '../context/ToastContext';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { useBookingState } from '../hooks/useBookingState';
+import { useApiCache } from '../hooks/useApiCache';
+import { useScreenPerformance } from '../hooks/usePerformanceTracking';
 import { BookingProgress } from '../components/BookingProgress';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -23,41 +25,51 @@ export default function ServiceSelectionScreen() {
   const { updateService } = useBookingState();
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
+  const { getRenderCount } = useScreenPerformance({ screenName: 'ServiceSelectionScreen' });
   
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | number | null>(null);
+
+  // Use API cache for services with 10-minute TTL
+  const { 
+    data: services = [], 
+    loading, 
+    error,
+    isCached,
+    refetch: refetchServices 
+  } = useApiCache(
+    '/api/services',
+    async () => {
+      try {
+        const data = await bookingService.getServices().catch(() => {
+          logger.warn('Fallback to mock services', undefined);
+          return convertMockServices();
+        });
+        return data || [];
+      } catch (err) {
+        logger.error('Error loading services', err);
+        return convertMockServices();
+      }
+    },
+    { 
+      ttl: 10 * 60 * 1000, // 10 minutes
+      onSuccess: (data) => {
+        trackEvent('services_loaded', { count: data?.length || 0, cached: isCached });
+      },
+      onError: (error) => {
+        trackEvent('services_load_error', { error: error.message });
+      }
+    }
+  );
 
   useFocusEffect(
     React.useCallback(() => {
-      trackScreenView('service_selection');
-      loadServices();
-      return () => {};
-    }, [trackScreenView])
-  );
-
-  const loadServices = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      logger.debug('Loading services');
-      const data = await bookingService.getServices().catch(() => {
-        logger.warn('Fallback to mock services', undefined);
-        return convertMockServices();
+      trackScreenView('service_selection', { 
+        cached: isCached,
+        renderCount: getRenderCount()
       });
-      setServices(data || []);
-      trackEvent('services_loaded', { count: data?.length || 0 });
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar serviços';
-      logger.error('Error loading services', err);
-      setError(errorMsg);
-      setServices(convertMockServices());
-      trackEvent('services_load_error', { error: errorMsg });
-    } finally {
-      setLoading(false);
-    }
-  };
+      return () => {};
+    }, [trackScreenView, isCached, getRenderCount])
+  );
 
   const handleServiceSelect = (service: Service | typeof SERVICES[0]) => {
     try {
