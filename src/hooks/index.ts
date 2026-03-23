@@ -15,3 +15,9 @@ export { useUnmount } from './useUnmount';
 export { useApiCache, useMultiApiCache } from './useApiCache';
 export { usePrefetchData, usePrefetch } from './usePrefetchData';
 export { useSmartRefresh, useDataChangeDetection } from './useSmartRefresh';
+export { 
+  useDeduplicatedRequest, 
+  useMultiDeduplicatedRequests,
+  clearAllPendingRequests,
+  getPendingRequestsInfo
+} from './useDeduplicatedRequest';
