@@ -58,7 +58,6 @@ const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ position = 'b
     <Pressable
       style={containerStyle}
       onPress={() => setIsExpanded(!isExpanded)}
-      activeOpacity={0.7}
     >
       <View style={styles.content}>
         <RNText style={[styles.icon, { color: colors.white }]}>

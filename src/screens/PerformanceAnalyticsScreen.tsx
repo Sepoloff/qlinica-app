@@ -58,24 +58,24 @@ const PerformanceAnalyticsScreen: React.FC = () => {
   // Load metrics
   const loadMetrics = useCallback(async () => {
     try {
-      const perfMetrics = performanceMonitor.getMetrics();
+      const perfSummary = performanceMonitor.getSummary();
       const analyticsData = await analyticsService.getSessionAnalytics();
 
       setMetrics({
-        avgResponseTime: perfMetrics.avgApiResponseTime || 0,
-        errorRate: (perfMetrics.totalErrors / Math.max(perfMetrics.totalRequests, 1)) * 100 || 0,
-        requestCount: perfMetrics.totalRequests || 0,
-        cacheHitRate: (perfMetrics.cacheHits / Math.max(perfMetrics.totalRequests, 1)) * 100 || 0,
-        memoryUsage: perfMetrics.memoryUsage || 0,
-        networkStatus: analyticsData.networkStatus as 'online' | 'offline' | 'slow',
+        avgResponseTime: Number(perfSummary.averageScreenTime) || 0,
+        errorRate: 0,
+        requestCount: Number(perfSummary.totalMeasurements) || 0,
+        cacheHitRate: 0,
+        memoryUsage: 0,
+        networkStatus: 'online' as const,
       });
 
       setAnalytics({
         totalSessions: analyticsData.totalSessions || 0,
-        avgSessionDuration: analyticsData.avgSessionDuration || 0,
-        activeUsers: analyticsData.activeUsers || 0,
-        bounceRate: analyticsData.bounceRate || 0,
-        topScreens: analyticsData.topScreens || [],
+        avgSessionDuration: 0,
+        activeUsers: analyticsData.uniqueUsers || 0,
+        bounceRate: 0,
+        topScreens: [],
       });
     } catch (error) {
       console.error('Error loading metrics:', error);

@@ -12,7 +12,7 @@ interface UseOfflineSyncReturn {
   queueLength: number;
   lastSyncTime: number | null;
   queuedOperations: QueuedOperation[];
-  queue: () => Promise<QueuedOperation>;
+  queue: QueuedOperation[];
   sync: () => Promise<boolean>;
   clearQueue: () => Promise<void>;
 }
@@ -78,7 +78,7 @@ export const useOfflineSync = (): UseOfflineSyncReturn => {
     queueLength: syncState.queueLength,
     lastSyncTime: syncState.lastSyncTime,
     queuedOperations,
-    queue,
+    queue: queuedOperations,
     sync,
     clearQueue,
   };

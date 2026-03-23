@@ -18,7 +18,7 @@ import { getPasswordStrength, validateName, validatePhone } from '../../utils/va
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { useScreenPerformance, useAsyncPerformance } from '../../hooks/usePerformanceTracking';
 import { logger } from '../../utils/logger';
-import { FormField } from '../../components/FormField';
+import FormField from '../../components/FormField';
 import { Checkbox } from '../../components/Checkbox';
 import { Button } from '../../components/Button';
 import { useRealTimeValidation } from '../../hooks/useRealTimeValidation';

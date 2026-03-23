@@ -35,5 +35,5 @@ export { OfflineBanner } from './OfflineBanner';
 export { ErrorState } from './ErrorState';
 
 // Form Components
-export { FormField } from './FormField';
+export { default as FormField } from './FormField';
 export { ConfirmDialog } from './ConfirmDialog';

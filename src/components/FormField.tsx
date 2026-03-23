@@ -30,8 +30,13 @@ interface FormFieldProps {
   maxLength?: number;
   required?: boolean;
   helper?: string;
+  helperText?: string;
   icon?: React.ReactNode;
   onFocus?: () => void;
+  isValidating?: boolean;
+  isValid?: boolean;
+  showValidation?: boolean;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }
 
 const FormField: React.FC<FormFieldProps> = ({
@@ -50,8 +55,13 @@ const FormField: React.FC<FormFieldProps> = ({
   maxLength,
   required = false,
   helper,
+  helperText,
   icon,
   onFocus,
+  isValidating = false,
+  isValid = false,
+  showValidation = false,
+  autoCapitalize = 'none',
 }) => {
   const { colors, isDark } = useTheme();
   const [isFocused, setIsFocused] = React.useState(false);
@@ -125,6 +135,7 @@ const FormField: React.FC<FormFieldProps> = ({
           maxLength={maxLength}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          autoCapitalize={autoCapitalize}
         />
       </View>
 
@@ -134,9 +145,9 @@ const FormField: React.FC<FormFieldProps> = ({
         </RNText>
       )}
 
-      {helper && !hasError && (
+      {(helper || helperText) && !hasError && (
         <RNText style={[styles.helperText, { color: colors.textSecondary }]}>
-          {helper}
+          {helper || helperText}
         </RNText>
       )}
     </View>

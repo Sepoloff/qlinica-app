@@ -6,7 +6,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { apiClient } from '../config/api';
+import { api } from '../config/api';
 
 export interface QueuedOperation {
   id: string;
@@ -160,16 +160,16 @@ class OfflineSyncManager {
   private async processOperation(operation: QueuedOperation): Promise<void> {
     switch (operation.type) {
       case 'POST':
-        await apiClient.post(operation.endpoint, operation.data);
+        await api.post(operation.endpoint, operation.data);
         break;
       case 'PUT':
-        await apiClient.put(operation.endpoint, operation.data);
+        await api.put(operation.endpoint, operation.data);
         break;
       case 'PATCH':
-        await apiClient.patch(operation.endpoint, operation.data);
+        await api.patch(operation.endpoint, operation.data);
         break;
       case 'DELETE':
-        await apiClient.delete(operation.endpoint);
+        await api.delete(operation.endpoint);
         break;
     }
   }

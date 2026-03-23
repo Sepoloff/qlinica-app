@@ -120,7 +120,6 @@ const NotificationDisplay: React.FC = () => {
               styles.progressBar,
               {
                 backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                animation: `progress ${notification.duration}ms linear`,
               },
             ]}
           />

@@ -19,11 +19,11 @@ export const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({
   position = 'bottom',
   onSyncPress,
 }) => {
-  const { queueCount, isSyncing, sync } = useOfflineSync();
+  const { queueLength, isSyncing, sync } = useOfflineSync();
   const scaleAnim = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
-    if (visible && queueCount > 0) {
+    if (visible && queueLength > 0) {
       Animated.spring(scaleAnim, {
         toValue: 1,
         useNativeDriver: true,
@@ -34,9 +34,9 @@ export const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({
         useNativeDriver: true,
       }).start();
     }
-  }, [queueCount, visible, scaleAnim]);
+  }, [queueLength, visible, scaleAnim]);
 
-  if (!visible || queueCount === 0) {
+  if (!visible || queueLength === 0) {
     return null;
   }
 
@@ -66,7 +66,7 @@ export const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({
           </View>
           <View style={styles.text}>
             <Text style={styles.title}>Operações Pendentes</Text>
-            <Text style={styles.subtitle}>{queueCount} agendamento(s) aguardando sincronização</Text>
+            <Text style={styles.subtitle}>{queueLength} agendamento(s) aguardando sincronização</Text>
           </View>
         </View>
 

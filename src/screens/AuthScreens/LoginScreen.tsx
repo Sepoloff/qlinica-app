@@ -15,7 +15,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { FormField } from '../../components/FormField';
+import FormField from '../../components/FormField';
 import { Button } from '../../components/Button';
 import { useRealTimeValidation } from '../../hooks/useRealTimeValidation';
 import { useAsyncOperation } from '../../hooks/useAsyncOperation';

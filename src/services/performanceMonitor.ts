@@ -130,6 +130,13 @@ class PerformanceMonitor {
   }
 
   /**
+   * Get metrics (alias for getSummary for compatibility)
+   */
+  getMetrics() {
+    return this.getSummary();
+  }
+
+  /**
    * Get metrics summary
    */
   getSummary(): {
