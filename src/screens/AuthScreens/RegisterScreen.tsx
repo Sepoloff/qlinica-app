@@ -1,6 +1,6 @@
 'use strict';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,13 +14,17 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { getPasswordStrength, validatePassword } from '../../utils/validation';
+import { getPasswordStrength } from '../../utils/validation';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { logger } from '../../utils/logger';
 import { FormInput } from '../../components/FormInput';
 import { Checkbox } from '../../components/Checkbox';
 import { Button } from '../../components/Button';
-import { useFormValidation, emailRule, passwordRule, nameRule } from '../../hooks/useFormValidation';
+import { useFormValidation, ValidationRule } from '../../hooks/useFormValidation';
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_MIN_LENGTH = 8;
+const NAME_MIN_LENGTH = 2;
 
 export default function RegisterScreen() {
   const navigation = useNavigation();
@@ -28,10 +32,21 @@ export default function RegisterScreen() {
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
 
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
+
+  const validationSchema: { [key: string]: ValidationRule } = {
+    name: { required: true, minLength: NAME_MIN_LENGTH },
+    email: { required: true, pattern: EMAIL_PATTERN },
+    password: { required: true, minLength: PASSWORD_MIN_LENGTH },
+    confirmPassword: { required: true },
+  };
+
+  const { validateForm, getFieldError } = useFormValidation(validationSchema);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -42,119 +57,75 @@ export default function RegisterScreen() {
     }, [trackScreenView, clearError])
   );
 
-  // Use form validation hook
-  const {
-    values,
-    errors,
-    touched,
-    setFieldValue,
-    validateForm,
-    resetForm,
-  } = useFormValidation({
-    initialValues: {
-      name: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-    },
-    validationRules: {
-      name: nameRule,
-      email: emailRule,
-      password: passwordRule,
-      confirmPassword: {
-        validate: (value: string) => {
-          if (!value) return 'Confirmação obrigatória';
-          if (value !== values.password) return 'As palavras-passe não correspondem';
-          return null;
-        },
-      },
-    },
-  });
-
-  const passwordStrength = getPasswordStrength(values.password);
+  const passwordStrength = getPasswordStrength(password);
 
   const handleRegister = async () => {
     clearError();
     setRegistrationError(null);
 
-    const formIsValid = await validateForm();
-    if (!formIsValid) {
-      showToast({
-        type: 'error',
-        title: 'Validação',
-        message: 'Verifique todos os campos do formulário',
-      });
-      trackEvent('register_validation_error');
+    // Validate all fields
+    const validationErrors = validateForm({ name, email, password, confirmPassword });
+    
+    if (Object.keys(validationErrors).length > 0) {
+      showToast('Verifique todos os campos do formulário', 'error');
+      trackEvent('register_validation_error', { errorCount: Object.keys(validationErrors).length });
       return;
     }
 
+    // Check password confirmation
+    if (password !== confirmPassword) {
+      showToast('As palavras-passe não correspondem', 'error');
+      return;
+    }
+
+    // Check terms agreement
     if (!agreedToTerms) {
-      showToast({
-        type: 'error',
-        title: 'Termos e Condições',
-        message: 'Por favor aceite os termos e condições',
-      });
-      trackEvent('register_terms_not_accepted');
-      return;
-    }
-
-    // Validate password strength
-    const passwordValidation = validatePassword(values.password);
-    if (!passwordValidation.valid) {
-      setRegistrationError(passwordValidation.errors[0]);
-      showToast({
-        type: 'error',
-        title: 'Palavra-passe fraca',
-        message: passwordValidation.errors[0],
-      });
-      trackEvent('register_weak_password');
+      showToast('Deve concordar com os termos e condições', 'error');
       return;
     }
 
     try {
-      logger.debug(`Attempting registration for ${values.email}`);
-      await register(values.email, values.password, values.name);
+      logger.debug(`Attempting registration for ${email}`);
+      await register(email, password, name);
       
-      logger.debug(`Registration successful for ${values.email}`);
-      showToast({
-        type: 'success',
-        title: 'Sucesso',
-        message: 'Conta criada com sucesso!',
-      });
+      logger.debug(`Registration successful for ${email}`);
+      showToast('Conta criada com sucesso! Inicie sessão para continuar.', 'success');
       trackEvent('register_success');
-      resetForm();
-      // Navigation handled by auth context
-    } catch (err: any) {
-      const errorMessage = err.message || 'Falha ao registrar';
-      logger.error(`Registration failed: ${errorMessage}`, err);
-      setRegistrationError(errorMessage);
       
-      showToast({
-        type: 'error',
-        title: 'Erro de Registro',
-        message: errorMessage,
-      });
-
-      trackEvent('register_error', { 
-        errorType: err.response?.status || 'unknown',
-      });
+      // Navigate to login
+      setTimeout(() => {
+        navigation.navigate('Login' as never);
+      }, 1000);
+    } catch (err: any) {
+      const errorMessage = err.message || 'Falha ao criar conta';
+      logger.error(`Registration failed: ${errorMessage}`, err as Error);
+      setRegistrationError(errorMessage);
+      showToast(errorMessage, 'error');
+      trackEvent('register_error', { error: errorMessage });
     }
   };
 
-  const getStrengthColor = () => {
-    if (!values.password) return COLORS.grey;
-    if (passwordStrength.strength === 'weak') return '#E74C3C';
-    if (passwordStrength.strength === 'medium') return '#FFB84D';
-    return '#4CAF50';
+  const handleLoginLink = () => {
+    trackEvent('login_link_clicked');
+    navigation.navigate('Login' as never);
   };
+
+  const nameError = getFieldError('name');
+  const emailError = getFieldError('email');
+  const passwordError = getFieldError('password');
+  const confirmPasswordError = getFieldError('confirmPassword') || 
+    (password !== confirmPassword && confirmPassword ? 'As palavras-passe não correspondem' : null);
+
+  const passwordScore = passwordStrength?.score || 0;
+  const passwordColor = passwordScore >= 4 ? COLORS.success : passwordScore >= 2 ? '#FFA500' : '#FF6B6B';
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <ScrollView 
+        contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -164,134 +135,99 @@ export default function RegisterScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.header}
         >
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Text style={styles.backButtonText}>← Voltar</Text>
-          </TouchableOpacity>
-          <Text style={styles.logo}>
-            <Text style={{ color: COLORS.gold }}>Q</Text>linica
-          </Text>
-          <Text style={styles.subtitle}>Crie sua conta</Text>
+          <Text style={styles.headerTitle}>Criar Conta</Text>
+          <Text style={styles.headerSubtitle}>Junte-se à nossa comunidade de bem-estar</Text>
         </LinearGradient>
 
-        {/* Form */}
-        <View style={styles.form}>
+        {/* Form Container */}
+        <View style={styles.formContainer}>
           {/* Name Input */}
-          <FormInput
-            label="Nome Completo"
-            placeholder="João da Silva"
-            value={values.name}
-            onChangeText={(text) => setFieldValue('name', text)}
-            error={touched.name ? errors.name : ''}
-            autoCapitalize="words"
-            editable={!isLoading}
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Nome Completo</Text>
+            <FormInput
+              placeholder="Seu nome completo"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              error={nameError || undefined}
+            />
+          </View>
 
           {/* Email Input */}
-          <FormInput
-            label="Email"
-            placeholder="seu@email.com"
-            value={values.email}
-            onChangeText={(text) => setFieldValue('email', text)}
-            error={touched.email ? errors.email : ''}
-            keyboardType="email-address"
-            editable={!isLoading}
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <FormInput
+              placeholder="seu@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={emailError || undefined}
+            />
+          </View>
 
           {/* Password Input */}
-          <View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Palavra-passe</Text>
             <FormInput
-              label="Palavra-passe"
               placeholder="Mínimo 8 caracteres"
-              value={values.password}
-              onChangeText={(text) => setFieldValue('password', text)}
-              error={touched.password ? errors.password : ''}
-              secureTextEntry={!showPassword}
-              editable={!isLoading}
-              rightIcon={
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁' : '👁‍🗨'}</Text>
-                </TouchableOpacity>
-              }
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              error={passwordError || undefined}
             />
-
-            {/* Password Strength */}
-            {values.password && (
-              <View style={styles.strengthContainer}>
-                <View style={styles.strengthBar}>
-                  <View
-                    style={[
-                      styles.strengthFill,
-                      {
-                        width: `${Math.min(100, passwordStrength.score * 25)}%` as any,
-                        backgroundColor: getStrengthColor(),
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.strengthText, { color: getStrengthColor() }]}>
-                  Força: {passwordStrength.strength}
-                </Text>
+            {password && (
+              <View style={styles.passwordStrengthContainer}>
+                <View style={[styles.strengthBar, { width: `${(passwordScore / 5) * 100}%`, backgroundColor: passwordColor }]} />
               </View>
+            )}
+            {password && (
+              <Text style={[styles.strengthText, { color: passwordColor }]}>
+                Força: {passwordStrength?.label}
+              </Text>
             )}
           </View>
 
           {/* Confirm Password Input */}
-          <FormInput
-            label="Confirmar Palavra-passe"
-            placeholder="Repita a palavra-passe"
-            value={values.confirmPassword}
-            onChangeText={(text) => setFieldValue('confirmPassword', text)}
-            error={touched.confirmPassword ? errors.confirmPassword : ''}
-            secureTextEntry={!showConfirmPassword}
-            editable={!isLoading}
-            rightIcon={
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.eyeIcon}>{showConfirmPassword ? '👁' : '👁‍🗨'}</Text>
-              </TouchableOpacity>
-            }
-          />
-
-          {/* Terms Checkbox */}
-          <View style={styles.termsSection}>
-            <Checkbox
-              label={
-                <Text style={styles.termsText}>
-                  Concordo com os{' '}
-                  <Text style={styles.termsLink}>Termos e Condições</Text>
-                </Text>
-              }
-              checked={agreedToTerms}
-              onPress={(value) => setAgreedToTerms(value)}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Confirmar Palavra-passe</Text>
+            <FormInput
+              placeholder="Confirme sua palavra-passe"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              error={confirmPasswordError || undefined}
             />
           </View>
 
-          {/* Register Button */}
+          {/* Terms Checkbox */}
+          <View style={styles.termsContainer}>
+            <Checkbox
+              checked={agreedToTerms}
+              onChange={setAgreedToTerms}
+              label="Concordo com os termos e condições"
+            />
+          </View>
+
+          {/* Submit Button */}
           <Button
-            label={isLoading ? 'Registrando...' : 'Criar Conta'}
             onPress={handleRegister}
-            disabled={isLoading}
+            disabled={isLoading || !agreedToTerms}
             loading={isLoading}
             variant="primary"
             size="large"
-            style={styles.registerButton}
-          />
+            style={{ marginTop: 20 }}
+          >
+            {isLoading ? 'A criar conta...' : 'Criar Conta'}
+          </Button>
+        </View>
 
-          {/* Login Link */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Já tem conta? </Text>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Text style={styles.loginLink}>Inicie sessão</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Login Link */}
+        <View style={styles.loginContainer}>
+          <Text style={styles.loginText}>Já tem conta? </Text>
+          <TouchableOpacity onPress={handleLoginLink}>
+            <Text style={styles.loginLink}>Inicie sessão aqui</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -303,88 +239,72 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.primary,
   },
-  scrollContent: {
+  contentContainer: {
     flexGrow: 1,
   },
   header: {
-    paddingTop: 60,
-    paddingBottom: 40,
     paddingHorizontal: 20,
-    alignItems: 'center',
+    paddingTop: 40,
+    paddingBottom: 30,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 20,
-  },
-  backButtonText: {
-    color: COLORS.gold,
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: 'DMSans',
-  },
-  logo: {
-    fontSize: 32,
+  headerTitle: {
+    fontSize: 28,
     fontWeight: '700',
     color: COLORS.white,
-    fontFamily: 'CormorantGaramond',
+    fontFamily: 'Cormorant',
+    marginBottom: 8,
   },
-  subtitle: {
+  headerSubtitle: {
     fontSize: 14,
     color: COLORS.grey,
-    marginTop: 8,
     fontFamily: 'DMSans',
   },
-  form: {
-    flex: 1,
+  formContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 32,
+    paddingVertical: 30,
+    flex: 1,
   },
-  strengthContainer: {
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.grey,
+    fontFamily: 'DMSans',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  passwordStrengthContainer: {
+    height: 4,
+    backgroundColor: `${COLORS.gold}20`,
+    borderRadius: 2,
     marginTop: 8,
-    marginBottom: 16,
+    overflow: 'hidden',
   },
   strengthBar: {
-    height: 4,
-    backgroundColor: `${COLORS.gold}10`,
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginBottom: 6,
-  },
-  strengthFill: {
     height: '100%',
     borderRadius: 2,
   },
   strengthText: {
     fontSize: 11,
-    fontWeight: '600',
     fontFamily: 'DMSans',
-    textTransform: 'capitalize',
+    marginTop: 4,
+    fontWeight: '500',
   },
-  eyeIcon: {
-    fontSize: 18,
+  termsContainer: {
+    marginVertical: 16,
   },
-  termsSection: {
-    marginVertical: 20,
-  },
-  termsText: {
-    fontSize: 13,
-    color: COLORS.white,
-    lineHeight: 20,
-    fontFamily: 'DMSans',
-  },
-  termsLink: {
-    color: COLORS.gold,
-    fontWeight: '600',
-  },
-  registerButton: {
-    marginVertical: 20,
-  },
-  footer: {
+  loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
-  footerText: {
+  loginText: {
     fontSize: 13,
     color: COLORS.grey,
     fontFamily: 'DMSans',
@@ -392,7 +312,7 @@ const styles = StyleSheet.create({
   loginLink: {
     fontSize: 13,
     color: COLORS.gold,
-    fontWeight: '600',
     fontFamily: 'DMSans',
+    fontWeight: '600',
   },
 });

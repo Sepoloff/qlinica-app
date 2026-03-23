@@ -105,45 +105,6 @@ export default function BookingSummaryScreen() {
           appointmentDate
         );
       } catch (reminderError) {
-        console.warn('Reminder schedule failed (non-critical):', reminderError);
-      }
-
-      // Reset booking context
-      resetBooking();
-
-      // Show success toast
-      showToast('Consulta agendada com sucesso!', 'success', 3000);
-
-      // Navigate to bookings
-      setTimeout(() => {
-        navigation.navigate('bookings' as never);
-      }, 1000);
-      // Parse date and time to create appointment datetime
-      const [day, month, year] = date.split('/');
-      const [hours, minutes] = time.split(':');
-      const appointmentDate = new Date(
-        parseInt(year),
-        parseInt(month) - 1,
-        parseInt(day),
-        parseInt(hours),
-        parseInt(minutes)
-      );
-
-      // Send booking confirmation notification
-      try {
-        await notifyBookingConfirmation(therapist.name, service.name, appointmentDate);
-      } catch (notificationError) {
-        logger.warn('Notification send failed (non-critical)', notificationError as Error, 'BookingSummaryScreen');
-      }
-
-      // Schedule reminder
-      try {
-        await scheduleAppointmentReminder(
-          therapist.name,
-          service.name,
-          appointmentDate
-        );
-      } catch (reminderError) {
         logger.warn('Reminder schedule failed (non-critical)', reminderError as Error, 'BookingSummaryScreen');
       }
 
@@ -158,7 +119,7 @@ export default function BookingSummaryScreen() {
         navigation.navigate('bookings' as never);
       }, 1000);
     } catch (error: any) {
-      console.error('Error confirming booking:', error);
+      logger.error('Error confirming booking', error as Error, 'BookingSummaryScreen');
       const errorMessage = error?.message || 'Falha ao agendar consulta';
       setConfirmationError(errorMessage);
       showToast(errorMessage, 'error', 4000);

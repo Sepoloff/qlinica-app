@@ -1,7 +1,7 @@
 'use strict';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../../constants/Colors';
@@ -18,9 +17,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { FormInput } from '../../components/FormInput';
 import { Button } from '../../components/Button';
-import { useFormValidation } from '../../hooks/useFormValidation';
+import { useFormValidation, ValidationRule } from '../../hooks/useFormValidation';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { logger } from '../../utils/logger';
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_MIN_LENGTH = 8;
 
 export default function LoginScreen() {
   const navigation = useNavigation();
@@ -33,10 +35,12 @@ export default function LoginScreen() {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isRateLimited, setIsRateLimited] = useState(false);
   
-  const { errors, validateField: validateFormField, hasErrors } = useFormValidation({
-    email: { required: true, pattern: 'email' },
-    password: { required: true, minLength: 8 },
-  });
+  const validationSchema: { [key: string]: ValidationRule } = {
+    email: { required: true, pattern: EMAIL_PATTERN },
+    password: { required: true, minLength: PASSWORD_MIN_LENGTH },
+  };
+  
+  const { errors, validateForm, getFieldError } = useFormValidation(validationSchema);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -49,23 +53,15 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     // Rate limiting check
     if (isRateLimited) {
-      showToast({
-        type: 'error',
-        title: 'Demasiadas tentativas',
-        message: 'Aguarde alguns minutos antes de tentar novamente',
-      });
+      showToast('Demasiadas tentativas. Aguarde alguns minutos antes de tentar novamente', 'error');
       return;
     }
 
     clearError();
-    const validationErrors = validate({ email, password });
+    const validationErrors = validateForm({ email, password });
     
     if (Object.keys(validationErrors).length > 0) {
-      showToast({
-        type: 'error',
-        title: 'Validação',
-        message: 'Verifique os campos do formulário',
-      });
+      showToast('Verifique os campos do formulário', 'error');
       trackEvent('login_validation_error', { errorCount: Object.keys(validationErrors).length });
       return;
     }
@@ -75,17 +71,13 @@ export default function LoginScreen() {
       await login(email, password);
       
       logger.debug(`Login successful for ${email}`);
-      showToast({
-        type: 'success',
-        title: 'Sucesso',
-        message: 'Login realizado com sucesso',
-      });
+      showToast('Login realizado com sucesso!', 'success');
       trackEvent('login_success');
       
       // Navigation will be handled by auth context changes
     } catch (err: any) {
       const errorMessage = err.message || 'Falha ao fazer login';
-      logger.error(`Login failed: ${errorMessage}`, err);
+      logger.error(`Login failed: ${errorMessage}`, err as Error);
       
       // Increment login attempts
       const newAttempts = loginAttempts + 1;
@@ -100,26 +92,31 @@ export default function LoginScreen() {
         }, 60000); // 1 minute lockout
       }
 
-      showToast({
-        type: 'error',
-        title: 'Erro de Login',
-        message: errorMessage,
-      });
-
-      trackEvent('login_error', { 
-        errorType: err.response?.status || 'unknown',
-        attempts: newAttempts,
-      });
+      showToast(errorMessage, 'error');
+      trackEvent('login_error', { attempts: newAttempts, error: errorMessage });
     }
   };
+
+  const handleForgotPassword = () => {
+    trackEvent('forgot_password_clicked');
+    navigation.navigate('ForgotPassword' as never);
+  };
+
+  const handleRegister = () => {
+    trackEvent('register_clicked');
+    navigation.navigate('Register' as never);
+  };
+
+  const emailError = getFieldError('email');
+  const passwordError = getFieldError('password');
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
+      <ScrollView 
+        contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -129,86 +126,61 @@ export default function LoginScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.header}
         >
-          <Text style={styles.logo}>
-            <Text style={{ color: COLORS.gold }}>Q</Text>linica
-          </Text>
-          <Text style={styles.subtitle}>Bem-vindo de volta</Text>
+          <Text style={styles.headerTitle}>Bem-vindo à Qlinica</Text>
+          <Text style={styles.headerSubtitle}>Inicie sessão para continuar</Text>
         </LinearGradient>
 
-        {/* Form */}
-        <View style={styles.form}>
-          {error && (
-            <View style={styles.errorBanner}>
-              <Text style={styles.errorBannerText}>⚠️ {error}</Text>
-            </View>
-          )}
-
+        {/* Form Container */}
+        <View style={styles.formContainer}>
           {/* Email Input */}
-          <FormInput
-            label="Email"
-            placeholder="seu@email.com"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              validateFieldValue('email', text);
-            }}
-            error={errors.email}
-            keyboardType="email-address"
-            editable={!isLoading}
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <FormInput
+              placeholder="seu@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={emailError || undefined}
+            />
+          </View>
 
           {/* Password Input */}
-          <FormInput
-            label="Palavra-passe"
-            placeholder="Sua palavra-passe"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              validateFieldValue('password', text);
-            }}
-            error={errors.password}
-            secureTextEntry={true}
-            editable={!isLoading}
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Palavra-passe</Text>
+            <FormInput
+              placeholder="Mínimo 8 caracteres"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              error={passwordError || undefined}
+            />
+          </View>
 
-          {/* Rate limit warning */}
-          {isRateLimited && (
-            <View style={styles.rateLimitWarning}>
-              <Text style={styles.rateLimitText}>
-                ⏱️ Demasiadas tentativas. Tente novamente em 1 minuto.
-              </Text>
-            </View>
-          )}
+          {/* Forgot Password Link */}
+          <TouchableOpacity onPress={handleForgotPassword}>
+            <Text style={styles.forgotPasswordLink}>Esqueceu a palavra-passe?</Text>
+          </TouchableOpacity>
 
-          {/* Login Button */}
+          {/* Submit Button */}
           <Button
-            label={isLoading ? 'Iniciando sessão...' : 'Iniciar Sessão'}
-            disabled={isLoading || isRateLimited || !isValid}
             onPress={handleLogin}
-            disabled={isLoading}
+            disabled={isLoading || isRateLimited}
             loading={isLoading}
             variant="primary"
             size="large"
-            style={styles.loginButton}
-          />
-
-          {/* Forgot Password */}
-          <TouchableOpacity style={styles.forgotPasswordButton}>
-            <Text style={styles.forgotPasswordText}>Esqueceu a palavra-passe?</Text>
-          </TouchableOpacity>
+            style={{ marginTop: 20 }}
+          >
+            {isLoading ? 'A iniciar sessão...' : 'Iniciar Sessão'}
+          </Button>
         </View>
 
         {/* Register Link */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Ainda não tem conta?{' '}
-            <Text
-              style={styles.registerLink}
-              onPress={() => navigation.navigate('Register' as never)}
-            >
-              Registre-se aqui
-            </Text>
-          </Text>
+        <View style={styles.registerContainer}>
+          <Text style={styles.registerText}>Ainda não tem conta? </Text>
+          <TouchableOpacity onPress={handleRegister}>
+            <Text style={styles.registerLink}>Registe-se aqui</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -216,141 +188,72 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  rateLimitWarning: {
-    backgroundColor: `${COLORS.danger}20`,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.danger,
-  },
-  rateLimitText: {
-    color: COLORS.danger,
-    fontSize: 12,
-    fontWeight: '500',
-  },
   container: {
     flex: 1,
     backgroundColor: COLORS.primary,
   },
-  scrollContent: {
+  contentContainer: {
     flexGrow: 1,
   },
   header: {
     paddingHorizontal: 20,
     paddingTop: 40,
-    paddingBottom: 40,
-    alignItems: 'center',
+    paddingBottom: 30,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
-  logo: {
-    fontSize: 32,
+  headerTitle: {
+    fontSize: 28,
     fontWeight: '700',
     color: COLORS.white,
     fontFamily: 'Cormorant',
     marginBottom: 8,
   },
-  subtitle: {
+  headerSubtitle: {
     fontSize: 14,
     color: COLORS.grey,
     fontFamily: 'DMSans',
   },
-  form: {
+  formContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingVertical: 30,
+    flex: 1,
   },
-  errorBanner: {
-    backgroundColor: `#E74C3C20`,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: '#E74C3C',
-  },
-  errorBannerText: {
-    fontSize: 13,
-    color: '#E74C3C',
-    fontFamily: 'DMSans',
-  },
-  formGroup: {
+  inputGroup: {
     marginBottom: 20,
   },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: COLORS.white,
+    color: COLORS.grey,
     fontFamily: 'DMSans',
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  input: {
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    color: COLORS.white,
-    borderWidth: 2,
-    borderColor: `${COLORS.gold}20`,
-    fontFamily: 'DMSans',
-    fontSize: 14,
-  },
-  inputError: {
-    borderColor: '#E74C3C',
-  },
-  passwordContainer: {
-    backgroundColor: COLORS.primaryLight,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: `${COLORS.gold}20`,
-  },
-  passwordInput: {
-    flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    color: COLORS.white,
-    fontFamily: 'DMSans',
-    fontSize: 14,
-  },
-  togglePasswordButton: {
-    paddingHorizontal: 12,
-  },
-  togglePasswordText: {
-    fontSize: 16,
-  },
-  fieldError: {
-    fontSize: 12,
-    color: '#E74C3C',
-    fontFamily: 'DMSans',
-    marginTop: 6,
-  },
-  loginButton: {
-    marginTop: 24,
-  },
-  forgotPasswordButton: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  forgotPasswordText: {
+  forgotPasswordLink: {
     fontSize: 13,
     color: COLORS.gold,
     fontFamily: 'DMSans',
     fontWeight: '500',
+    textAlign: 'right',
+    marginTop: 8,
   },
-  footer: {
+  registerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 20,
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    alignItems: 'center',
   },
-  footerText: {
+  registerText: {
     fontSize: 13,
     color: COLORS.grey,
     fontFamily: 'DMSans',
   },
   registerLink: {
+    fontSize: 13,
     color: COLORS.gold,
-    fontWeight: '700',
+    fontFamily: 'DMSans',
+    fontWeight: '600',
   },
 });
