@@ -1,155 +1,267 @@
-/**
- * SyncStatusIndicator Component
- * Shows offline sync status and queue information
- */
-
-import React, { useMemo } from 'react';
-import { View, StyleSheet, Pressable, Text as RNText, Animated } from 'react-native';
-import { useOfflineSync } from '../hooks/useOfflineSync';
-import { useTheme } from '../context/ThemeContext';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Animated,
+} from 'react-native';
+import { COLORS } from '../constants/Colors';
+import { offlineSyncService, type SyncStatus } from '../services/offlineSyncService';
 
 interface SyncStatusIndicatorProps {
-  position?: 'top' | 'bottom';
-  animated?: boolean;
+  onSyncNow?: () => void;
+  compact?: boolean;
 }
 
-const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ position = 'bottom', animated = true }) => {
-  const { isOnline, isSyncing, queueLength, lastSyncTime } = useOfflineSync();
-  const { colors } = useTheme();
-  const [isExpanded, setIsExpanded] = React.useState(false);
+export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({
+  onSyncNow,
+  compact = false,
+}) => {
+  const [status, setStatus] = useState<SyncStatus>({
+    isOnline: true,
+    isSyncing: false,
+    queueCount: 0,
+  });
 
-  const statusColor = useMemo(() => {
-    if (!isOnline) return colors.danger;
-    if (isSyncing) return colors.warning;
-    if (queueLength > 0) return colors.info;
-    return colors.success;
-  }, [isOnline, isSyncing, queueLength, colors]);
+  const [pulseAnimation] = useState(new Animated.Value(0));
 
-  const statusText = useMemo(() => {
-    if (!isOnline) return 'Offline - Changes will sync when online';
-    if (isSyncing) return `Syncing ${queueLength} changes...`;
-    if (queueLength > 0) return `${queueLength} pending changes`;
-    return 'All synced';
-  }, [isOnline, isSyncing, queueLength]);
+  useEffect(() => {
+    const unsubscribe = offlineSyncService.subscribeToSyncStatusChanges((newStatus) => {
+      setStatus(newStatus);
+    });
 
-  const statusIcon = useMemo(() => {
-    if (isSyncing) return '⟳';
-    if (!isOnline) return '✕';
-    if (queueLength > 0) return '!';
+    return unsubscribe;
+  }, []);
+
+  // Animate pulsing when syncing
+  useEffect(() => {
+    if (status.isSyncing) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnimation, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(pulseAnimation, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: false,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnimation.setValue(0);
+    }
+  }, [status.isSyncing, pulseAnimation]);
+
+  const opacity = pulseAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.5, 1],
+  });
+
+  const getStatusColor = () => {
+    if (!status.isOnline) return '#FF6B6B'; // Red
+    if (status.isSyncing) return COLORS.gold; // Gold
+    if (status.queueCount > 0) return '#FFB84D'; // Orange
+    return '#4CAF50'; // Green
+  };
+
+  const getStatusText = () => {
+    if (!status.isOnline) return 'Offline';
+    if (status.isSyncing) return 'A sincronizar...';
+    if (status.queueCount > 0) return `Pendentes: ${status.queueCount}`;
+    return 'Sincronizado';
+  };
+
+  const getStatusIcon = () => {
+    if (!status.isOnline) return '📡';
+    if (status.isSyncing) return '⏳';
+    if (status.queueCount > 0) return '⚠️';
     return '✓';
-  }, [isSyncing, isOnline, queueLength]);
+  };
 
-  const containerStyle = useMemo(
-    () => [
-      styles.container,
-      {
-        backgroundColor: statusColor,
-        [position === 'bottom' ? 'bottom' : 'top']: 0,
-      },
-    ],
-    [statusColor, position],
-  );
-
-  if (isOnline && !isSyncing && queueLength === 0 && !isExpanded) {
-    return null;
+  if (compact) {
+    return (
+      <TouchableOpacity
+        style={[
+          styles.compactContainer,
+          { backgroundColor: getStatusColor() + '20' },
+        ]}
+        onPress={onSyncNow}
+        disabled={!status.queueCount || status.isSyncing}
+      >
+        <Animated.Text
+          style={[
+            styles.compactIcon,
+            { opacity: status.isSyncing ? opacity : 1 },
+          ]}
+        >
+          {getStatusIcon()}
+        </Animated.Text>
+        <Text style={[styles.compactText, { color: getStatusColor() }]}>
+          {getStatusText()}
+        </Text>
+      </TouchableOpacity>
+    );
   }
 
   return (
-    <Pressable
-      style={containerStyle}
-      onPress={() => setIsExpanded(!isExpanded)}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: getStatusColor() + '10',
+          borderColor: getStatusColor() + '50',
+        },
+      ]}
     >
       <View style={styles.content}>
-        <RNText style={[styles.icon, { color: colors.white }]}>
-          {isSyncing ? '⟳' : statusIcon}
-        </RNText>
-        <RNText style={[styles.text, { color: colors.white }]} numberOfLines={1}>
-          {statusText}
-        </RNText>
-        {queueLength > 0 && (
-          <RNText style={[styles.badge, { backgroundColor: colors.white, color: statusColor }]}>
-            {queueLength}
-          </RNText>
+        <View style={styles.statusInfo}>
+          <Animated.Text
+            style={[
+              styles.icon,
+              { opacity: status.isSyncing ? opacity : 1 },
+            ]}
+          >
+            {getStatusIcon()}
+          </Animated.Text>
+          <View style={styles.textContainer}>
+            <Text style={[styles.statusText, { color: getStatusColor() }]}>
+              {getStatusText()}
+            </Text>
+            {status.queueCount > 0 && (
+              <Text style={styles.details}>
+                {status.queueCount} operação{status.queueCount !== 1 ? 's' : ''} aguardando sincronização
+              </Text>
+            )}
+            {status.lastSyncTime && (
+              <Text style={styles.lastSync}>
+                Última sincronização: {formatTime(status.lastSyncTime)}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {status.queueCount > 0 && !status.isSyncing && (
+          <TouchableOpacity
+            style={[styles.syncButton, { borderColor: getStatusColor() }]}
+            onPress={onSyncNow}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.syncButtonText, { color: getStatusColor() }]}>
+              Sincronizar
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {status.isSyncing && (
+          <ActivityIndicator color={getStatusColor()} size="small" />
         )}
       </View>
 
-      {isExpanded && (
-        <View style={styles.details}>
-          <DetailRow label="Status" value={isOnline ? 'Online' : 'Offline'} />
-          <DetailRow label="Syncing" value={isSyncing ? 'Yes' : 'No'} />
-          <DetailRow label="Queue" value={`${queueLength} items`} />
-          {lastSyncTime && (
-            <DetailRow
-              label="Last Sync"
-              value={new Date(lastSyncTime).toLocaleTimeString()}
-            />
-          )}
-        </View>
-      )}
-    </Pressable>
-  );
-};
-
-const DetailRow: React.FC<{ label: string; value: string }> = ({ label, value }) => {
-  const { colors } = useTheme();
-
-  return (
-    <View style={styles.detailRow}>
-      <RNText style={[styles.detailLabel, { color: colors.white }]}>{label}:</RNText>
-      <RNText style={[styles.detailValue, { color: colors.white }]}>{value}</RNText>
+      {/* Status indicator dot */}
+      <Animated.View
+        style={[
+          styles.statusDot,
+          { backgroundColor: getStatusColor(), opacity: status.isSyncing ? opacity : 1 },
+        ]}
+      />
     </View>
   );
 };
 
+function formatTime(timestamp: number): string {
+  const now = Date.now();
+  const diff = now - timestamp;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+
+  if (minutes < 1) return 'agora';
+  if (minutes < 60) return `há ${minutes}m`;
+  if (hours < 24) return `há ${hours}h`;
+  return `há ${Math.floor(hours / 24)}d`;
+}
+
 const styles = StyleSheet.create({
+  compactContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  compactIcon: {
+    fontSize: 14,
+  },
+  compactText: {
+    fontSize: 11,
+    fontWeight: '500',
+    fontFamily: 'DMSans',
+  },
   container: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 1000,
+    borderRadius: 12,
+    borderWidth: 1,
     padding: 12,
+    marginHorizontal: 20,
+    marginVertical: 12,
   },
   content: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
+  },
+  statusInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   icon: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
   },
-  text: {
+  textContainer: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
   },
-  badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    fontSize: 12,
-    fontWeight: 'bold',
-    minWidth: 24,
-    textAlign: 'center',
+  statusText: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'DMSans',
+    marginBottom: 2,
   },
   details: {
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    fontSize: 11,
+    color: COLORS.grey,
+    fontFamily: 'DMSans',
+    marginBottom: 2,
   },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
+  lastSync: {
+    fontSize: 10,
+    color: COLORS.grey,
+    fontFamily: 'DMSans',
+    fontStyle: 'italic',
   },
-  detailLabel: {
-    fontSize: 12,
+  syncButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderRadius: 6,
+  },
+  syncButtonText: {
+    fontSize: 11,
     fontWeight: '600',
+    fontFamily: 'DMSans',
   },
-  detailValue: {
-    fontSize: 12,
+  statusDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });
-
-export default SyncStatusIndicator;
