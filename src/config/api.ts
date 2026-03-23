@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosResponse, AxiosRequestConfig } from 'axios';
 import { authStorage } from '../utils/storage';
 import { analyticsService } from '../services/analyticsService';
 import { logger } from '../utils/logger';
+import { parseAPIError, isAuthError } from '../utils/apiErrorHandler';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
@@ -82,19 +83,21 @@ api.interceptors.response.use(
     const key = `${config.method}:${config.url}`;
     const currentRetry = retryCount.get(key) || 0;
 
-    // Handle 401 - Unauthorized (don't retry)
-    if (error.response?.status === 401) {
+    // Handle 401/403 - Unauthorized (don't retry)
+    const parsedError = parseAPIError(error);
+    if (error.response?.status === 401 || error.response?.status === 403 || isAuthError(parsedError)) {
       try {
         await authStorage.removeToken();
-        logger.warn('🔐 Token expired - user logged out');
+        logger.warn('🔐 Token expired or access denied - user logged out');
         analyticsService.trackError(error, {
-          type: 'auth_expired',
+          type: 'auth_error',
+          code: parsedError.code,
           endpoint: config.url,
         });
       } catch (storageError) {
         logger.error('Error clearing storage', storageError);
       }
-      return Promise.reject(error);
+      return Promise.reject(parsedError);
     }
 
     // Don't retry 4xx errors (except 429 - rate limit)

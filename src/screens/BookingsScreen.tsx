@@ -182,11 +182,6 @@ export default function BookingsScreen() {
         />
       }
     >
-      {/* VISUAL INDICATOR: BOOKINGS SCREEN */}
-      <View style={{ backgroundColor: '#5f1a1a', padding: 12, alignItems: 'center' }}>
-        <Text style={{ color: '#ff7f7f', fontSize: 12, fontWeight: 'bold' }}>📅 MARCAÇÕES (Bookings Screen)</Text>
-      </View>
-      
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>As minhas marcações</Text>
