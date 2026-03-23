@@ -4,25 +4,38 @@ import { COLORS } from '../constants/Colors';
 
 interface CheckboxProps {
   checked: boolean;
-  onPress: (value: boolean) => void;
+  onPress?: (value: boolean) => void;
+  onChange?: (value: boolean) => void;
+  onValueChange?: (value: boolean) => void;
   label?: string | React.ReactNode;
   disabled?: boolean;
   style?: ViewStyle;
+  testID?: string;
 }
 
 export const Checkbox: React.FC<CheckboxProps> = ({
   checked,
   onPress,
+  onChange,
+  onValueChange,
   label,
   disabled = false,
   style,
+  testID,
 }) => {
+  const handleChange = (value: boolean) => {
+    onPress?.(value);
+    onChange?.(value);
+    onValueChange?.(value);
+  };
+
   return (
     <TouchableOpacity
       style={[styles.container, style, disabled && styles.disabled]}
-      onPress={() => !disabled && onPress(!checked)}
+      onPress={() => !disabled && handleChange(!checked)}
       disabled={disabled}
       activeOpacity={0.7}
+      testID={testID}
     >
       <View
         style={[

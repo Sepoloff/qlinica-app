@@ -133,29 +133,25 @@ export default function LoginScreen() {
         {/* Form Container */}
         <View style={styles.formContainer}>
           {/* Email Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <FormInput
-              placeholder="seu@email.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={emailError || undefined}
-            />
-          </View>
+          <FormInput
+            label="Email"
+            placeholder="seu@email.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            error={emailError || undefined}
+          />
 
           {/* Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Palavra-passe</Text>
-            <FormInput
-              placeholder="Mínimo 8 caracteres"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              error={passwordError || undefined}
-            />
-          </View>
+          <FormInput
+            label="Palavra-passe"
+            placeholder="Mínimo 8 caracteres"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            error={passwordError || undefined}
+          />
 
           {/* Forgot Password Link */}
           <TouchableOpacity onPress={handleForgotPassword}>
@@ -164,15 +160,14 @@ export default function LoginScreen() {
 
           {/* Submit Button */}
           <Button
+            title={isLoading ? 'A iniciar sessão...' : 'Iniciar Sessão'}
             onPress={handleLogin}
             disabled={isLoading || isRateLimited}
             loading={isLoading}
             variant="primary"
             size="large"
             style={{ marginTop: 20 }}
-          >
-            {isLoading ? 'A iniciar sessão...' : 'Iniciar Sessão'}
-          </Button>
+          />
         </View>
 
         {/* Register Link */}

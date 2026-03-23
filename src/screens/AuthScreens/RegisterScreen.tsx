@@ -142,69 +142,61 @@ export default function RegisterScreen() {
         {/* Form Container */}
         <View style={styles.formContainer}>
           {/* Name Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nome Completo</Text>
-            <FormInput
-              placeholder="Seu nome completo"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-              error={nameError || undefined}
-            />
-          </View>
+          <FormInput
+            label="Nome Completo"
+            placeholder="Seu nome completo"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+            error={nameError || undefined}
+          />
 
           {/* Email Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <FormInput
-              placeholder="seu@email.com"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              error={emailError || undefined}
-            />
-          </View>
+          <FormInput
+            label="Email"
+            placeholder="seu@email.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            error={emailError || undefined}
+          />
 
           {/* Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Palavra-passe</Text>
-            <FormInput
-              placeholder="Mínimo 8 caracteres"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              error={passwordError || undefined}
-            />
-            {password && (
-              <View style={styles.passwordStrengthContainer}>
-                <View style={[styles.strengthBar, { width: `${(passwordScore / 5) * 100}%`, backgroundColor: passwordColor }]} />
-              </View>
-            )}
-            {password && (
-              <Text style={[styles.strengthText, { color: passwordColor }]}>
-                Força: {passwordStrength?.label}
-              </Text>
-            )}
-          </View>
+          <FormInput
+            label="Palavra-passe"
+            placeholder="Mínimo 8 caracteres"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            error={passwordError || undefined}
+          />
+          {password && (
+            <View style={styles.passwordStrengthContainer}>
+              <View style={[styles.strengthBar, { width: `${(passwordScore / 5) * 100}%`, backgroundColor: passwordColor }]} />
+            </View>
+          )}
+          {password && (
+            <Text style={[styles.strengthText, { color: passwordColor }]}>
+              Força: {passwordStrength?.label}
+            </Text>
+          )}
 
           {/* Confirm Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirmar Palavra-passe</Text>
-            <FormInput
-              placeholder="Confirme sua palavra-passe"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              error={confirmPasswordError || undefined}
-            />
-          </View>
+          <FormInput
+            label="Confirmar Palavra-passe"
+            placeholder="Confirme sua palavra-passe"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            error={confirmPasswordError || undefined}
+          />
 
           {/* Terms Checkbox */}
           <View style={styles.termsContainer}>
             <Checkbox
               checked={agreedToTerms}
-              onChange={setAgreedToTerms}
+              onValueChange={setAgreedToTerms}
               label="Concordo com os termos e condições"
               testID="terms-checkbox"
             />
@@ -212,15 +204,14 @@ export default function RegisterScreen() {
 
           {/* Submit Button */}
           <Button
+            title={isLoading ? 'A Registar...' : 'Registar'}
             onPress={handleRegister}
             disabled={isLoading || !agreedToTerms}
             loading={isLoading}
             variant="primary"
             size="large"
             style={{ marginTop: 20 }}
-          >
-            {isLoading ? 'A criar conta...' : 'Criar Conta'}
-          </Button>
+          />
         </View>
 
         {/* Login Link */}

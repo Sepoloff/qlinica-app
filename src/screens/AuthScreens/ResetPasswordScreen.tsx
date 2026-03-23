@@ -54,18 +54,12 @@ export default function ResetPasswordScreen() {
 
       if (result.valid) {
         setStep('password');
-        showToast({
-          message: 'Código verificado com sucesso!',
-          type: 'success',
-        });
+        showToast('Código verificado com sucesso!', 'success');
       }
     } catch (err: any) {
       const errorMessage = err.message || 'Código inválido ou expirado';
       setError(errorMessage);
-      showToast({
-        message: errorMessage,
-        type: 'error',
-      });
+      showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -99,10 +93,7 @@ export default function ResetPasswordScreen() {
     } catch (err: any) {
       const errorMessage = err.message || 'Erro ao redefinir senha';
       setError(errorMessage);
-      showToast({
-        message: errorMessage,
-        type: 'error',
-      });
+      showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -160,7 +151,7 @@ export default function ResetPasswordScreen() {
               )}
 
               <Button
-                label={isLoading ? 'Verificando...' : 'Verificar Código'}
+                title={isLoading ? 'Verificando...' : 'Verificar Código'}
                 onPress={handleVerifyToken}
                 disabled={!resetToken.trim() || isLoading}
                 variant="primary"

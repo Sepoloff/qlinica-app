@@ -10,7 +10,8 @@ export type ButtonSize = 'small' | 'medium' | 'large';
 
 interface ButtonProps {
   onPress: () => void;
-  title: string;
+  title?: string;
+  children?: string | React.ReactNode;
   variant?: ButtonVariant;
   size?: ButtonSize;
   disabled?: boolean;
@@ -21,6 +22,7 @@ interface ButtonProps {
   fullWidth?: boolean;
   enableHaptic?: boolean;
   hapticType?: 'light' | 'success';
+  label?: string;
 }
 
 const variantStyles = {
@@ -81,6 +83,8 @@ const sizeStyles = {
 export const Button: React.FC<ButtonProps> = ({
   onPress,
   title,
+  children,
+  label,
   variant = 'primary',
   size = 'medium',
   disabled = false,
@@ -92,6 +96,7 @@ export const Button: React.FC<ButtonProps> = ({
   enableHaptic = true,
   hapticType = 'light',
 }) => {
+  const buttonText = children || label || title || '';
   const variantStyle = variantStyles[variant];
   const sizeStyle = sizeStyles[size];
 
@@ -140,7 +145,7 @@ export const Button: React.FC<ButtonProps> = ({
             textStyle,
           ]}
         >
-          {title}
+          {buttonText}
         </Text>
       </View>
     </TouchableOpacity>

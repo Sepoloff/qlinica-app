@@ -8,11 +8,11 @@ import { COLORS } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
 import { useQuickToast } from '../hooks/useToast';
 import { useNotificationManager } from '../hooks/useNotificationManager';
-import bookingService, { Booking, Service, Therapist } from '../services/bookingService';
+import { bookingService, Booking, Service, Therapist } from '../services/bookingService';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { SkeletonLoader } from '../components/SkeletonLoader';
-import { formatDate, formatTime } from '../utils/dateHelpers';
+import { formatDateISO, formatTime } from '../utils/dateHelpers';
 import { AlertModal } from '../components/AlertModal';
 
 export default function BookingDetailsScreen() {
@@ -134,7 +134,7 @@ export default function BookingDetailsScreen() {
         </LinearGradient>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>⚠️ {error || 'Consulta não encontrada'}</Text>
-          <Button label="Voltar" onPress={() => navigation.goBack()} />
+          <Button title="Voltar" onPress={() => navigation.goBack()} />
         </View>
       </View>
     );
@@ -234,7 +234,7 @@ export default function BookingDetailsScreen() {
           {isFuture && booking.status !== 'cancelled' && (
             <>
               <Button
-                label="📅 Remarcar Consulta"
+                title="📅 Remarcar Consulta"
                 onPress={handleReschedule}
                 variant="secondary"
               />
@@ -244,7 +244,7 @@ export default function BookingDetailsScreen() {
 
           {isFuture && booking.status !== 'cancelled' && (
             <Button
-              label="❌ Cancelar Consulta"
+              title="❌ Cancelar Consulta"
               onPress={() => setShowCancelModal(true)}
               variant="danger"
             />
@@ -252,7 +252,7 @@ export default function BookingDetailsScreen() {
 
           {isCompleted && (
             <Button
-              label="📞 Agendar Novo"
+              title="📞 Agendar Novo"
               onPress={() => navigation.navigate('ServiceSelection' as never)}
               variant="primary"
             />
