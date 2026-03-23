@@ -7,19 +7,20 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { THERAPISTS } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
-import { useBookingFlow } from '../context/BookingFlowContext';
 import { useToast } from '../context/ToastContext';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { useBookingState } from '../hooks/useBookingState';
+import { BookingProgress } from '../components/BookingProgress';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { RatingDisplay } from '../components/RatingDisplay';
 import { SkeletonLoader } from '../components/SkeletonLoader';
-import bookingService, { Therapist } from '../services/bookingService';
+import { bookingService, Therapist } from '../services/bookingService';
 import { logger } from '../utils/logger';
 
 export default function TherapistSelectionScreen() {
   const navigation = useNavigation();
   const { bookingData, setTherapist } = useBooking();
-  const { bookingState, setBookingState } = useBookingFlow();
+  const { updateTherapist } = useBookingState();
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
   
@@ -70,13 +71,9 @@ export default function TherapistSelectionScreen() {
       logger.debug(`Therapist selected: ${therapist.id} - ${therapist.name}`);
       setSelectedTherapist(String(therapist.id));
       setTherapist(therapist as any);
-      setBookingState({ therapistId: therapist.id });
+      updateTherapist(String(therapist.id), therapist.name);
       
-      showToast({
-        type: 'success',
-        title: 'Terapeuta Selecionado',
-        message: `${therapist.name} selecionado com sucesso`,
-      });
+      showToast(`${therapist.name} selecionado com sucesso`, 'success');
       
       trackEvent('therapist_selected', { 
         therapistId: therapist.id,
@@ -85,11 +82,7 @@ export default function TherapistSelectionScreen() {
       });
     } catch (err) {
       logger.error('Error selecting therapist', err);
-      showToast({
-        type: 'error',
-        title: 'Erro',
-        message: 'Erro ao selecionar terapeuta',
-      });
+      showToast('Erro ao selecionar terapeuta', 'error');
       trackEvent('therapist_selection_error', { error: (err as Error).message });
     }
   };
@@ -140,6 +133,11 @@ export default function TherapistSelectionScreen() {
           </Text>
         </View>
       </LinearGradient>
+
+      {/* Booking Progress */}
+      <View style={styles.progressContainer}>
+        <BookingProgress currentStep={2} totalSteps={4} />
+      </View>
 
       {/* Therapists List */}
       <View style={styles.therapistsContainer}>
@@ -269,6 +267,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.grey,
     fontFamily: 'DMSans',
+  },
+  progressContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   therapistsContainer: {
     paddingHorizontal: 20,

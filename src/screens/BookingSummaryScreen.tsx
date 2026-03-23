@@ -13,10 +13,10 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
-import { useBookingFlow } from '../context/BookingFlowContext';
 import { useToast } from '../context/ToastContext';
 import { useNotificationManager } from '../hooks/useNotificationManager';
 import { useBookingAPI } from '../hooks/useBookingAPI';
+import { BookingProgress } from '../components/BookingProgress';
 import { Button } from '../components/Button';
 import { logger } from '../utils/logger';
 
@@ -44,7 +44,7 @@ export default function BookingSummaryScreen() {
   const { bookingData, resetBooking } = useBooking();
   const { showToast } = useToast();
   const { notifyBookingConfirmation, scheduleAppointmentReminder } = useNotificationManager();
-  const { submitBooking, error: flowError, clearError } = useBookingFlow();
+  const { submitBooking } = useBookingAPI();
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmationError, setConfirmationError] = useState<string | null>(null);
   
@@ -148,6 +148,11 @@ export default function BookingSummaryScreen() {
           <Text style={styles.successIconText}>✓</Text>
         </View>
         <Text style={styles.successMessage}>Pronto para confirmar!</Text>
+      </View>
+
+      {/* Booking Progress */}
+      <View style={styles.progressContainer}>
+        <BookingProgress currentStep={4} totalSteps={4} />
       </View>
 
       {/* Service Card */}
@@ -276,6 +281,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.grey,
     fontFamily: 'DMSans',
+  },
+  progressContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   successContainer: {
     alignItems: 'center',

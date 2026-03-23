@@ -7,19 +7,20 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { SERVICES } from '../constants/Data';
 import { useBooking } from '../context/BookingContext';
-import { useBookingFlow } from '../context/BookingFlowContext';
 import { useToast } from '../context/ToastContext';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { useBookingState } from '../hooks/useBookingState';
+import { BookingProgress } from '../components/BookingProgress';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { SkeletonLoader } from '../components/SkeletonLoader';
-import bookingService, { Service } from '../services/bookingService';
+import { bookingService, Service } from '../services/bookingService';
 import { convertMockServices } from '../utils/mockDataConverters';
 import { logger } from '../utils/logger';
 
 export default function ServiceSelectionScreen() {
   const navigation = useNavigation();
   const { setService } = useBooking();
-  const { setBookingState } = useBookingFlow();
+  const { updateService } = useBookingState();
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
   
@@ -64,13 +65,9 @@ export default function ServiceSelectionScreen() {
       
       setSelectedServiceId(service.id);
       setService(service as any);
-      setBookingState({ serviceId: service.id });
+      updateService(String(service.id), service.name, (service as any).price);
       
-      showToast({
-        type: 'success',
-        title: 'Serviço Selecionado',
-        message: `${service.name} selecionado com sucesso`,
-      });
+      showToast(`${service.name} selecionado com sucesso`, 'success');
 
       trackEvent('service_selected', { 
         serviceId: service.id,
@@ -114,6 +111,11 @@ export default function ServiceSelectionScreen() {
           <Text style={styles.headerSubtitle}>Selecione o tipo de terapia desejada</Text>
         </View>
       </LinearGradient>
+
+      {/* Booking Progress */}
+      <View style={styles.progressContainer}>
+        <BookingProgress currentStep={1} totalSteps={4} />
+      </View>
 
       {/* Services Grid */}
       <View style={styles.servicesContainer}>
@@ -201,6 +203,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.grey,
     fontFamily: 'DMSans',
+  },
+  progressContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   servicesContainer: {
     paddingHorizontal: 20,

@@ -13,17 +13,18 @@ import {
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { COLORS } from '../constants/Colors';
 import { useBooking } from '../context/BookingContext';
-import { useBookingFlow } from '../context/BookingFlowContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { useBookingState } from '../hooks/useBookingState';
+import { BookingProgress } from '../components/BookingProgress';
 import { ProgressIndicator } from '../components/ProgressIndicator';
 import { TimeSlotPicker } from '../components/TimeSlotPicker';
 import { InfoBox } from '../components/InfoBox';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { Button } from '../components/Button';
 import { logger } from '../utils/logger';
-import bookingService from '../services/bookingService';
+import { bookingService } from '../services/bookingService';
 import { 
   getNextBusinessDays, 
   formatDateDDMMYYYY, 
@@ -36,7 +37,7 @@ export default function CalendarSelectionScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { bookingData, setDateTime, resetBooking } = useBooking();
-  const { setBookingState } = useBookingFlow();
+  const { updateDateTime } = useBookingState();
   const { user } = useAuth();
   const { showToast } = useToast();
   const { trackScreenView, trackEvent } = useAnalytics();
@@ -110,21 +111,13 @@ export default function CalendarSelectionScreen() {
     setError(null);
 
     if (!selectedDate || !selectedTime) {
-      showToast({
-        type: 'error',
-        title: 'Seleção Obrigatória',
-        message: 'Por favor, selecione data e hora para continuar',
-      });
+      showToast('Por favor, selecione data e hora para continuar', 'error');
       trackEvent('booking_confirm_error', { reason: 'no_date_time' });
       return;
     }
 
     if (!user) {
-      showToast({
-        type: 'error',
-        title: 'Autenticação Necessária',
-        message: 'Você precisa estar autenticado para fazer um agendamento',
-      });
+      showToast('Você precisa estar autenticado para fazer um agendamento', 'error');
       trackEvent('booking_confirm_error', { reason: 'not_authenticated' });
       navigation.goBack();
       return;
@@ -132,11 +125,11 @@ export default function CalendarSelectionScreen() {
 
     setSubmitting(true);
     try {
-      logger.debug(`Confirming booking for ${formatDateDDMMYYYY(selectedDate)} at ${selectedTime}`, 'CalendarSelectionScreen');
+      logger.debug(`Confirming booking for ${formatDateDDMMYYYY(selectedDate)} at ${selectedTime}`);
       
       const dateStringISO = formatDateISO(selectedDate);
       const dateStringDisplay = formatDateDDMMYYYY(selectedDate);
-      setBookingState({ date: dateStringISO, time: selectedTime });
+      updateDateTime(dateStringISO, selectedTime);
       
       trackEvent('booking_datetime_set', { 
         date: dateStringDisplay,
@@ -225,6 +218,11 @@ export default function CalendarSelectionScreen() {
           </Text>
         </View>
       </LinearGradient>
+
+      {/* Booking Progress */}
+      <View style={styles.progressContainer}>
+        <BookingProgress currentStep={3} totalSteps={4} />
+      </View>
 
       {/* Service Summary */}
       {bookingData.service && bookingData.therapist && (
@@ -382,6 +380,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.grey,
     fontFamily: 'DMSans',
+  },
+  progressContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   summaryCard: {
     marginHorizontal: 20,
