@@ -1,7 +1,7 @@
 'use strict';
 
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle, Pressable } from 'react-native';
 import { COLORS } from '../constants/Colors';
 
 interface CardProps {
@@ -12,6 +12,11 @@ interface CardProps {
   highlighted?: boolean;
   disabled?: boolean;
   onPress?: () => void;
+  // Accessibility props
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  accessibilityRole?: 'button' | 'link' | 'none';
+  testID?: string;
 }
 
 /**
@@ -32,6 +37,10 @@ export const Card: React.FC<CardProps> = ({
   highlighted = false,
   disabled = false,
   onPress,
+  accessibilityLabel,
+  accessibilityHint,
+  accessibilityRole = 'none',
+  testID,
 }) => {
   const cardStyle = {
     backgroundColor: highlighted ? `${COLORS.gold}10` : COLORS.primaryLight,
@@ -48,6 +57,12 @@ export const Card: React.FC<CardProps> = ({
         shadow && styles.shadow,
         style,
       ]}
+      accessible={onPress !== undefined}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole={onPress ? 'button' : accessibilityRole}
+      accessibilityState={{ disabled }}
+      testID={testID}
     >
       {children}
     </View>
@@ -55,9 +70,19 @@ export const Card: React.FC<CardProps> = ({
 
   if (onPress) {
     return (
-      <View style={styles.touchableWrapper}>
+      <Pressable 
+        style={styles.touchableWrapper}
+        onPress={onPress}
+        disabled={disabled}
+        accessible={true}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        testID={testID}
+      >
         {content}
-      </View>
+      </Pressable>
     );
   }
 

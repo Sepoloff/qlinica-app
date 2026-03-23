@@ -13,6 +13,9 @@ interface HeaderProps {
   rightElement?: React.ReactNode;
   style?: ViewStyle;
   gradientBackground?: boolean;
+  // Accessibility props
+  accessibilityLabel?: string;
+  testID?: string;
 }
 
 /**
@@ -35,6 +38,8 @@ export const Header: React.FC<HeaderProps> = ({
   rightElement,
   style,
   gradientBackground = false,
+  accessibilityLabel,
+  testID,
 }) => {
   const navigation = useNavigation();
 
@@ -53,6 +58,10 @@ export const Header: React.FC<HeaderProps> = ({
         gradientBackground && styles.headerBackground,
         style,
       ]}
+      accessible={true}
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityRole="header"
+      testID={testID}
     >
       <View style={styles.leftSection}>
         {showBackButton && (
@@ -60,12 +69,15 @@ export const Header: React.FC<HeaderProps> = ({
             onPress={handleBackPress}
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel="Voltar"
+            accessibilityRole="button"
+            testID="header-back-button"
           >
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
         )}
         <View style={styles.titleSection}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={1} accessibilityRole="header">
             {title}
           </Text>
           {subtitle && (

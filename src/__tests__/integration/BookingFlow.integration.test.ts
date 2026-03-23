@@ -215,7 +215,7 @@ describe('Booking Flow Integration', () => {
     it('should allow booking confirmation', () => {
       const booking = {
         confirmed: false,
-        confirmationTime: null,
+        confirmationTime: null as number | null,
       };
 
       booking.confirmed = true;
@@ -223,6 +223,7 @@ describe('Booking Flow Integration', () => {
 
       expect(booking.confirmed).toBe(true);
       expect(booking.confirmationTime).not.toBeNull();
+      expect(typeof booking.confirmationTime).toBe('number');
     });
 
     it('should calculate correct total with taxes', () => {
