@@ -47,7 +47,7 @@ export default function ProfileScreen() {
         setNotifPush(parsed.push ?? false);
       }
     } catch (error) {
-      logger.error('Error loading preferences', error as Error, 'ProfileScreen');
+      logger.error('Error loading preferences', error);
     }
   };
 
@@ -56,7 +56,7 @@ export default function ProfileScreen() {
       await AsyncStorage.setItem('notificationPrefs', JSON.stringify({ sms, email, push }));
       logger.debug('Preferences saved', 'ProfileScreen');
     } catch (error) {
-      logger.error('Error saving preferences', error as Error, 'ProfileScreen');
+      logger.error('Error saving preferences', error);
     }
   };
 
@@ -148,7 +148,7 @@ export default function ProfileScreen() {
               trackEvent('logout_success');
               logger.debug('User logged out successfully', 'ProfileScreen');
             } catch (error) {
-              logger.error('Error logging out', error as Error, 'ProfileScreen');
+              logger.error('Error logging out', error);
               showToast({
                 type: 'error',
                 title: 'Erro',

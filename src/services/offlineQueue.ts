@@ -35,7 +35,7 @@ class OfflineQueueService {
         logger.debug(`Loaded ${this.queue.length} queued requests`, 'OfflineQueue');
       }
     } catch (error) {
-      logger.error('Error loading offline queue', error as Error, 'OfflineQueue');
+      logger.error('Error loading offline queue', error);
       this.queue = [];
     }
   }

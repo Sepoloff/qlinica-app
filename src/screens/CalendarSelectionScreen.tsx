@@ -91,7 +91,7 @@ export default function CalendarSelectionScreen() {
       trackEvent('available_slots_loaded', { count: slots?.length || 0 });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar horários';
-      logger.error('Error loading available times', err as Error, 'CalendarSelectionScreen');
+      logger.error('Error loading available times', err);
       setError(errorMsg);
       // Use default times as fallback
       setAvailableTimes([

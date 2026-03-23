@@ -36,7 +36,7 @@ class LocationService {
       
       return this.hasPermission;
     } catch (error) {
-      logger.error('Error requesting location permission', error as Error, 'LocationService');
+      logger.error('Error requesting location permission', error);
       return false;
     }
   }
@@ -67,7 +67,7 @@ class LocationService {
       logger.debug(`User location obtained: ${coords.latitude}, ${coords.longitude}`, 'LocationService');
       return coords;
     } catch (error) {
-      logger.error('Error getting user location', error as Error, 'LocationService');
+      logger.error('Error getting user location', error);
       return null;
     }
   }
@@ -126,7 +126,7 @@ class LocationService {
 
       return null;
     } catch (error) {
-      logger.error('Error reverse geocoding', error as Error, 'LocationService');
+      logger.error('Error reverse geocoding', error);
       return null;
     }
   }
@@ -151,7 +151,7 @@ class LocationService {
 
       return null;
     } catch (error) {
-      logger.error('Error geocoding address', error as Error, 'LocationService');
+      logger.error('Error geocoding address', error);
       return null;
     }
   }

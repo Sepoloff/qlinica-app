@@ -55,7 +55,7 @@ export default function BookingsScreen() {
         trackEvent('bookings_loaded', { count: bookings?.length || 0 });
       }
     } catch (error) {
-      logger.error('Error loading bookings', error as Error, 'BookingsScreen');
+      logger.error('Error loading bookings', error);
       setOperationError('Erro ao carregar agendamentos');
       showToast({
         type: 'error',

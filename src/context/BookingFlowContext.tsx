@@ -153,7 +153,7 @@ export const BookingFlowProvider: React.FC<{ children: ReactNode }> = ({ childre
         'Falha ao criar agendamento. Tente novamente.';
       
       setError(errorMessage);
-      logger.error(`Failed to create booking: ${errorMessage}`, err, 'BookingFlowContext');
+      logger.error(`Failed to create booking: ${errorMessage}`, err);
       throw new Error(errorMessage);
     } finally {
       setIsSubmitting(false);

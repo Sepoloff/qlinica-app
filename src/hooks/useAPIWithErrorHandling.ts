@@ -57,15 +57,13 @@ export const useAPIWithErrorHandling = () => {
         // Log error
         logger.error(
           `API call failed: ${errorInfo.userMessage}`,
-          error instanceof Error ? error : new Error(String(error)),
-          'useAPIWithErrorHandling'
+          error instanceof Error ? error : new Error(String(error))
         );
 
         // Queue for retry if offline and queueOffline enabled
         if (!isOnline && queueOffline && errorInfo.isRetryable) {
           logger.debug(
-            `Queueing request for later processing`,
-            'useAPIWithErrorHandling'
+            `Queueing request for later processing`
           );
         }
 
@@ -146,8 +144,7 @@ export const useAPIWithErrorHandling = () => {
 
             logger.error(
               `API call failed after ${maxRetries} retries`,
-              error instanceof Error ? error : new Error(String(error)),
-              'useAPIWithRetry'
+              error instanceof Error ? error : new Error(String(error))
             );
 
             return {

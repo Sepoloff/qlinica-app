@@ -56,7 +56,7 @@ export default function TherapistSelectionScreen() {
       trackEvent('therapists_loaded', { count: data?.length || 0 });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar terapeutas';
-      logger.error('Error loading therapists', err as Error, 'TherapistSelectionScreen');
+      logger.error('Error loading therapists', err);
       setError(errorMsg);
       setTherapists(THERAPISTS as any);
       trackEvent('therapists_load_error', { error: errorMsg });
@@ -84,7 +84,7 @@ export default function TherapistSelectionScreen() {
         rating: (therapist as any).rating,
       });
     } catch (err) {
-      logger.error('Error selecting therapist', err as Error, 'TherapistSelectionScreen');
+      logger.error('Error selecting therapist', err);
       showToast({
         type: 'error',
         title: 'Erro',

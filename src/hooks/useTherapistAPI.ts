@@ -76,7 +76,7 @@ export const useTherapistAPI = () => {
           error: errorMessage,
           isLoading: false,
         }));
-        logger.error('Error fetching therapists', error as Error, 'useTherapistAPI');
+        logger.error('Error fetching therapists', error);
         throw error;
       }
     },
@@ -125,7 +125,7 @@ export const useTherapistAPI = () => {
 
         return availableSlots;
       } catch (error) {
-        logger.error('Error fetching availability', error as Error, 'useTherapistAPI');
+        logger.error('Error fetching availability', error);
         throw error;
       }
     },
@@ -155,7 +155,7 @@ export const useTherapistAPI = () => {
           error: errorMessage,
           isLoading: false,
         }));
-        logger.error('Search error', error as Error, 'useTherapistAPI');
+        logger.error('Search error', error);
         throw error;
       }
     },

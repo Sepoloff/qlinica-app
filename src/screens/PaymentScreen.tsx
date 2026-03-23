@@ -72,7 +72,7 @@ export default function PaymentScreen({
         setSelectedMethod(methods[0].id);
       }
     } catch (error) {
-      logger.error('Error loading payment methods', error as Error, 'PaymentScreen');
+      logger.error('Error loading payment methods', error);
       showToast({
         type: 'error',
         title: 'Erro',
@@ -168,7 +168,7 @@ export default function PaymentScreen({
         });
       }
     } catch (error) {
-      logger.error('Payment failed', error as Error, 'PaymentScreen');
+      logger.error('Payment failed', error);
       const errorMsg = (error as any)?.message || 'Falha no processamento do pagamento';
 
       showToast({

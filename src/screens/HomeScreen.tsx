@@ -71,7 +71,7 @@ export default function HomeScreen() {
         screen: 'home',
         operation: 'loadData',
       });
-      logger.error('Error loading home data', err as Error, 'HomeScreen');
+      logger.error('Error loading home data', err);
     }
   };
 

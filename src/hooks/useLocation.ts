@@ -43,7 +43,7 @@ export const useLocation = (): UseLocationReturn => {
     } catch (err: any) {
       const errorMessage = err?.message || 'Failed to get location';
       setError(errorMessage);
-      logger.error('Error in useLocation', err, 'useLocation');
+      logger.error('Error in useLocation', err);
       return null;
     } finally {
       setIsLoading(false);
@@ -71,7 +71,7 @@ export const useLocation = (): UseLocationReturn => {
       } catch (err: any) {
         const errorMessage = err?.message || 'Failed to calculate distance';
         setError(errorMessage);
-        logger.error('Error calculating distance', err, 'useLocation');
+        logger.error('Error calculating distance', err);
         return null;
       }
     },
@@ -90,7 +90,7 @@ export const useLocation = (): UseLocationReturn => {
       } catch (err: any) {
         const errorMessage = err?.message || 'Failed to get address';
         setError(errorMessage);
-        logger.error('Error getting address', err, 'useLocation');
+        logger.error('Error getting address', err);
         return null;
       }
     },

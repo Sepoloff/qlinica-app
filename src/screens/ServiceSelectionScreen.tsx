@@ -49,7 +49,7 @@ export default function ServiceSelectionScreen() {
       trackEvent('services_loaded', { count: data?.length || 0 });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro ao carregar serviços';
-      logger.error('Error loading services', err as Error, 'ServiceSelectionScreen');
+      logger.error('Error loading services', err);
       setError(errorMsg);
       setServices(convertMockServices());
       trackEvent('services_load_error', { error: errorMsg });
@@ -83,7 +83,7 @@ export default function ServiceSelectionScreen() {
         navigation.navigate('TherapistSelection' as never);
       }, 300);
     } catch (err) {
-      logger.error('Error selecting service', err as Error, 'ServiceSelectionScreen');
+      logger.error('Error selecting service', err);
       showToast({
         type: 'error',
         title: 'Erro',

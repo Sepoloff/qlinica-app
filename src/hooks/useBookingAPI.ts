@@ -36,7 +36,7 @@ export const useBookingAPI = () => {
       const errorMsg = err.message || 'Failed to load bookings';
       setState(prev => ({ ...prev, error: errorMsg, isLoading: false }));
       toast.error(errorMsg);
-      logger.error('Failed to fetch bookings', err, 'Hook:BookingAPI');
+      logger.error('Failed to fetch bookings', err);
       throw err;
     }
   }, [toast]);
@@ -87,7 +87,7 @@ export const useBookingAPI = () => {
         const errorMsg = err.message || 'Failed to create booking';
         setState(prev => ({ ...prev, error: errorMsg, isLoading: false }));
         toast.error(errorMsg);
-        logger.error('Failed to create booking', err, 'Hook:BookingAPI');
+        logger.error('Failed to create booking', err);
         throw err;
       }
     },

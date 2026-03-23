@@ -37,7 +37,7 @@ export const useServices = () => {
       return services;
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to load services';
-      logger.error('Failed to fetch services', err, 'Hook:Services');
+      logger.error('Failed to fetch services', err);
       setState(prev => ({
         ...prev,
         services: [],
@@ -112,7 +112,7 @@ export const useTherapists = () => {
       return therapists;
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to load therapists';
-      logger.error('Failed to fetch therapists', err, 'Hook:Therapists');
+      logger.error('Failed to fetch therapists', err);
       setState(prev => ({
         ...prev,
         therapists: [],

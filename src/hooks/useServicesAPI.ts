@@ -61,7 +61,7 @@ export const useServicesAPI = () => {
         error: errorMessage,
         isLoading: false,
       }));
-      logger.error('Error fetching services', error as Error, 'useServicesAPI');
+      logger.error('Error fetching services', error);
       throw error;
     }
   }, []);
@@ -115,7 +115,7 @@ export const useServicesAPI = () => {
         error: errorMessage,
         isLoading: false,
       }));
-      logger.error('Search error', error as Error, 'useServicesAPI');
+      logger.error('Search error', error);
       throw error;
     }
   }, []);

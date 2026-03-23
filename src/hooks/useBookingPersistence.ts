@@ -50,7 +50,7 @@ export const useBookingPersistence = (options: BookingPersistenceOptions = {}) =
       await AsyncStorage.setItem(key, JSON.stringify(bookingState));
       logger.debug(`Booking persisted: ${key}`, 'useBookingPersistence');
     } catch (error) {
-      logger.error('Error persisting booking', error as Error, 'useBookingPersistence');
+      logger.error('Error persisting booking', error);
     }
   }, [bookingState, key]);
 
@@ -65,7 +65,7 @@ export const useBookingPersistence = (options: BookingPersistenceOptions = {}) =
         return previousState;
       }
     } catch (error) {
-      logger.error('Error restoring booking', error as Error, 'useBookingPersistence');
+      logger.error('Error restoring booking', error);
     }
     return null;
   }, [key, setBookingState]);
@@ -77,7 +77,7 @@ export const useBookingPersistence = (options: BookingPersistenceOptions = {}) =
       resetBookingState();
       logger.debug(`Booking cleared from persistence: ${key}`, 'useBookingPersistence');
     } catch (error) {
-      logger.error('Error clearing booking persistence', error as Error, 'useBookingPersistence');
+      logger.error('Error clearing booking persistence', error);
     }
   }, [key, resetBookingState]);
 
@@ -87,7 +87,7 @@ export const useBookingPersistence = (options: BookingPersistenceOptions = {}) =
       const persisted = await AsyncStorage.getItem(key);
       return !!persisted;
     } catch (error) {
-      logger.error('Error checking booking persistence', error as Error, 'useBookingPersistence');
+      logger.error('Error checking booking persistence', error);
       return false;
     }
   }, [key]);
