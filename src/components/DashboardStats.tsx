@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Colors } from '../constants/Colors';
+import { COLORS } from '../constants/Colors';
 
 export interface DashboardStat {
   label: string;
@@ -40,7 +40,7 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, columns =
       case 'stable':
         return '#6B7280';
       default:
-        return Colors.navy;
+        return COLORS.navy;
     }
   };
 
@@ -55,13 +55,13 @@ export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats, columns =
         >
           <View style={styles.cardContent}>
             {stat.icon && (
-              <Text style={[styles.icon, { color: stat.color || Colors.gold }]}>
+              <Text style={[styles.icon, { color: stat.color || COLORS.gold }]}>
                 {stat.icon}
               </Text>
             )}
             <Text style={styles.label}>{stat.label}</Text>
             <View style={styles.valueContainer}>
-              <Text style={[styles.value, { color: stat.color || Colors.navy }]}>
+              <Text style={[styles.value, { color: stat.color || COLORS.navy }]}>
                 {stat.value}
               </Text>
               {stat.unit && <Text style={styles.unit}>{stat.unit}</Text>}
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   statCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',

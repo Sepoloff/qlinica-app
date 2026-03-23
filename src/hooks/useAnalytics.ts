@@ -28,11 +28,16 @@ export const useAnalytics = (screenName?: string) => {
     analyticsService.trackPerformance(metricName, duration);
   }, []);
 
+  const trackScreenView = useCallback((screenName: string, properties?: Record<string, any>) => {
+    analyticsService.trackScreenView(screenName, properties);
+  }, []);
+
   return {
     trackEvent,
     trackBookingStep,
     trackPayment,
     trackError,
     trackTiming,
+    trackScreenView,
   };
 };

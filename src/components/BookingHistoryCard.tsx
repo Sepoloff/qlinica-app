@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { Colors } from '../constants/Colors';
+import { COLORS } from '../constants/Colors';
 
 export interface BookingHistoryItem {
   id: string;
@@ -34,7 +34,7 @@ const getStatusColor = (status: BookingHistoryItem['status']) => {
     case 'pending':
       return '#F59E0B';
     default:
-      return Colors.gold;
+      return COLORS.gold;
   }
 };
 
@@ -181,11 +181,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: Colors.gold,
+    borderLeftColor: COLORS.gold,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   serviceName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.navy,
+    color: COLORS.navy,
     marginBottom: 4,
   },
   therapistName: {
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   value: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.navy,
+    color: COLORS.navy,
   },
   detailsContainer: {
     marginBottom: 12,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.gold,
+    color: COLORS.gold,
   },
   paymentStatusContainer: {
     flex: 1,
@@ -289,10 +289,10 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   rescheduleButton: {
-    backgroundColor: Colors.gold + '20',
+    backgroundColor: COLORS.gold + '20',
   },
   rescheduleButtonText: {
-    color: Colors.gold,
+    color: COLORS.gold,
     fontWeight: '600',
     fontSize: 13,
   },

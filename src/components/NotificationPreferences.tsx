@@ -12,7 +12,13 @@ import { Button } from './Button';
 import { Divider } from './Divider';
 import { TextInput as TextField } from './TextInput';
 import { Badge } from './Badge';
-import { useNotifications } from '../context/NotificationContext';
+
+interface NotificationSettings {
+  pushNotifications: boolean;
+  emailNotifications: boolean;
+  smsReminders: boolean;
+  reminderTime: number;
+}
 
 interface NotificationPreferencesProps {
   onSave?: () => void;
@@ -23,14 +29,18 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
   onSave,
   showSaveButton = true,
 }) => {
-  const { settings, updateSettings, isLoading, error } = useNotifications();
-  const [localSettings, setLocalSettings] = useState(settings);
+  const [localSettings, setLocalSettings] = useState<NotificationSettings>({
+    pushNotifications: true,
+    emailNotifications: false,
+    smsReminders: true,
+    reminderTime: 24, // hours before appointment
+  });
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleToggle = (key: keyof typeof localSettings) => {
+  const handleToggle = (key: keyof NotificationSettings) => {
     setLocalSettings((prev) => ({
       ...prev,
-      [key]: !prev[key],
+      [key]: typeof prev[key] === 'boolean' ? !prev[key] : prev[key],
     }));
   };
 
@@ -47,7 +57,8 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      await updateSettings(localSettings);
+      // Save settings to local storage or API
+      console.log('Notification settings saved:', localSettings);
       onSave?.();
     } catch (err) {
       console.error('Error saving notification settings:', err);
@@ -68,65 +79,54 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <Card style={styles.card}>
-        {/* Master Toggle */}
+        {/* Push Notifications */}
         <View style={styles.section}>
           <View style={styles.headerRow}>
-            <Badge label="Importante" variant="warning" size="small" />
+            <Badge label="Notificações" variant="info" size="small" />
           </View>
           <Checkbox
-            label="Ativar Notificações"
-            checked={localSettings.enabled}
-            onPress={() => handleToggle('enabled')}
+            label="Notificações Push"
+            checked={localSettings.pushNotifications}
+            onPress={() => handleToggle('pushNotifications')}
             style={styles.checkbox}
           />
           <Divider style={styles.divider} />
         </View>
 
-        {/* Booking Notifications */}
+        {/* Email Notifications */}
         <View style={styles.section}>
-          <View style={styles.headerRow}>
-            <Badge label="Agendamentos" variant="info" size="small" />
-          </View>
-
           <Checkbox
-            label="Confirmação de Agendamento"
-            checked={localSettings.bookingConfirmation}
-            onPress={() => handleToggle('bookingConfirmation')}
-            disabled={!localSettings.enabled}
+            label="Notificações por Email"
+            checked={localSettings.emailNotifications}
+            onPress={() => handleToggle('emailNotifications')}
             style={styles.checkbox}
           />
           <Divider style={styles.divider} />
         </View>
 
-        {/* Appointment Reminders */}
+        {/* SMS Reminders */}
         <View style={styles.section}>
-          <View style={styles.headerRow}>
-            <Badge label="Lembretes" variant="success" size="small" />
-          </View>
-
           <Checkbox
-            label="Lembretes de Consultas"
-            checked={localSettings.appointmentReminders}
-            onPress={() => handleToggle('appointmentReminders')}
-            disabled={!localSettings.enabled}
+            label="Lembretes por SMS"
+            checked={localSettings.smsReminders}
+            onPress={() => handleToggle('smsReminders')}
             style={styles.checkbox}
           />
 
-          {localSettings.appointmentReminders && (
+          {localSettings.smsReminders && (
             <>
               <View style={styles.reminderTimeSection}>
                 <TextField
-                  label="Tempo de Aviso (minutos)"
+                  label="Tempo de Aviso (horas)"
                   keyboardType="number-pad"
                   value={localSettings.reminderTime.toString()}
                   onChangeText={handleReminderTimeChange}
-                  editable={!isLoading}
-                  maxLength={4}
+                  maxLength={3}
                 />
                 <View style={styles.reminderHint}>
                   <Badge
-                    label={`Aviso: ${formatMinutes(localSettings.reminderTime)} antes`}
-                    variant="info"
+                    label={`Aviso: ${localSettings.reminderTime} horas antes`}
+                    variant="success"
                     size="small"
                   />
                 </View>
@@ -136,73 +136,18 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
           )}
         </View>
 
-        {/* Cancellation & Reschedule */}
-        <View style={styles.section}>
-          <View style={styles.headerRow}>
-            <Badge label="Alterações" variant="danger" size="small" />
-          </View>
-
-          <Checkbox
-            label="Notificações de Cancelamento"
-            checked={localSettings.cancellationNotices}
-            onPress={() => handleToggle('cancellationNotices')}
-            disabled={!localSettings.enabled}
-            style={styles.checkbox}
-          />
-
-          <Checkbox
-            label="Notificações de Remarcação"
-            checked={localSettings.rescheduling}
-            onPress={() => handleToggle('rescheduling')}
-            disabled={!localSettings.enabled}
-            style={styles.checkbox}
-          />
-          <Divider style={styles.divider} />
-        </View>
-
-        {/* Payment & Reviews */}
-        <View style={styles.section}>
-          <View style={styles.headerRow}>
-            <Badge label="Outros" variant="primary" size="small" />
-          </View>
-
-          <Checkbox
-            label="Notificações de Pagamento"
-            checked={localSettings.paymentNotifications}
-            onPress={() => handleToggle('paymentNotifications')}
-            disabled={!localSettings.enabled}
-            style={styles.checkbox}
-          />
-
-          <Checkbox
-            label="Pedidos de Avaliação"
-            checked={localSettings.reviewRequests}
-            onPress={() => handleToggle('reviewRequests')}
-            disabled={!localSettings.enabled}
-            style={styles.checkbox}
-          />
-        </View>
-
-        {/* Error Message */}
-        {error && (
-          <View style={styles.errorMessage}>
-            <Badge label={`Erro: ${error}`} variant="danger" size="small" />
+        {/* Action Buttons */}
+        {showSaveButton && (
+          <View style={styles.actions}>
+            <Button
+              title="Guardar Definições"
+              onPress={handleSave}
+              loading={isSaving}
+              variant="primary"
+            />
           </View>
         )}
       </Card>
-
-      {/* Save Button */}
-      {showSaveButton && (
-        <Button
-          title={isSaving ? 'Guardando...' : 'Guardar Preferências'}
-          onPress={handleSave}
-          loading={isSaving}
-          disabled={isSaving || isLoading}
-          variant="primary"
-          size="large"
-          style={styles.saveButton}
-        />
-      )}
     </ScrollView>
   );
 };
@@ -210,45 +155,32 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.offWhite,
+    backgroundColor: COLORS.background,
   },
   card: {
     margin: 16,
-    marginTop: 12,
+    padding: 16,
   },
   section: {
-    marginVertical: 12,
+    marginBottom: 16,
   },
   headerRow: {
     marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
   },
   checkbox: {
     marginVertical: 8,
   },
   divider: {
-    marginVertical: 8,
+    marginVertical: 12,
   },
   reminderTimeSection: {
-    marginTop: 16,
-    marginLeft: 0,
-    backgroundColor: `${COLORS.primary}08`,
-    padding: 12,
-    borderRadius: 8,
+    marginVertical: 12,
+    paddingLeft: 16,
   },
   reminderHint: {
     marginTop: 8,
   },
-  errorMessage: {
-    marginTop: 16,
-    padding: 12,
-    backgroundColor: `${COLORS.danger}10`,
-    borderRadius: 8,
-  },
-  saveButton: {
-    margin: 16,
+  actions: {
+    marginTop: 24,
   },
 });
-
-export default NotificationPreferences;

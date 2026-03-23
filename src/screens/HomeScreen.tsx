@@ -67,10 +67,11 @@ export default function HomeScreen() {
       console.error('Error loading home data:', err);
       const errorMessage = err instanceof Error ? err.message : 'Falha ao carregar dados';
       setError(errorMessage);
-      trackError(err instanceof Error ? err : new Error(errorMessage), {
-        screen: 'home',
-        operation: 'loadData',
-      });
+      trackError(
+        (err instanceof Error ? err.message : 'Unknown error'),
+        errorMessage,
+        err instanceof Error ? err.stack : undefined
+      );
       logger.error('Error loading home data', err);
     }
   };

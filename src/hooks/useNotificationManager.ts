@@ -1,6 +1,6 @@
 /**
  * useNotificationManager
- * Hook for managing notification operations with context-aware settings
+ * Hook for managing notification operations
  */
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -17,8 +17,8 @@ import {
   sendReviewRequestNotification,
   onNotificationResponse,
   onNotificationReceived,
+  NotificationPayload,
 } from '../services/notificationService';
-import { useNotifications } from '../context/NotificationContext';
 
 interface NotificationHandlers {
   onBookingConfirmation?: (bookingData: any) => void;
@@ -29,203 +29,233 @@ interface NotificationHandlers {
   onReview?: (reviewData: any) => void;
 }
 
+// Default notification settings
+const DEFAULT_SETTINGS = {
+  enabled: true,
+  bookingConfirmation: true,
+  appointmentReminders: true,
+  reminderTime: 24 * 60, // minutes before appointment
+  cancellationNotices: true,
+  rescheduling: true,
+  paymentNotifications: true,
+  reviewRequests: true,
+};
+
 export function useNotificationManager(handlers?: NotificationHandlers) {
-  const { settings } = useNotifications();
-  const unsubscribeRef = useRef<(() => void)[]>([]);
+  const unsubscribeRef = useRef<Array<() => void>>([]);
 
   /**
-   * Send a booking confirmation notification if enabled
+   * Send a booking confirmation notification
    */
   const notifyBookingConfirmation = useCallback(
-    async (therapistName: string, serviceName: string, dateTime: Date) => {
-      if (!settings.enabled || !settings.bookingConfirmation) return;
+    async (therapistName: string, serviceName: string, dateTime: Date | string) => {
+      if (!DEFAULT_SETTINGS.enabled || !DEFAULT_SETTINGS.bookingConfirmation) return;
 
       try {
-        await sendBookingConfirmationNotification(therapistName, serviceName, dateTime);
+        const appointmentDate = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
+        await sendBookingConfirmationNotification(therapistName, serviceName, appointmentDate);
+        handlers?.onBookingConfirmation?.({
+          therapistName,
+          serviceName,
+          dateTime: appointmentDate,
+        });
       } catch (error) {
         console.error('Error sending booking confirmation:', error);
       }
     },
-    [settings.enabled, settings.bookingConfirmation]
+    [handlers]
   );
 
   /**
-   * Schedule an appointment reminder if enabled
+   * Send appointment reminder notification
    */
-  const scheduleAppointmentReminder = useCallback(
-    async (
-      therapistName: string,
-      serviceName: string,
-      appointmentDate: Date,
-      minutesBefore?: number
-    ) => {
-      if (!settings.enabled || !settings.appointmentReminders) return;
+  const notifyReminder = useCallback(
+    async (therapistName: string, serviceName: string, dateTime: Date | string, minutesBefore?: number) => {
+      if (!DEFAULT_SETTINGS.enabled || !DEFAULT_SETTINGS.appointmentReminders) return;
 
       try {
-        const reminderTime = minutesBefore || settings.reminderTime;
-        await sendAppointmentReminderNotification(
+        const appointmentDate = typeof dateTime === 'string' ? new Date(dateTime) : dateTime;
+        const reminderTime = minutesBefore ?? DEFAULT_SETTINGS.reminderTime;
+        await sendAppointmentReminderNotification(therapistName, serviceName, appointmentDate, reminderTime);
+        handlers?.onReminder?.({
           therapistName,
           serviceName,
-          appointmentDate,
-          reminderTime
-        );
+          dateTime: appointmentDate,
+          minutesBefore: reminderTime,
+        });
       } catch (error) {
-        console.error('Error scheduling appointment reminder:', error);
+        console.error('Error sending reminder notification:', error);
       }
     },
-    [settings.enabled, settings.appointmentReminders, settings.reminderTime]
+    [handlers]
   );
 
   /**
-   * Send a cancellation notification if enabled
+   * Send cancellation notification
    */
   const notifyCancellation = useCallback(
-    async (therapistName: string, serviceName: string, originalDate: Date) => {
-      if (!settings.enabled || !settings.cancellationNotices) return;
+    async (therapistName: string, serviceName: string, cancelledDate?: Date | string) => {
+      if (!DEFAULT_SETTINGS.enabled || !DEFAULT_SETTINGS.cancellationNotices) return;
 
       try {
-        await sendCancellationNotification(therapistName, serviceName, originalDate);
+        const dateToPass = cancelledDate 
+          ? (typeof cancelledDate === 'string' ? new Date(cancelledDate) : cancelledDate)
+          : new Date();
+        await sendCancellationNotification(therapistName, serviceName, dateToPass);
+        handlers?.onCancellation?.({
+          therapistName,
+          serviceName,
+          cancelledDate: dateToPass,
+        });
       } catch (error) {
         console.error('Error sending cancellation notification:', error);
       }
     },
-    [settings.enabled, settings.cancellationNotices]
+    [handlers]
   );
 
   /**
-   * Send a reschedule notification if enabled
+   * Send reschedule notification
    */
   const notifyReschedule = useCallback(
-    async (
-      therapistName: string,
-      serviceName: string,
-      newDate: Date,
-      oldDate: Date
-    ) => {
-      if (!settings.enabled || !settings.rescheduling) return;
+    async (therapistName: string, serviceName: string, newDate: Date | string, oldDate: Date | string) => {
+      if (!DEFAULT_SETTINGS.enabled || !DEFAULT_SETTINGS.rescheduling) return;
 
       try {
-        await sendRescheduleNotification(therapistName, serviceName, newDate, oldDate);
+        const newAppointmentDate = typeof newDate === 'string' ? new Date(newDate) : newDate;
+        const oldAppointmentDate = typeof oldDate === 'string' ? new Date(oldDate) : oldDate;
+        await sendRescheduleNotification(therapistName, serviceName, newAppointmentDate, oldAppointmentDate);
+        handlers?.onReschedule?.({
+          therapistName,
+          serviceName,
+          oldDate: oldAppointmentDate,
+          newDate: newAppointmentDate,
+        });
       } catch (error) {
         console.error('Error sending reschedule notification:', error);
       }
     },
-    [settings.enabled, settings.rescheduling]
+    [handlers]
   );
 
   /**
-   * Send a payment notification if enabled
+   * Send payment notification
    */
   const notifyPayment = useCallback(
     async (amount: number, bookingId: string) => {
-      if (!settings.enabled || !settings.paymentNotifications) return;
+      if (!DEFAULT_SETTINGS.enabled || !DEFAULT_SETTINGS.paymentNotifications) return;
 
       try {
         await sendPaymentNotification(amount, bookingId);
+        handlers?.onPayment?.({
+          amount,
+          bookingId,
+        });
       } catch (error) {
         console.error('Error sending payment notification:', error);
       }
     },
-    [settings.enabled, settings.paymentNotifications]
+    [handlers]
   );
 
   /**
-   * Send a review request notification if enabled
+   * Send review request notification
    */
   const notifyReviewRequest = useCallback(
     async (therapistName: string, serviceName: string, bookingId: string) => {
-      if (!settings.enabled || !settings.reviewRequests) return;
+      if (!DEFAULT_SETTINGS.enabled || !DEFAULT_SETTINGS.reviewRequests) return;
 
       try {
         await sendReviewRequestNotification(therapistName, serviceName, bookingId);
+        handlers?.onReview?.({
+          therapistName,
+          serviceName,
+          bookingId,
+        });
       } catch (error) {
         console.error('Error sending review request notification:', error);
       }
     },
-    [settings.enabled, settings.reviewRequests]
+    [handlers]
   );
 
   /**
-   * Send a custom notification
+   * Send custom local notification
    */
-  const sendCustomNotification = useCallback(
-    async (title: string, body: string, data?: Record<string, any>) => {
-      if (!settings.enabled) return;
-
+  const sendNotification = useCallback(
+    async (payload: NotificationPayload) => {
       try {
-        await sendLocalNotification({ title, body, data });
+        await sendLocalNotification(payload, 1);
       } catch (error) {
-        console.error('Error sending custom notification:', error);
+        console.error('Error sending local notification:', error);
       }
     },
-    [settings.enabled]
+    []
   );
 
   /**
-   * Cancel a scheduled notification
+   * Schedule notification for later
    */
-  const cancel = useCallback(async (notificationId: string) => {
-    try {
-      await cancelNotification(notificationId);
-    } catch (error) {
-      console.error('Error canceling notification:', error);
-    }
-  }, []);
+  const scheduleNotificationLater = useCallback(
+    async (payload: NotificationPayload, triggerDate: Date) => {
+      try {
+        return await scheduleNotification(payload, triggerDate);
+      } catch (error) {
+        console.error('Error scheduling notification:', error);
+      }
+    },
+    []
+  );
 
-  // Setup notification listeners on mount
+  /**
+   * Cancel scheduled notification
+   */
+  const cancelScheduledNotification = useCallback(
+    async (notificationId: string) => {
+      try {
+        await cancelNotification(notificationId);
+      } catch (error) {
+        console.error('Error cancelling notification:', error);
+      }
+    },
+    []
+  );
+
+  /**
+   * Setup notification listeners
+   */
   useEffect(() => {
-    const unsubscribers: (() => void)[] = [];
+    const subscriptions: Array<() => void> = [];
 
-    // Listen to notification responses (when user taps a notification)
-    unsubscribers.push(
-      onNotificationResponse((notification) => {
-        const trigger = notification.request.content.data?.type;
+    // Handle notification received
+    const subscription1 = onNotificationReceived((notification) => {
+      console.log('Notification received:', notification);
+    });
 
-        switch (trigger) {
-          case 'booking':
-            handlers?.onBookingConfirmation?.(notification.request.content.data);
-            break;
-          case 'reminder':
-            handlers?.onReminder?.(notification.request.content.data);
-            break;
-          case 'cancellation':
-            handlers?.onCancellation?.(notification.request.content.data);
-            break;
-          case 'reschedule':
-            handlers?.onReschedule?.(notification.request.content.data);
-            break;
-          case 'payment':
-            handlers?.onPayment?.(notification.request.content.data);
-            break;
-          case 'review':
-            handlers?.onReview?.(notification.request.content.data);
-            break;
-        }
-      })
-    );
+    // Handle notification response
+    const subscription2 = onNotificationResponse((response) => {
+      console.log('Notification response:', response);
+    });
 
-    // Listen to notifications received in foreground
-    unsubscribers.push(
-      onNotificationReceived((notification) => {
-        console.log('Notification received:', notification);
-      })
-    );
+    if (subscription1) subscriptions.push(subscription1);
+    if (subscription2) subscriptions.push(subscription2);
 
-    unsubscribeRef.current = unsubscribers;
+    unsubscribeRef.current = subscriptions;
 
     return () => {
-      unsubscribers.forEach((unsubscribe) => unsubscribe());
+      subscriptions.forEach((unsub) => unsub?.());
     };
-  }, [handlers]);
+  }, []);
 
   return {
     notifyBookingConfirmation,
-    scheduleAppointmentReminder,
+    notifyReminder,
     notifyCancellation,
     notifyReschedule,
     notifyPayment,
     notifyReviewRequest,
-    sendCustomNotification,
-    cancel,
+    sendNotification,
+    scheduleNotificationLater,
+    cancelScheduledNotification,
   };
 }

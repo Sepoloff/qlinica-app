@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
-import { Colors } from '../constants/Colors';
+import { COLORS } from '../constants/Colors';
 
 interface SkeletonLoaderProps {
   width?: number | string;
@@ -61,7 +61,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
       key={index}
       style={[
         styles.skeleton,
-        getSize(),
+        getSize() as any,
         { marginBottom: index < count - 1 ? marginBottom : 0 },
         animated && { opacity },
       ]}
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: COLORS.white,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,

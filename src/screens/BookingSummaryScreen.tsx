@@ -51,7 +51,7 @@ export default function BookingSummaryScreen() {
   const route = useRoute<any>();
   const { bookingData, resetBooking } = useBooking();
   const { showToast } = useToast();
-  const { notifyBookingConfirmation, scheduleAppointmentReminder } = useNotificationManager();
+  const { notifyBookingConfirmation, notifyReminder } = useNotificationManager();
   const { createBooking } = useBookingAPI();
   const { trackEvent } = useAnalytics();
   const [isConfirming, setIsConfirming] = useState(false);
@@ -176,8 +176,8 @@ export default function BookingSummaryScreen() {
         });
 
       // Schedule appointment reminder (non-blocking)
-      scheduleAppointmentReminder(therapist.name, service.name, appointmentDate)
-        .catch((reminderError) => {
+      notifyReminder(therapist.name, service.name, appointmentDate)
+        .catch((reminderError: any) => {
           logger.warn('Reminder schedule failed (non-critical)', reminderError as Error);
         });
 

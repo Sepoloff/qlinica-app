@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, FlatList } from 'react-native';
-import { Colors } from '../constants/Colors';
+import { COLORS } from '../constants/Colors';
 
 export interface Notification {
   id: string;
@@ -34,7 +34,7 @@ const getTypeColor = (type: Notification['type']) => {
     case 'info':
       return '#3B82F6';
     default:
-      return Colors.gold;
+      return COLORS.gold;
   }
 };
 
@@ -214,7 +214,7 @@ function getTimeAgo(date: Date): string {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.white,
+    backgroundColor: COLORS.white,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -230,16 +230,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.navy,
+    color: COLORS.navy,
   },
   badge: {
-    backgroundColor: Colors.gold,
+    backgroundColor: COLORS.gold,
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
   badgeText: {
-    color: Colors.white,
+    color: COLORS.white,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.navy,
+    color: COLORS.navy,
     marginBottom: 4,
   },
   message: {
@@ -324,7 +324,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 40,
-    backgroundColor: Colors.white,
+    backgroundColor: COLORS.white,
     borderRadius: 12,
   },
   emptyIcon: {

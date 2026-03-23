@@ -94,8 +94,7 @@ export default function BookingsScreen() {
                     const dateTime = new Date(`${booking.date}T${booking.time}`);
                     await notifyCancellation(
                       booking.therapistId || 'Terapeuta',
-                      booking.serviceId || 'Serviço',
-                      dateTime
+                      booking.serviceId || 'Serviço'
                     );
                   } catch (notificationError) {
                     logger.warn('Cancellation notification failed (non-critical)', notificationError as Error);
