@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants/Colors';
 import { Booking } from '../services/bookingService';
@@ -40,7 +40,7 @@ const getStatusLabel = (status: Booking['status']) => {
   return labels[status];
 };
 
-export const BookingCard: React.FC<BookingCardProps> = ({
+const BookingCardComponent: React.FC<BookingCardProps> = ({
   booking,
   serviceName = 'Consulta',
   therapistName = 'Terapeuta',
@@ -152,6 +152,24 @@ export const BookingCard: React.FC<BookingCardProps> = ({
     </TouchableOpacity>
   );
 };
+
+// Memoized export to prevent unnecessary re-renders
+export const BookingCard = memo(
+  BookingCardComponent,
+  (prevProps, nextProps) => {
+    // Custom comparison to only re-render when key props change
+    return (
+      prevProps.booking.id === nextProps.booking.id &&
+      prevProps.booking.status === nextProps.booking.status &&
+      prevProps.booking.date === nextProps.booking.date &&
+      prevProps.serviceName === nextProps.serviceName &&
+      prevProps.therapistName === nextProps.therapistName &&
+      prevProps.isLoading === nextProps.isLoading
+    );
+  }
+);
+
+BookingCard.displayName = 'BookingCard';
 
 const styles = StyleSheet.create({
   container: {

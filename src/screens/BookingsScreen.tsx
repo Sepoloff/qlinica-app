@@ -8,6 +8,7 @@ import { useToast } from '../context/ToastContext';
 import { useNotificationManager } from '../hooks/useNotificationManager';
 import { useBookingAPI } from '../hooks/useBookingAPI';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { useScreenPerformance, useApiPerformance } from '../hooks/usePerformanceTracking';
 import { Booking } from '../services/apiService';
 import { BookingCard } from '../components/BookingCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -20,6 +21,13 @@ export default function BookingsScreen() {
   const { showToast } = useToast();
   const { notifyCancellation, notifyReschedule } = useNotificationManager();
   const { trackScreenView, trackEvent } = useAnalytics();
+  
+  // Performance tracking
+  const { getRenderCount } = useScreenPerformance({
+    screenName: 'BookingsScreen',
+    logToConsole: __DEV__,
+  });
+  const { trackApiCall } = useApiPerformance('/api/bookings');
   
   // Use API hook
   const { 

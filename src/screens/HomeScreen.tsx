@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { useServices } from '../hooks/useDataAPI';
 import { useBookingAPI } from '../hooks/useBookingAPI';
+import { useScreenPerformance, useApiPerformance } from '../hooks/usePerformanceTracking';
 import { Service, Booking } from '../services/apiService';
 import { convertMockBookings, convertMockServices } from '../utils/mockDataConverters';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -19,6 +20,14 @@ export default function HomeScreen() {
   const safeNav = useSafeNavigation();
   const { user, isLoading: authLoading } = useAuth();
   const { trackScreenView, trackEvent, trackError } = useAnalytics();
+  
+  // Performance tracking
+  const { getRenderCount } = useScreenPerformance({
+    screenName: 'HomeScreen',
+    logToConsole: __DEV__,
+  });
+  const { trackApiCall: trackServicesCall } = useApiPerformance('/api/services');
+  const { trackApiCall: trackBookingsCall } = useApiPerformance('/api/bookings');
   
   // Use API hooks
   const { services = [], isLoading: servicesLoading, error: servicesError, refresh: refreshServices } = useServices();
