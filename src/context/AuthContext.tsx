@@ -1,8 +1,9 @@
 'use strict';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { api } from '../config/api';
 import { authStorage, userStorage } from '../utils/storage';
+import { logger } from '../utils/logger';
 
 export interface User {
   id: string;
@@ -27,6 +28,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
   clearError: () => void;
+  refreshToken: () => Promise<boolean>;
+  isRefreshingToken: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,6 +38,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRefreshingToken, setIsRefreshingToken] = useState(false);
+  const tokenRefreshPromiseRef = useRef<Promise<boolean> | null>(null);
 
   // Auto-login on app launch
   useEffect(() => {
@@ -48,13 +53,70 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const userProfile = await userStorage.getProfile();
 
       if (token && userProfile) {
+        logger.debug('✅ Auto-login successful - restored session from storage');
         setUser(userProfile as User);
+      } else {
+        logger.debug('No stored session found - user starts as logged out');
       }
     } catch (error) {
-      console.error('Failed to restore token:', error);
+      logger.error('Failed to restore token on app launch:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const refreshToken = async (): Promise<boolean> => {
+    // If already refreshing, wait for that promise
+    if (tokenRefreshPromiseRef.current) {
+      return tokenRefreshPromiseRef.current;
+    }
+
+    // Create new refresh promise
+    const refreshPromise = (async () => {
+      try {
+        setIsRefreshingToken(true);
+        const refreshToken = await authStorage.getRefreshToken();
+
+        if (!refreshToken) {
+          logger.warn('No refresh token available - logging out');
+          await logout();
+          return false;
+        }
+
+        const response = await api.post<{ token: string; refreshToken: string }>(
+          '/auth/refresh',
+          { refreshToken }
+        );
+
+        const { token: newToken, refreshToken: newRefreshToken } = response.data;
+
+        if (!newToken) {
+          logger.warn('No token in refresh response - logging out');
+          await logout();
+          return false;
+        }
+
+        // Update tokens
+        await authStorage.setToken(newToken);
+        if (newRefreshToken) {
+          await authStorage.setRefreshToken(newRefreshToken);
+        }
+
+        logger.debug('✅ Token refreshed successfully');
+        return true;
+      } catch (error: any) {
+        logger.error('Token refresh failed:', error);
+        // If refresh fails, log out user
+        await logout();
+        return false;
+      } finally {
+        setIsRefreshingToken(false);
+        tokenRefreshPromiseRef.current = null;
+      }
+    })();
+
+    tokenRefreshPromiseRef.current = refreshPromise;
+    return refreshPromise;
   };
 
   const login = async (email: string, password: string): Promise<void> => {
@@ -77,8 +139,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('Password inválido');
       }
 
+      logger.debug(`Attempting login for ${email}`);
+
       const response = await api.post('/auth/login', { email, password });
-      const { token, user: userData } = response.data;
+      const { token, refreshToken, user: userData } = response.data;
 
       if (!token) {
         throw new Error('No token received from server');
@@ -88,10 +152,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('No user data received from server');
       }
 
-      // Save token and user data
+      // Save tokens and user data securely
       await authStorage.setToken(token);
+      if (refreshToken) {
+        await authStorage.setRefreshToken(refreshToken);
+      }
       await userStorage.setProfile(userData);
 
+      logger.debug(`✅ Login successful for ${email}`);
       setUser(userData);
     } catch (err: any) {
       let errorMessage = 'Login failed';
@@ -109,6 +177,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         errorMessage = err.message;
       }
 
+      logger.error(`Login failed for ${email}:`, errorMessage);
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -123,6 +192,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       // Import validation from utils
       const { validateEmail, validatePassword, validateName } = require('../utils/validation');
+
+      logger.debug(`Attempting registration for ${email}`);
 
       // Validate inputs before API call
       if (!email?.trim() || !password?.trim() || !name?.trim()) {
@@ -154,7 +225,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       const response = await api.post('/auth/register', { email, password, name });
-      const { token, user: userData } = response.data;
+      const { token, refreshToken, user: userData } = response.data;
 
       if (!token) {
         throw new Error('No token received from server');
@@ -164,10 +235,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         throw new Error('No user data received from server');
       }
 
-      // Save token and user data
+      // Save tokens and user data securely
       await authStorage.setToken(token);
+      if (refreshToken) {
+        await authStorage.setRefreshToken(refreshToken);
+      }
       await userStorage.setProfile(userData);
 
+      logger.debug(`✅ Registration successful for ${email}`);
       setUser(userData);
     } catch (err: any) {
       let errorMessage = 'Registration failed';
@@ -185,6 +260,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         errorMessage = err.message;
       }
 
+      logger.error(`Registration failed for ${email}:`, errorMessage);
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
@@ -196,14 +272,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
 
     try {
+      logger.debug('Logging out user...');
       // Call logout endpoint if available
-      await api.post('/auth/logout');
-    } catch (err) {
-      console.error('Logout API error:', err);
+      try {
+        await api.post('/auth/logout');
+        logger.debug('Logout API call successful');
+      } catch (err) {
+        logger.error('Logout API error:', err);
+        // Continue with local logout even if API fails
+      }
     } finally {
       // Always clear local data
-      await authStorage.removeToken();
-      await userStorage.removeProfile();
+      try {
+        await authStorage.removeToken();
+        await authStorage.removeRefreshToken();
+        await userStorage.removeProfile();
+        logger.debug('✅ Local auth data cleared');
+      } catch (err) {
+        logger.error('Error clearing local storage:', err);
+      }
+      
       setUser(null);
       setIsLoading(false);
     }
@@ -236,6 +324,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     logout,
     updateUser,
     clearError,
+    refreshToken,
+    isRefreshingToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

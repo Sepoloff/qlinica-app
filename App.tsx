@@ -31,6 +31,7 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { useAuth } from './src/context/AuthContext';
 import { initializeNotifications } from './src/services/notificationService';
 import { offlineSyncService } from './src/services/offlineSyncService';
+import { setAuthRefreshCallback } from './src/config/api';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -89,10 +90,13 @@ function TabNavigator() {
 }
 
 function RootNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, refreshToken } = useAuth();
 
-  // Initialize notifications and offline sync on app start
+  // Initialize services and set auth refresh callback
   useEffect(() => {
+    // Set the auth refresh callback for API interceptor
+    setAuthRefreshCallback(() => refreshToken());
+
     const initializeServices = async () => {
       try {
         await initializeNotifications();
@@ -108,7 +112,7 @@ function RootNavigator() {
     };
 
     initializeServices();
-  }, []);
+  }, [refreshToken]);
 
   if (isLoading) {
     return (

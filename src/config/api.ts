@@ -53,6 +53,14 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Store the auth context to use refreshToken
+let authContextRefresh: (() => Promise<boolean>) | null = null;
+
+// Setter for auth context (to avoid circular dependency)
+export const setAuthRefreshCallback = (callback: () => Promise<boolean>) => {
+  authContextRefresh = callback;
+};
+
 // Response interceptor - Handle errors and retry logic with exponential backoff
 api.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -74,7 +82,7 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const config = error.config as AxiosRequestConfig & { retryCount?: number };
+    const config = error.config as AxiosRequestConfig & { retryCount?: number; _retried?: boolean };
 
     if (!config) {
       return Promise.reject(error);
@@ -83,19 +91,43 @@ api.interceptors.response.use(
     const key = `${config.method}:${config.url}`;
     const currentRetry = retryCount.get(key) || 0;
 
-    // Handle 401/403 - Unauthorized (don't retry)
-    const parsedError = parseAPIError(error);
-    if (error.response?.status === 401 || error.response?.status === 403 || isAuthError(parsedError)) {
+    // Handle 401 - Try to refresh token
+    if (error.response?.status === 401 && !config._retried && authContextRefresh) {
       try {
+        logger.warn('🔄 Token expired - attempting refresh...');
+        config._retried = true;
+        
+        const refreshed = await authContextRefresh();
+        
+        if (refreshed) {
+          // Retry the original request with new token
+          logger.debug('✅ Token refreshed - retrying original request');
+          return api(config);
+        } else {
+          // Refresh failed - reject
+          logger.warn('Token refresh failed - logging out');
+          await authStorage.removeToken();
+          return Promise.reject(error);
+        }
+      } catch (refreshError) {
+        logger.error('Error during token refresh:', refreshError);
         await authStorage.removeToken();
-        logger.warn('🔐 Token expired or access denied - user logged out');
+        return Promise.reject(error);
+      }
+    }
+
+    // Handle 403 - Access denied (don't retry or refresh)
+    const parsedError = parseAPIError(error);
+    if (error.response?.status === 403 || isAuthError(parsedError)) {
+      try {
+        logger.warn('🔐 Access denied');
         analyticsService.trackError(error, {
           type: 'auth_error',
           code: parsedError.code,
           endpoint: config.url,
         });
       } catch (storageError) {
-        logger.error('Error clearing storage', storageError);
+        logger.error('Error tracking error', storageError);
       }
       return Promise.reject(parsedError);
     }
